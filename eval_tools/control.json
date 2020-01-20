@@ -1,0 +1,481 @@
+{
+  "GOVERNANCE": {
+    "KNOX_GATEWAY": {
+      "name": "Knox",
+      "abbr": "KX",
+      "config": {
+        "section": "",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "",
+        "configs": {
+        }
+      }
+    },
+    "INFRA_SOLR": {
+      "name": "SOLR Infrastructure",
+      "abbr": "iSOLR",
+      "config": {
+        "section": "infra-solr-xml",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "infra-solr-env",
+        "configs": {
+          "heap": "infra_solr_maxmem",
+          "user_nofile_limit": "infra_solr_user_nofile_limit",
+          "user_nproc_limit": "infra_solr_user_nproc_limit",
+          "log.dir": "infra_solr_log_dir",
+          "data.dir": "infra_solr_datadir"
+        }
+      }
+    },
+    "ATLAS_SERVER": {
+      "name": "Atlas",
+      "abbr": "AS",
+      "config": {
+        "section": "ranger-atlas-security",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "atlas-env",
+        "configs": {
+          "heap": "atlas_server_xmx",
+          "data.dir": "metadata_data_dir",
+          "log.dir": "metadata_log_dir"
+        }
+      }
+    }
+  },
+  "HADOOP": {
+    "NAMENODE": {
+      "name": "Namenode",
+      "abbr": "NN",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+          "data.dir": "dfs.namenode.name.dir",
+          "dfs.namenode.checkpoint.dir": "dfs.namenode.checkpoint.dir",
+          "dfs.namenode.handler.count": "dfs.namenode.handler.count",
+          "dfs.webhdfs.enabled": "dfs.webhdfs.enabled"
+        }
+      },
+      "environment": {
+        "section": "hadoop-env",
+        "configs": {
+          "heap": "namenode_heapsize",
+          "backup_dir": "namenode_backup_dir",
+          "opt_max_size": "namenode_opt_maxnewsize",
+          "opt_perm_size": "namenode_opt_permsize",
+          "opt_max_perm_size": "namenode_opt_maxpermsize",
+          "tmp_dir": "hdfs_tmp_dir",
+          "user_proc_ulimit": "hdfs_user_nproc_limit",
+          "user_nofile_ulimit": "hdfs_user_nofile_limit",
+          "log_dir_prefix": "hdfs_log_dir_prefix"
+        }
+      }
+    },
+    "DATANODE": {
+      "name": "Datanode",
+      "abbr": "DN",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+          "data.dir": "dfs.datanode.data.dir",
+          "dfs.datanode.max.transfer.threads": "dfs.datanode.max.transfer.threads",
+          "dfs.datanode.failed.volumes.tolerated": "dfs.datanode.failed.volumes.tolerated"
+        }
+      },
+      "environment": {
+        "section": "hadoop-env",
+        "configs": {
+          "heap": "dtnode_heapsize"
+        }
+      }
+    },
+    "JOURNALNODE": {
+      "name": "JournalNode",
+      "abbr": "JN",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+          "data.dir": "dfs.journalnode.edits.dir"
+        }
+      },
+      "environment": {
+        "section": "hadoop-env",
+        "configs": {
+          "memory": "hadoop_heapsize"
+        }
+      }
+    },
+    "ZKFC": {
+      "name": "ZK Failover Controller",
+      "abbr": "ZKFC",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "",
+        "configs": {
+        }
+      }
+    },
+    "RESOURCEMANAGER": {
+      "name": "Resource Manager",
+      "abbr": "RM",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "",
+        "configs": {
+          "heap": "resourcemanager_heapsize"
+        }
+      }
+    },
+    "NODEMANAGER": {
+      "name": "Node Manager",
+      "abbr": "NM",
+      "config": {
+        "section": "yarn-site",
+        "configs": {
+          "yarn.nodemanager.local-dirs": "yarn.nodemanager.local-dirs",
+          "yarn.nodemanager.remote-app-log-dir": "yarn.nodemanager.remote-app-log-dir",
+          "yarn.nodemanager.log-dirs": "yarn.nodemanager.log-dirs",
+          "yarn.nodemanager.recovery.dir": "yarn.nodemanager.recovery.dir",
+          "off.heap": "yarn.nodemanager.resource.memory-mb"
+        }
+      },
+      "environment": {
+        "section": "yarn-env",
+        "configs": {
+          "heap": "nodemanager_heapsize",
+          "log_prefix": "yarn_log_dir_prefix"
+        }
+      }
+    },
+    "ZOOKEEPER_SERVER": {
+      "name": "ZooKeeper Server",
+      "abbr": "ZK",
+      "config": {
+        "section": "zoo.cfg",
+        "configs": {
+          "data.dir": "dataDir",
+          "autopurge.purgeInterval": "autopurge.purgeInterval"
+        }
+      },
+      "environment": {
+        "section": "zoo.cfg",
+        "configs": {
+        }
+      }
+    },
+    "HISTORYSERVER": {
+      "name": "Job History Server",
+      "abbr": "JHS",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "",
+        "configs": {
+        }
+      }
+    }
+  },
+  "HIVE": {
+    "HIVE_METASTORE": {
+      "name": "Hive Metastore",
+      "abbr": "HMS",
+      "config": {
+        "section": "hive-site",
+        "configs": {
+          "hive.metastore.warehouse.dir": "hive.metastore.warehouse.dir"
+        }
+      },
+      "environment": {
+        "section": "hive-env",
+        "configs": {
+          "heap": "hive.metastore.heapsize",
+          "log.dir": "hive_log_dir"
+        }
+      }
+    },
+    "HIVE_SERVER": {
+      "name": "Hive Server2",
+      "abbr": "HS2",
+      "config": {
+        "section": "hive-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "hive-env",
+        "configs": {
+          "heap": "non-set-yet"
+        }
+      }
+    },
+    "HIVE_SERVER_INTERACTIVE": {
+      "name": "Hive Server2 Interactive",
+      "abbr": "HS2i",
+      "config": {
+        "section": "hive-interactive-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "hive-interactive-env",
+        "configs": {
+        }
+      }
+    }
+  },
+  "PIPELINE": {
+    "OOZIE_SERVER": {
+      "name": "Oozie",
+      "abbr": "OZ",
+      "config": {
+        "section": "oozie-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "oozie-env",
+        "configs": {
+          "heap": "oozie_heapsize",
+          "data.dir": "oozie_data_dir",
+          "tmp.dir": "oozie_tmp_dir"
+        }
+      }
+    },
+    "NIFI_MASTER": {
+      "name": "NiFi",
+      "abbr": "NF",
+      "config": {
+        "section": "nifi-properties",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "nifi-env",
+        "configs": {
+          "log.dir": "nifi_node_log_dir"
+        }
+      }
+    },
+    "KAFKA_BROKER": {
+      "name": "Kafka Broker",
+      "abbr": "KB",
+      "config": {
+        "section": "kafka-broker",
+        "configs": {
+          "data.dir": "log.dirs"
+        }
+      },
+      "environment": {
+        "section": "kafka-env",
+        "configs": {
+          "log.dir": "kafka_log_dir",
+          "user_nofile_limit": "kafka_user_nofile_limit",
+          "user_nproc_limit": "kafka_user_nproc_limit"
+        }
+      }
+    }
+  },
+  "HBASE": {
+    "HBASE_MASTER": {
+      "name": "HBase Master",
+      "abbr": "HM",
+      "config": {
+        "section": "hbase-site",
+        "configs": {
+          "data.dir": "hbase.rootdir"
+        }
+      },
+      "environment": {
+        "section": "hbase-env",
+        "configs": {
+          "heap": "hbase_master_heapsize",
+          "log.dir": "hbase_log_dir"
+        }
+      }
+    },
+    "HBASE_REGIONSERVER": {
+      "name": "Region Server",
+      "abbr": "RS",
+      "config": {
+        "section": "hbase-site",
+        "configs": {
+          "local.dir": "hbase.local.dir",
+          "tmp.dir": "hbase.tmp.dir",
+          "handler.count": "hbase.regionserver.handler.count"
+        }
+      },
+      "environment": {
+        "section": "hbase-env",
+        "configs": {
+          "heap": "hbase_regionserver_heapsize",
+          "off.heap": "hbase_max_direct_memory_size",
+          "user_nproc_limit": "hbase_user_nproc_limit",
+          "user_nofile_limit": "hbase_user_nofile_limit"
+        }
+      }
+    }
+  },
+  "SPARK": {
+    "LIVY2_SERVER": {
+      "name": "Livy2 Server",
+      "abbr": "L2S",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "",
+        "configs": {
+        }
+      }
+    },
+    "SPARK2_JOBHISTORYSERVER": {
+      "name": "Spark2 JobHistory Server",
+      "abbr": "S2JHS",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "",
+        "configs": {
+        }
+      }
+    },
+    "SPARK_JOBHISTORYSERVER": {
+      "name": "Spark JobHistory Server",
+      "abbr": "SJHS",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "",
+        "configs": {
+        }
+      }
+    }
+  },
+  "DRUID": {
+    "DRUID_ROUTER": {
+      "name": "Druid Router",
+      "abbr": "DR",
+      "config": {
+        "section": "druid-router",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "druid-env",
+        "configs": {
+          "heap": "druid.router.jvm.heap.memory",
+          "off.heap": "druid.router.jvm.direct.memory"
+        }
+      }
+    },
+    "DRUID_OVERLOAD": {
+      "name": "Druid Overload",
+      "abbr": "DO",
+      "config": {
+        "section": "druid-overload",
+        "configs": {
+          "data_dir": ""
+        }
+      },
+      "environment": {
+        "section": "druid-env",
+        "configs": {
+          "heap": "druid.overlord.jvm.heap.memory",
+          "off.heap": "druid.overlord.jvm.direct.memory"
+        }
+      }
+    },
+    "DRUID_BROKER": {
+      "name": "Druid Broker",
+      "abbr": "DB",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+          "data_dir": ""
+        }
+      },
+      "environment": {
+        "section": "druid-env",
+        "configs": {
+          "heap": "druid.broker.jvm.heap.memory",
+          "off.heap": "druid.broker.jvm.direct.memory"
+        }
+      }
+    },
+    "DRUID_MIDDLEMANAGER": {
+      "name": "Druid Middle Manager",
+      "abbr": "DM",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "druid-env",
+        "configs": {
+          "heap": "druid.middlemanager.jvm.heap.memory",
+          "off.heap": "druid.middlemanager.jvm.direct.memory"
+        }
+      }
+    },
+    "DRUID_HISTORICAL": {
+      "name": "Druid Historical",
+      "abbr": "DH",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "druid-env",
+        "configs": {
+          "heap": "druid.historical.jvm.heap.memory",
+          "off.heap": "druid.historical.jvm.direct.memory"
+        }
+      }
+    },
+    "DRUID_COORDINATOR": {
+      "name": "Druid Coordinator",
+      "abbr": "DC",
+      "config": {
+        "section": "hdfs-site",
+        "configs": {
+        }
+      },
+      "environment": {
+        "section": "druid-env",
+        "configs": {
+          "heap": "druid.coordinator.jvm.heap.memory",
+          "off.heap": "druid.coordinator.jvm.direct.memory"
+        }
+      }
+    }
+  }
+}

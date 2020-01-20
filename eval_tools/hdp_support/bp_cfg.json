@@ -1,0 +1,341 @@
+{
+  "evaluate_cfgs": [
+    {
+      "ams-hbase-site": {
+        "environment_dependent": [
+          "hbase.rootdir",
+          "hbase.tmp.dir"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "hadoop-env": {
+        "environment_dependent": [
+          "hadoop_heapsize",
+          "dtnode_heapsize",
+          "namenode_backup_dir",
+          "hadoop_pid_dir_prefix",
+          "namenode_opt_newsize",
+          "namenode_heapsize",
+          "namenode_opt_maxpermsize",
+          "namenode_opt_maxnewsize",
+          "namenode_opt_permsize"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "core-site": {
+        "environment_dependent": [
+          "hadoop.security.key.provider.path",
+          "ha.zookeeper.quorum",
+          "fs.protected.directories",
+          "fs.defaultFS"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "dbks-site": {
+        "environment_dependent": [
+          "ranger.ks.jpa.jdbc.url",
+          "ranger.ks.kerberos.principal"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "hbase-site": {
+        "environment_dependent": [
+          "hbase.rootdir",
+          "hbase.master.kerberos.principal",
+          "hbase.regionserver.kerberos.principal",
+          "hbase.security.authentication.spnego.kerberos.principal",
+          "hbase.tmp.dir",
+          "hbase.zookeeper.quorum",
+          "phoenix.queryserver.kerberos.principal"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "hdfs-site": {
+        "environment_dependent": [
+          "dfs.secondary.namenode.kerberos.principal",
+          "dfs.secondary.namenode.kerberos.internal.spnego.principal",
+          "dfs.internal.nameservices",
+          "dfs.encryption.key.provider.uri",
+          "dfs.datanode.kerberos.principal",
+          "dfs.datanode.data.dir",
+          "nfs.kerberos.principal",
+          "dfs.web.authentication.kerberos.principal",
+          "dfs.nameservices",
+          "dfs.namenode.shared.edits.dir",
+          "dfs.namenode.name.dir",
+          "dfs.namenode.kerberos.principal",
+          "dfs.namenode.kerberos.internal.spnego.principal",
+          "dfs.namenode.checkpoint.dir",
+          "dfs.journalnode.kerberos.principal",
+          "dfs.journalnode.kerberos.internal.spnego.principal",
+          "dfs.journalnode.edits.dir",
+          "dfs.internal.nameservices",
+          "dfs.encryption.key.provider.uri",
+          "dfs.datanode.kerberos.principal",
+          "dfs.datanode.data.dir"
+        ],
+        "skip": []
+      }
+    },    {
+      "hive-env": {
+        "environment_dependent": [
+          "hive_log_dir",
+          "hive.client.heapsize",
+          "heapsize",
+          "hive.metastore.heapsize",
+          "hive_ambari_database",
+          "hive.heapsize"
+        ],
+        "skip": [
+          "hive_database_type",
+          "hive_database",
+          "hive_database_name",
+          "hcat_log_dir"
+        ]
+      }
+    },
+
+    {
+      "hive-interactive-site": {
+        "environment_dependent": [
+          "hive.server2.zookeeper.namespace",
+          "hive.server2.tez.default.queues",
+          "hive.metastore.uris",
+          "hive.llap.zk.sm.connectionString",
+          "hive.llap.task.principal",
+          "hive.llap.io.memory.size",
+          "hive.llap.daemon.yarn.container.mb",
+          "hive.llap.daemon.service.principal"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "hive-interactive-env": {
+        "environment_dependent": [
+          "hive_heapsize",
+          "llap_headroom_space",
+          "llap_heap_size",
+          "num_llap_nodes",
+          "num_llap_nodes_for_llap_daemons"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "hiveserver2-site": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
+      "hive-site": {
+        "environment_dependent": [
+          "hive.zookeeper.quorum",
+          "hive.server2.zookeeper.namespace",
+          "hive.server2.tez.default.queues",
+          "hive.server2.authentication.spnego.principal",
+          "hive.server2.authentication.kerberos.principal",
+          "hive.metastore.uris",
+          "hive.metastore.kerberos.principal",
+          "hive.cluster.delegation.token.store.zookeeper.connectString",
+          "atlas.rest.address"
+        ],
+        "skip": [
+          "ambari.hive.db.schema.name"
+        ]
+      }
+    },
+    {
+      "kafka-broker": {
+        "environment_dependent": [
+          "sasl.kerberos.principal.to.local.rules",
+          "zookeeper.connect",
+          "log.dirs"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "kms-site": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
+      "livy2-conf": {
+        "environment_dependent": [
+          "livy.server.launch.kerberos.principal",
+          "livy.superusers",
+          "livy.server.auth.kerberos.principal"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "mapred-site": {
+        "environment_dependent": [
+          "mapreduce.jobhistory.principal",
+          "mapreduce.jobhistory.webapp.address",
+          "mapreduce.jobhistory.webapp.spnego-principal",
+          "mapreduce.jobhistory.address"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "oozie-site": {
+        "environment_dependent": [
+          "oozie.base.url",
+          "local.realm"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "ranger-admin-site": {
+        "environment_dependent": [
+          "xasecure.audit.jaas.Client.option.principal",
+          "ranger.unixauth.service.hostname",
+          "ranger.truststore.file",
+          "ranger.ldap.url",
+          "ranger.ldap.user.dnpattern",
+          "ranger.sso.providerurl",
+          "ranger.ldap.base.dn",
+          "ranger.ldap.bind.dn",
+          "ranger.ldap.group.searchbase",
+          "ranger.ldap.group.searchfilter",
+          "ranger.jpa.jdbc.url",
+          "ranger.audit.solr.zookeepers",
+          "ranger.audit.solr.urls"
+        ],
+        "skip": [
+          "ranger.sso.publicKey"
+        ]
+      }
+    },
+    {
+      "ranger-hive-audit": {
+        "environment_dependent": [
+          "xasecure.audit.jaas.Client.option.principal",
+          "xasecure.audit.destination.solr.zookeepers",
+          "xasecure.audit.destination.solr.urls",
+          "xasecure.audit.destination.hdfs.dir"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "ranger-kms-audit": {
+        "environment_dependent": [
+          "xasecure.audit.jaas.Client.option.principal",
+          "xasecure.audit.destination.solr.zookeepers",
+          "xasecure.audit.destination.solr.urls",
+          "xasecure.audit.destination.hdfs.dir"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "ranger-tagsync-site": {
+        "environment_dependent": [
+          "ranger.tagsync.source.atlasrest.endpoint"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "spark2-defaults": {
+        "environment_dependent": [
+          "spark.sql.hive.hiveserver2.jdbc.url.principal",
+          "spark.sql.hive.hiveserver2.jdbc.url",
+          "spark.hadoop.hive.zookeeper.quorum"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "spark2-hive-site-override": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
+      "sqoop-site": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
+      "tez-interactive-site": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
+      "tez-site": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
+      "yarn-site": {
+        "environment_dependent": [
+          "yarn.timeline-service.webapp.https.address",
+          "yarn.timeline-service.webapp.address",
+          "yarn.timeline-service.principal",
+          "yarn.timeline-service.leveldb-timeline-store.path",
+          "yarn.timeline-service.http-authentication.kerberos.principal",
+          "yarn.timeline-service.address",
+          "yarn.resourcemanager.zk-address",
+          "yarn.resourcemanager.webapp.spnego-principal",
+          "yarn.resourcemanager.webapp.https.address.rm2",
+          "yarn.resourcemanager.webapp.https.address.rm1",
+          "yarn.resourcemanager.webapp.address.rm2",
+          "yarn.resourcemanager.webapp.address.rm1",
+          "yarn.resourcemanager.webapp.address",
+          "yarn.resourcemanager.scheduler.address",
+          "yarn.resourcemanager.resource-tracker.address",
+          "yarn.resourcemanager.principal",
+          "yarn.resourcemanager.hostname.rm2",
+          "yarn.resourcemanager.hostname.rm1",
+          "yarn.resourcemanager.hostname",
+          "yarn.resourcemanager.admin.address",
+          "yarn.nodemanager.webapp.spnego-principal",
+          "yarn.resourcemanager.address",
+          "yarn.nodemanager.resource.memory-mb",
+          "yarn.nodemanager.resource.cpu-vcores",
+          "yarn.nodemanager.recovery.dir",
+          "yarn.nodemanager.local-dirs",
+          "yarn.nodemanager.log-dirs",
+          "yarn.nodemanager.principal",
+          "yarn.log.server.web-service.url",
+          "yarn.log.server.url"
+        ],
+        "skip": []
+      }
+    },
+    {
+      "zoo.cfg": {
+        "environment_dependent": [
+          "dataDir"
+        ],
+        "skip": [
+          "hello",
+          "test"
+        ]
+      }
+    }
+  ],
+  "global": {}
+}

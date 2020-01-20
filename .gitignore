@@ -1,0 +1,10 @@
+# IntelliJ
+/.idea/
+*.iml
+
+# Java
+*.class
+target
+
+# Python
+*.pyc
