@@ -8,3 +8,6 @@ target
 
 # Python
 *.pyc
+
+# Special Files
+test.yaml
