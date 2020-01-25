@@ -7,8 +7,11 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.streever.hive.config.DbSetConfig;
 import com.streever.hive.config.Metastore;
 import com.streever.hive.config.QueryDefinitions;
+
 import static com.streever.hive.reporting.ReportCounter.*;
-import com.streever.hive.reporting.Reporter;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
@@ -28,8 +31,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 
 @JsonIgnoreProperties({"cl", "config", "queryDefinitions", "metastoreDirectDataSource", "h2DataSource",
@@ -49,16 +51,16 @@ public class DbSet extends SreProcessBase {
     private String[] dbCmdlineOverride = null;
 
     private List<DbPaths> dbPaths;
-    private List<AbstractCommandReturnCheck> checks;
+    private List<CommandReturnCheck> checks;
 
     private String dbListingQuery;
     private String pathsListingQuery;
 
-    public List<AbstractCommandReturnCheck> getChecks() {
+    public List<CommandReturnCheck> getChecks() {
         return checks;
     }
 
-    public void setChecks(List<AbstractCommandReturnCheck> checks) {
+    public void setChecks(List<CommandReturnCheck> checks) {
         this.checks = checks;
     }
 
@@ -192,47 +194,41 @@ public class DbSet extends SreProcessBase {
         List<SRERunnable> sres = new ArrayList<SRERunnable>();//[dbs.length];
         for (String database : dbs) {
             DbPaths paths = new DbPaths(database, this);
-            // The baseline 'checks' are in this class.  But are required
-            // at the implementation.  Clone these and add to each new
-            // paths instance created.
-//            for (CommandReturnCheck check : getChecks()) {
-//                try {
-//                    CommandReturnCheck clCheck = (CommandReturnCheck) ((AbstractCommandReturnCheck) check).clone();
-//                    paths.addChild(clCheck);
-//                } catch (CloneNotSupportedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//            dbsrptr.addDbPaths(database, paths);
             paths.setStatus(CONSTRUCTED);
             sres.add(paths);
         }
 
+        List<ScheduledFuture> myThreads = new ArrayList<ScheduledFuture>();
+
         // Create Thread Pool for work.
-        ExecutorService pool = Executors.newFixedThreadPool(getConfig().getParallelism());
-        pool.execute(getReporter());
+//        ExecutorService pool = Executors.newFixedThreadPool(getConfig().getParallelism());
+        ScheduledExecutorService pool = Executors.newScheduledThreadPool(getConfig().getParallelism());
+        myThreads.add(pool.schedule(getReporter(), 1, MILLISECONDS));
+//        pool.execute(getReporter());
         for (SRERunnable sre : sres) {
             sre.setStatus(WAITING);
-            pool.execute(sre);
+            myThreads.add(pool.schedule(sre, 1, MILLISECONDS));
+//            pool.execute(sre);
         }
 
-//        while (true) {
-//            boolean completed = true;
-//            for (SRERunnable sre: sres) {
-//                System.out.println(sre.getStatusStr());
-//                if (sre.getStatus() < SRERunnable.ERROR) {
-//                    completed = false;
-//                }
-//            }
-//            if (completed) {
-//                System.out.println("All Done");
-//                dbsrptr.refresh();
-//                break;
-//            }
-//            Thread.sleep(1000);
-//        }
-
+        while (true) {
+            boolean check = true;
+            for (ScheduledFuture sf: myThreads) {
+                if (!sf.isDone()) {
+                    check = false;
+                    break;
+                }
+            }
+            if (check)
+                break;
+        }
         pool.shutdown();
+//        try {
+//            pool.awaitTermination(1, HOURS);
+//            pool.shutdown();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
     }
 
     public DataSource getMetastoreDirectDataSource() {
@@ -241,42 +237,6 @@ public class DbSet extends SreProcessBase {
         }
         return metastoreDirectDataSource;
     }
-
-//    protected void getConfigs(String configFile) throws Throwable {
-//        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-//        mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-//
-//        Date start = new Date();
-//
-//        try {
-//            File cfgFile = new File(configFile);
-//            if (!cfgFile.exists()) {
-//                throw new RuntimeException("Missing configuration file: " + configFile);
-//            }
-//            String yamlCfgFile = FileUtils.readFileToString(cfgFile, Charset.forName("UTF-8"));
-//
-//            this.config = mapper.readerFor(DbSetConfig.class).readValue(yamlCfgFile);
-//
-//            String CONFIG_RESOURCE = "/query_definitions.yaml";
-//            try {
-//                URL configURL = this.getClass().getResource(CONFIG_RESOURCE);
-//                if (configURL == null) {
-//                    throw new RuntimeException("Can build URL for Resource: " + CONFIG_RESOURCE);
-//                }
-//                String yamlConfigDefinition = IOUtils.toString(configURL);
-//                this.queryDefinitions = mapper.readerFor(QueryDefinitions.class).readValue(yamlConfigDefinition);
-//            } catch (Exception e) {
-//                throw new RuntimeException("Missing resource file: " + CONFIG_RESOURCE, e);
-//            }
-//        } catch (Exception e) {
-//            throw new RuntimeException("Issue getting configs", e);
-//        } finally {
-//            Date end = new Date();
-//            long diff = end.getTime() - start.getTime();
-////            System.out.println("Time: " + diff);
-//        }
-//
-//    }
 
     public DataSource getHs2DataSource() {
         if (hs2DataSource == null) {

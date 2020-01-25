@@ -23,6 +23,7 @@ public class Reporter implements Runnable {
     private final int ANSI_SIZE = 5;
     private int WIDTH = 100;
     private int linePos = 0;
+    private boolean tictoc = false;
 
     private String name;
     private Map<String, ReportCounter> counters = new HashMap<String, ReportCounter>();
@@ -96,9 +97,11 @@ public class Reporter implements Runnable {
         linePos = 0;
     }
 
-    public void refresh() {
+    // Return true when not completed.
+    public boolean refresh() {
         int ERROR = 0;
         int SUCCESS = 1;
+        boolean rtn = false;
         List<String> currentProcessing = new ArrayList<String>();
         resetLines();
         pushLine(StringUtils.leftPad("=", WIDTH, "="));
@@ -146,9 +149,14 @@ public class Reporter implements Runnable {
             if (i > 0)
                 overallStatusSb.append(ANSI_BLUE).append("/").append(ANSI_GREEN);
             AtomicLong value = progress.get(i);
-            if (value != null)
+            if (value != null) {
                 overallStatusSb.append(value.toString());
-            else
+                // Use this to flag that there are processed that
+                // have not completed.
+                if (i < ReportCounter.ERROR && value.get() > 0) {
+                    rtn = true;
+                }
+            } else
                 overallStatusSb.append("0");
         }
         overallStatusSb.append(ANSI_BLUE).append("]").append(ANSI_RESET);
@@ -162,25 +170,20 @@ public class Reporter implements Runnable {
         String totalsSummary = overallTotalsSb.toString();
         totalsSummary = StringUtils.leftPad(totalsSummary, WIDTH - (summary.length() + 1) + (20 * 5), " ");
 //        summary = StringUtils.leftPad(summary, WIDTH + (8 * 5), " ");
-        pushLine(summary + totalsSummary);
-    }
-
-    private boolean completed() {
-        boolean completed = true;
-        for (String database : counters.keySet()) {
-            ReportCounter ctr = counters.get(database);
-            if (ctr.getStatus() != COMPLETED) {
-                completed = false;
-                break;
-            }
+        if (tictoc) {
+            pushLine(StringUtils.leftPad(" ", WIDTH, "="));
+        } else {
+            pushLine(StringUtils.leftPad("*", WIDTH, "="));
         }
-        return completed;
+        tictoc = !tictoc;
+        pushLine(summary + totalsSummary);
+
+        return rtn;
     }
 
     @Override
     public void run() {
-        while (true) {
-            refresh();
+        while (refresh()) {
             try {
                 Thread.sleep(200);
                 System.out.print(".");
@@ -188,7 +191,6 @@ public class Reporter implements Runnable {
                 e.printStackTrace();
             }
         }
-        // 1 last time.
-//        refresh();
+        refresh();
     }
 }

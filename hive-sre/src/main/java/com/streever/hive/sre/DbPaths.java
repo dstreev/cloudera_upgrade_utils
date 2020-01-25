@@ -48,8 +48,7 @@ public class DbPaths extends SRERunnable  {
 
         for (CommandReturnCheck check: dbSet.getChecks()) {
             try {
-                CommandReturnCheck newCheck =
-                        (CommandReturnCheck)((AbstractCommandReturnCheck)check).clone();
+                CommandReturnCheck newCheck = (CommandReturnCheck)check.clone();
                 checks.add(newCheck);
                 // Connect CommandReturnCheck counter to this counter as a child.
                 // TODO: Need to set Counters name from the 'check'

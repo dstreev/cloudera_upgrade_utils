@@ -38,6 +38,7 @@ public class Sre {
         try {
             sre.init(args);
             sre.getSreProcess().start();
+            System.exit(0);
         } catch (Throwable t) {
             t.printStackTrace();
         }
