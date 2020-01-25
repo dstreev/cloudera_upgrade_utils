@@ -1,0 +1,14 @@
+- Processing Database Directories
+  - Look for Missing Directories (Upgrade)
+  - Check Small Files
+
+- Process Databases for Managed Tables
+  - Check Compaction Status
+  - Check For Bad Named Orc Files (Upgrade)
+  - Look for candidates that should be converted from Managed to External/Purge
+
+- Check for Overlapping Managed table locations
+
+- Look for Bad / Questionable Serde's
+
+- ACID tables that will "move" locations.

@@ -6,7 +6,7 @@ query_definitions:
         initial: "%"
         sqlType: 12
         location: 1
-  elementPaths:
+  tbl_part_locations:
     statement: "WITH
                     BASE AS
                     (

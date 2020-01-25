@@ -1,23 +1,58 @@
 package com.streever.hive.sre;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
 
+import java.io.PrintStream;
 import java.util.List;
 
-public abstract class SRERunnable implements Counter, Runnable {
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "type")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = MissingDirectoryCheck.class, name = "missing.directory"),
+        @JsonSubTypes.Type(value = SmallFiles.class, name = "small.files"),
+        @JsonSubTypes.Type(value = FilenameFormatCheck.class, name = "filename.format"),
+        @JsonSubTypes.Type(value = DirectoryExistsCheck.class, name = "directory.exists")
+})
+@JsonIgnoreProperties({"success", "error", "counter"})
+public abstract class AbstractCommandReturnCheck implements Counter, CommandReturnCheck, Cloneable {
 
     private String name;
-    private ReportCounter counter = new ReportCounter();
 
+    /**
+     * allows stdout to be captured if necessary
+     */
+    public PrintStream success = System.out;
+    /**
+     * allows stderr to be captured if necessary
+     */
+    public PrintStream error = System.err;
 
+    public ReportCounter counter = new ReportCounter();
+
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public void setName(String name) {
         this.name = name;
-        counter.setName(name);
+//        counter = new ReportCounter();
+//        counter.setName(name);
+    }
+
+    @Override
+    public String getFullCommand(String[] args) {
+        StringBuilder sb = new StringBuilder(getCommand());
+        for (int i = 0; i < args.length; i++) {
+            sb.append(" ").append(args[i]);
+        }
+        return sb.toString();
     }
 
     public ReportCounter getCounter() {
@@ -101,6 +136,16 @@ public abstract class SRERunnable implements Counter, Runnable {
     @Override
     public void setError(long error) {
         counter.setError(error);
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        CommandReturnCheck clone = (CommandReturnCheck)super.clone();
+        clone.setName(this.name);
+        clone.setCounter(new ReportCounter());
+        clone.getCounter().setName(this.name);
+        return clone;
+
     }
 
 }

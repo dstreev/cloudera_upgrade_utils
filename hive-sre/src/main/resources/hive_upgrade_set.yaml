@@ -1,0 +1,7 @@
+name: "Hive 3 Upgrade Checks"
+dbListingQuery: "db_tbl_count"
+pathsListingQuery: "tbl_part_locations"
+checks:
+  -
+    type: "missing.directory"
+    name: "Missing Directories"

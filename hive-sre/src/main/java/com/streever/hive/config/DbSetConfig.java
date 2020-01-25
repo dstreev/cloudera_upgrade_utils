@@ -6,7 +6,7 @@ import com.streever.sql.QueryDefinition;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class HiveSRE {
+public class DbSetConfig {
     @JsonProperty(value = "metastore_direct")
     private Metastore metastoreDirect;
     private Metastore hs2;

@@ -1,4 +1,5 @@
 package com.streever.hive.sre;
 
-public class SmallFiles {
+public abstract class SmallFiles extends AbstractCommandReturnCheck {
+
 }

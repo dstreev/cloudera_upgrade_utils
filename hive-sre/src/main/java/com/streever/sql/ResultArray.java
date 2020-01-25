@@ -101,6 +101,10 @@ public class ResultArray {
         return rtn;
     }
 
+    public long getCount() {
+        return records.size();
+    }
+
     public String getField(String column, Integer index) {
         // Find the column index.
         int columnIndex = find(header, column);
