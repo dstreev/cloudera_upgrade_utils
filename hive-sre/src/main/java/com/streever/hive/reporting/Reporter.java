@@ -26,8 +26,8 @@ public class Reporter implements Runnable {
     private boolean tictoc = false;
 
     private String name;
-    private Map<String, ReportCounter> counters = new HashMap<String, ReportCounter>();
 
+    private Map<String, List<ReportCounter>> counterGroups = new HashMap<String, List<ReportCounter>>();
 
     public String getName() {
         return name;
@@ -37,8 +37,14 @@ public class Reporter implements Runnable {
         this.name = name;
     }
 
-    public void addCounter(String name, ReportCounter counter) {
-        counters.put(name, counter);
+    public void addCounter(String groupName, ReportCounter counter) {
+        if (counterGroups.containsKey(groupName)) {
+            counterGroups.get(groupName).add(counter);
+        } else {
+            List<ReportCounter> counters = new ArrayList<ReportCounter>();
+            counters.add(counter);
+            counterGroups.put(groupName, counters);
+        }
     }
 
     private Wrap getCounterDisplay(ReportCounter counter) {
@@ -102,82 +108,92 @@ public class Reporter implements Runnable {
         int ERROR = 0;
         int SUCCESS = 1;
         boolean rtn = false;
-        List<String> currentProcessing = new ArrayList<String>();
-        resetLines();
-        pushLine(StringUtils.leftPad("=", WIDTH, "="));
-        pushLine(StringUtils.center(getName(), WIDTH));
-        pushLine(StringUtils.leftPad("=", WIDTH, "="));
-//        StringBuilder sb = new StringBuilder();
-        Map<Integer, AtomicLong> totals = new TreeMap<Integer, AtomicLong>();
-        totals.put(ERROR, new AtomicLong(0));
-        totals.put(SUCCESS, new AtomicLong(0));
-        Map<Integer, AtomicLong> progress = new TreeMap<Integer, AtomicLong>();
-        for (String database : counters.keySet()) {
-            ReportCounter ctr = counters.get(database);
-            if (progress.containsKey(ctr.getStatus())) {
-                progress.get(ctr.getStatus()).addAndGet(1);
-            } else {
-                progress.put(ctr.getStatus(), new AtomicLong(1));
-            }
-            switch (ctr.getStatus()) {
+
+        // TODO: Need to rework to ReportCountGroups.
+        if (counterGroups.size() == 0)
+            return true;
+        for (String groupName : this.counterGroups.keySet()) {
+            List<ReportCounter> counters = counterGroups.get(groupName);
+
+            List<String> currentProcessing = new ArrayList<String>();
+            resetLines();
+            pushLine(StringUtils.leftPad("=", WIDTH, "="));
+            pushLine(StringUtils.center(groupName, WIDTH));
+            pushLine(StringUtils.leftPad("=", WIDTH, "="));
+
+            Map<Integer, AtomicLong> totals = new TreeMap<Integer, AtomicLong>();
+            totals.put(ERROR, new AtomicLong(0));
+            totals.put(SUCCESS, new AtomicLong(0));
+            Map<Integer, AtomicLong> progress = new TreeMap<Integer, AtomicLong>();
+            for (ReportCounter ctr : counters) {
+                if (progress.containsKey(ctr.getStatus())) {
+                    progress.get(ctr.getStatus()).addAndGet(1);
+                } else {
+                    progress.put(ctr.getStatus(), new AtomicLong(1));
+                }
+                switch (ctr.getStatus()) {
 //                case CONSTRUCTED:
 //                    break;
 //                case WAITING:
 //                    break;
 //                case STARTED:
 //                    break;
-                case PROCESSING:
-                    Wrap cd = getCounterDisplay(ctr);
-                    currentProcessing.addAll(cd.details);
-                    break;
+                    case PROCESSING:
+                        Wrap cd = getCounterDisplay(ctr);
+                        currentProcessing.addAll(cd.details);
+                        break;
 //                case ERROR:
 //                    break;
 //                case COMPLETED:
 //                    break;
-            }
-            for (ReportCounter child: ctr.getChildren()) {
-                totals.get(ERROR).addAndGet(child.getError());
-                totals.get(SUCCESS).addAndGet(child.getSuccess());
-            }
-        }
-        for (String line : currentProcessing) {
-            pushLine(line);
-        }
-        StringBuilder overallStatusSb = new StringBuilder();
-        overallStatusSb.append(ANSI_BLUE).append("[").append(ANSI_GREEN);
-        for (int i = 0; i <= COMPLETED; i++) {
-            if (i > 0)
-                overallStatusSb.append(ANSI_BLUE).append("/").append(ANSI_GREEN);
-            AtomicLong value = progress.get(i);
-            if (value != null) {
-                overallStatusSb.append(value.toString());
-                // Use this to flag that there are processed that
-                // have not completed.
-                if (i < ReportCounter.ERROR && value.get() > 0) {
-                    rtn = true;
                 }
-            } else
-                overallStatusSb.append("0");
-        }
-        overallStatusSb.append(ANSI_BLUE).append("]").append(ANSI_RESET);
+                for (ReportCounter child : ctr.getChildren()) {
+                    totals.get(ERROR).addAndGet(child.getError());
+                    totals.get(SUCCESS).addAndGet(child.getSuccess());
+                }
+            }
+            for (String line : currentProcessing) {
+                pushLine(line);
+            }
+            StringBuilder overallStatusSb = new StringBuilder();
+            overallStatusSb.append(ANSI_BLUE).append("[").append(ANSI_GREEN);
+            if (counters.size() > 0) {
+                for (int i = 0; i <= COMPLETED; i++) {
+                    if (i > 0)
+                        overallStatusSb.append(ANSI_BLUE).append("/").append(ANSI_GREEN);
+                    AtomicLong value = progress.get(i);
+                    if (value != null) {
+                        overallStatusSb.append(value.toString());
+                        // Use this to flag that there are processed that
+                        // have not completed.
+                        if (i < ReportCounter.ERROR && value.get() > 0) {
+                            rtn = true;
+                        }
+                    } else
+                        overallStatusSb.append("0");
+                }
+            } else {
+                rtn = true;
+            }
+            overallStatusSb.append(ANSI_BLUE).append("]").append(ANSI_RESET);
 
-        String summary = overallStatusSb.toString();
+            String summary = overallStatusSb.toString();
 
-        StringBuilder overallTotalsSb = new StringBuilder();
-        overallTotalsSb.append(ANSI_BLUE).append("[").append(ANSI_GREEN);
-        overallTotalsSb.append(totals.get(ERROR).get()).append(ANSI_BLUE).append("/").append(ANSI_GREEN);
-        overallTotalsSb.append(totals.get(SUCCESS).get()).append(ANSI_BLUE).append("]").append(ANSI_RESET);
-        String totalsSummary = overallTotalsSb.toString();
-        totalsSummary = StringUtils.leftPad(totalsSummary, WIDTH - (summary.length() + 1) + (20 * 5), " ");
+            StringBuilder overallTotalsSb = new StringBuilder();
+            overallTotalsSb.append(ANSI_BLUE).append("[").append(ANSI_GREEN);
+            overallTotalsSb.append(totals.get(ERROR).get()).append(ANSI_BLUE).append("/").append(ANSI_GREEN);
+            overallTotalsSb.append(totals.get(SUCCESS).get()).append(ANSI_BLUE).append("]").append(ANSI_RESET);
+            String totalsSummary = overallTotalsSb.toString();
+            totalsSummary = StringUtils.leftPad(totalsSummary, WIDTH - (summary.length() + 1) + (20 * 5), " ");
 //        summary = StringUtils.leftPad(summary, WIDTH + (8 * 5), " ");
-        if (tictoc) {
-            pushLine(StringUtils.leftPad(" ", WIDTH, "="));
-        } else {
-            pushLine(StringUtils.leftPad("*", WIDTH, "="));
+            if (tictoc) {
+                pushLine(StringUtils.leftPad(" ", WIDTH, "="));
+            } else {
+                pushLine(StringUtils.leftPad("*", WIDTH, "="));
+            }
+            tictoc = !tictoc;
+            pushLine(summary + totalsSummary);
         }
-        tictoc = !tictoc;
-        pushLine(summary + totalsSummary);
-
         return rtn;
     }
 
@@ -186,7 +202,7 @@ public class Reporter implements Runnable {
         while (refresh()) {
             try {
                 Thread.sleep(200);
-                System.out.print(".");
+//                System.out.print(".");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

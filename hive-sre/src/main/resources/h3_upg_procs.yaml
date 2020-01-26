@@ -1,0 +1,16 @@
+processes:
+  -
+    type: "dbSet"
+    name: "Hive 3 Upgrade Checks - Locations Scan"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    dbListingQuery: "db_tbl_count"
+    pathsListingQuery: "tbl_part_locations"
+    checks:
+      -
+        name: "Missing Directories"
+        pathCommand: "lsp -f path -t"
+        onErrorCommand: "mkdir -p %s"
+        reportOnResults: false
+        reportOnPath: true
+        processOnError: true
+        processOnSuccess: false

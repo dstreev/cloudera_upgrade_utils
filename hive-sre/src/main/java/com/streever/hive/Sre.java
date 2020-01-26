@@ -3,41 +3,35 @@ package com.streever.hive;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.streever.hive.config.DbSetConfig;
-import com.streever.hive.config.QueryDefinitions;
-import com.streever.hive.sre.DbSet;
-import com.streever.hive.sre.SreProcessBase;
+import com.streever.hive.sre.SreProcesses;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-import java.io.File;
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.util.Date;
 
 /**
  * Hello world!
  */
 public class Sre {
 
-    private SreProcessBase sreProcess;
+    private SreProcesses processes;
 //    private String outputDirectory;
 //    private String[] overrideDbs;
 
-    public SreProcessBase getSreProcess() {
-        return sreProcess;
+
+    public SreProcesses getProcesses() {
+        return processes;
     }
 
-    public void setSreProcess(SreProcessBase sreProcess) {
-        this.sreProcess = sreProcess;
+    public void setProcesses(SreProcesses processes) {
+        this.processes = processes;
     }
 
     public static void main(String[] args) {
         Sre sre = new Sre();
         try {
             sre.init(args);
-            sre.getSreProcess().start();
+            sre.getProcesses().start();
             System.exit(0);
         } catch (Throwable t) {
             t.printStackTrace();
@@ -64,7 +58,7 @@ public class Sre {
 
         if (cmd.hasOption("u3")) {
             // Load Hive Upgrade Stack.
-            String stackResource = "/hive_upgrade_set.yaml";
+            String stackResource = "/h3_upg_procs.yaml";
 
             try {
                 URL configURL = this.getClass().getResource(stackResource);
@@ -72,16 +66,14 @@ public class Sre {
                     throw new RuntimeException("Can build URL for Hive Upgrade Stack Resource: " + stackResource);
                 }
                 String yamlConfigDefinition = IOUtils.toString(configURL);
-                setSreProcess(mapper.readerFor(DbSet.class).readValue(yamlConfigDefinition));
+                setProcesses(mapper.readerFor(SreProcesses.class).readValue(yamlConfigDefinition));
                 // Initialize with config and output directory.
-                getSreProcess().initConfig(cmd.getOptionValue("cfg"), cmd.getOptionValue("o"));
+                getProcesses().init(cmd.getOptionValue("cfg"), cmd.getOptionValue("o"));
 
             } catch (Exception e) {
                 throw new RuntimeException("Missing resource file: " + stackResource, e);
             }
-
         }
-
     }
 
     private Options getOptions() {

@@ -1,5 +1,6 @@
 package com.streever.hive.sre;
 
+import com.streever.hive.config.QueryDefinitions;
 import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
 
@@ -9,7 +10,8 @@ public abstract class SRERunnable implements Counter, Runnable {
 
     private String name;
     private ReportCounter counter = new ReportCounter();
-
+//    private ConnectionPools connectionPools;
+//    private QueryDefinitions queryDefinitions;
 
     public String getName() {
         return name;
@@ -27,6 +29,22 @@ public abstract class SRERunnable implements Counter, Runnable {
     public void setCounter(ReportCounter counter) {
         this.counter = counter;
     }
+
+//    public ConnectionPools getConnectionPools() {
+//        return connectionPools;
+//    }
+//
+//    public void setConnectionPools(ConnectionPools connectionPools) {
+//        this.connectionPools = connectionPools;
+//    }
+//
+//    public QueryDefinitions getQueryDefinitions() {
+//        return queryDefinitions;
+//    }
+//
+//    public void setQueryDefinitions(QueryDefinitions queryDefinitions) {
+//        this.queryDefinitions = queryDefinitions;
+//    }
 
     @Override
     public int getStatus() {

@@ -1,5 +1,6 @@
 package com.streever.hive.sre;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.streever.hadoop.HadoopSession;
 import com.streever.hadoop.shell.command.CommandReturn;
 import static com.streever.hive.reporting.ReportCounter.*;
@@ -16,21 +17,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-//@JsonIgnoreProperties({"database", "dbSet"})
 public class DbPaths extends SRERunnable  {
 
-//    private String database;
-    private DbSet dbSet;
+    private DbSet parent;
     private HadoopSession session;
 
     private List<CommandReturnCheck> checks = new ArrayList<CommandReturnCheck>();
 
-    public DbSet getDbSet() {
-        return dbSet;
+    public DbSet getParent() {
+        return parent;
     }
 
-    public void setDbSet(DbSet dbSet) {
-        this.dbSet = dbSet;
+    public void setParent(DbSet parent) {
+        this.parent = parent;
     }
 
     public List<CommandReturnCheck> getChecks() {
@@ -43,9 +42,7 @@ public class DbPaths extends SRERunnable  {
 
     public DbPaths(String name, DbSet dbSet) {
         setName(name);
-        setDbSet(dbSet);
-        dbSet.getReporter().addCounter(name, this.getCounter());
-
+        setParent(dbSet);
         for (CommandReturnCheck check: dbSet.getChecks()) {
             try {
                 CommandReturnCheck newCheck = (CommandReturnCheck)check.clone();
@@ -71,10 +68,11 @@ public class DbPaths extends SRERunnable  {
     @Override
     public void run() {
         this.setStatus(STARTED);
-        try (Connection conn = dbSet.getMetastoreConnection()) {
+        try (Connection conn = getParent().getParent().getConnectionPools().
+                getMetastoreDirectConnection()) {
 
-            QueryDefinition queryDefinition = dbSet.getQueryDefinitions().
-                    getQueryDefinition(dbSet.getPathsListingQuery());
+            QueryDefinition queryDefinition = getParent().getQueryDefinitions().
+                    getQueryDefinition(getParent().getPathsListingQuery());
             PreparedStatement preparedStatement = JDBCUtils.getPreparedStatement(conn, queryDefinition);
 
             Properties overrides = new Properties();
@@ -92,7 +90,7 @@ public class DbPaths extends SRERunnable  {
             // Loop through the paths
             for (int i = 0; i < columnArray.length; i++) { //String path : columnArray) {
                 String path = columnArray[i];
-                for (CommandReturnCheck lclCheck: getChecks()) {
+                for (CommandReturnCheck lclCheck : getChecks()) {
                     String[] commandArgs = {path};
                     String rcmd = lclCheck.getFullCommand(commandArgs);
                     CommandReturn cr = session.processInput(rcmd);
@@ -108,11 +106,6 @@ public class DbPaths extends SRERunnable  {
                     }
                 }
                 incProcessed(1);
-//                try {
-//                    Thread.sleep(200);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
