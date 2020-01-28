@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.streever.hadoop.HadoopSession;
 import com.streever.hive.config.QueryDefinitions;
 import com.streever.hive.config.SreProcessesConfig;
 import com.streever.sql.JDBCUtils;
@@ -25,7 +26,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 
 @JsonIgnoreProperties({"parent", "config", "queryDefinitions", "metastoreDirectDataSource", "h2DataSource",
-        "outputDirectory", "dbPaths"})
+        "outputDirectory", "dbPaths", "cliSession"})
 public class DbSet extends SreProcessBase {
 
     // Build after construction
@@ -41,7 +42,13 @@ public class DbSet extends SreProcessBase {
     private List<CommandReturnCheck> checks;
 
     private String dbListingQuery;
+    private String[] listingColumns;
     private String pathsListingQuery;
+//    private HadoopSession cliSession;
+//
+//    public HadoopSession getCliSession() {
+//        return cliSession;
+//    }
 
     public String getQueryDefinitionReference() {
         return queryDefinitionReference;
@@ -89,6 +96,14 @@ public class DbSet extends SreProcessBase {
         this.dbListingQuery = dbListingQuery;
     }
 
+    public String[] getListingColumns() {
+        return listingColumns;
+    }
+
+    public void setListingColumns(String[] listingColumns) {
+        this.listingColumns = listingColumns;
+    }
+
     public String getPathsListingQuery() {
         return pathsListingQuery;
     }
@@ -119,6 +134,14 @@ public class DbSet extends SreProcessBase {
         if (outputDirectory == null) {
             throw new RuntimeException("Config File and Output Directory must be set before init.");
         }
+
+//        this.cliSession = HadoopSession.get("DB Paths for: " + getName());
+//        String[] api = {"-api"};
+//        try {
+//            this.cliSession.start(api);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
         // TODO: Setup output paths.
 

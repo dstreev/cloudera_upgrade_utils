@@ -1,11 +1,4 @@
 query_definitions:
-  selectDbs:
-    statement: "select name, db_location_uri from DBS where name like ?"
-    parameters:
-      dbs:
-        initial: "%"
-        sqlType: 12
-        location: 1
   tbl_part_locations:
     statement: "WITH
                     BASE AS
@@ -158,4 +151,107 @@ query_definitions:
         initial: "%"
         sqlType: 12
         location: 1
-
+  tbl_mngd_non_acid_locations:
+    statement: "WITH
+                    MANAGED_TBL AS
+                    (
+                        SELECT DISTINCT
+                            t.TBL_ID
+                        FROM
+                            TBLS t
+                        INNER JOIN
+                            TABLE_PARAMS tp
+                        WHERE
+                            t.TBL_ID = tp.TBL_ID
+                        AND t.TBL_TYPE = 'MANAGED_TABLE'
+                 AND tp.PARAM_KEY = 'transactional'
+                 AND tp.PARAM_VALUE='true'
+                 )
+                 ,
+                 BASE AS
+                 (
+                 SELECT
+                 D.NAME             AS DB_NAME ,
+                 D.DB_LOCATION_URI  AS DB_DEFAULT_LOC ,
+                 D.OWNER_NAME       AS DB_OWNER ,
+                 T.TBL_ID           AS TBL_ID ,
+                 T.TBL_NAME         AS TBL_NAME ,
+                 T.OWNER            AS TBL_OWNER ,
+                 T.TBL_TYPE         AS TBL_TYPE ,
+                 S.INPUT_FORMAT     AS TBL_INPUT_FORMAT ,
+                 S.OUTPUT_FORMAT    AS TBL_OUTPUT_FORMAT ,
+                 S.LOCATION         AS TBL_LOCATION ,
+                 S.NUM_BUCKETS      AS TBL_NUM_BUCKETS ,
+                 SER.SLIB           AS TBL_SERDE_SLIB ,
+                 PARAMS.PARAM_KEY   AS TBL_PARAM_KEY ,
+                 PARAMS.PARAM_VALUE AS TBL_PARAM_VALUE ,
+                 P.PART_ID          AS PART_ID ,
+                 P.PART_NAME        AS PART_NAME ,
+                 PS.INPUT_FORMAT    AS PART_INPUT_FORMAT ,
+                 PS.OUTPUT_FORMAT   AS PART_OUTPUT_FORMAT,
+                 PS.LOCATION        AS PART_LOCATION ,
+                 PS.NUM_BUCKETS     AS PART_NUM_BUCKETS ,
+                 PSER.SLIB          AS PART_SERDE_SLIB
+                 FROM
+                 DBS D
+                 INNER JOIN
+                 TBLS T
+                 ON
+                 D.DB_ID = T.DB_ID
+                 LEFT OUTER JOIN
+                 SDS S
+                 ON
+                 T.SD_ID = S.SD_ID
+                 LEFT OUTER JOIN
+                 SERDES SER
+                 ON
+                 S.SERDE_ID = SER.SERDE_ID
+                 LEFT OUTER JOIN
+                 TABLE_PARAMS PARAMS
+                 ON
+                 T.TBL_ID = PARAMS.TBL_ID
+                 LEFT OUTER JOIN
+                 PARTITIONS P
+                 ON
+                 T.TBL_ID = P.TBL_ID
+                 LEFT OUTER JOIN
+                 SDS PS
+                 ON
+                 P.SD_ID = PS.SD_ID
+                 LEFT OUTER JOIN
+                 SERDES PSER
+                 ON
+                 PS.SERDE_ID = PSER.SERDE_ID
+                 WHERE
+                 D.NAME LIKE ?
+                 )
+                 SELECT
+                 b.db_name ,
+                 b.tbl_id,
+                 b.tbl_name ,
+                 b.tbl_type ,
+                 b.part_name ,
+                 b.part_location AS path_check ,
+                 COUNT(*)
+                 FROM
+                 BASE b
+                 WHERE
+                 tbl_type = 'MANAGED_TABLE'
+                 AND b.tbl_id NOT IN
+                 (
+                 SELECT
+                 tbl_id
+                 FROM
+                 MANAGED_TBL)
+                 GROUP BY
+                 b.db_name,
+                 b.tbl_id,
+                 b.tbl_name,
+                 b.tbl_type,
+                 b.part_name,
+                 path_check"
+    parameters:
+      dbs:
+        initial: "%"
+        sqlType: 12
+        location: 1

@@ -7,6 +7,7 @@ import com.streever.hive.reporting.ReportCounter;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Properties;
 
 //@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
 //        include = JsonTypeInfo.As.PROPERTY,
@@ -17,20 +18,25 @@ import java.util.List;
 //        @JsonSubTypes.Type(value = FilenameFormatCheck.class, name = "filename.format"),
 //        @JsonSubTypes.Type(value = DirectoryExistsCheck.class, name = "directory.exists")
 //})
-@JsonIgnoreProperties({"counter"})
+@JsonIgnoreProperties({"counter", "properties"})
 public class CommandReturnCheck implements Counter, Cloneable {
 
     private String name;
     private String pathCommand;
+    // Most commands that run will not be an error, but are issues that need to
+    // be put into the 'error' or action bucket.  Use this to control that direction.
+    private Boolean invertCheck = true;
     // Determine if the on..Commands should be run against the "path" or
     //      each record in the CommandReturn.
     private Boolean reportOnResults = Boolean.FALSE;
     private Boolean reportOnPath = Boolean.TRUE;
     private Boolean processOnError = Boolean.TRUE;
     private Boolean processOnSuccess = Boolean.TRUE;
-    private String onSuccessCommand;
-    private String onErrorCommand;
-
+    private String onSuccessRecordCommand;
+    private String onErrorRecordCommand;
+    private String onSuccessPathCommand;
+    private String onErrorPathCommand;
+    private String[] currentArgs;
     /**
      * allows stdout to be captured if necessary
      */
@@ -43,19 +49,93 @@ public class CommandReturnCheck implements Counter, Cloneable {
     public ReportCounter counter = new ReportCounter();
 
     public void onError(CommandReturn commandReturn) {
-        if (getReportOnPath()) {
-            String action = String.format(getOnErrorCommand(), commandReturn.getPath());
-            error.println(action);
+        if (!invertCheck) {
+            internalOnError(commandReturn);
+        } else {
+            internalOnSuccess(commandReturn);
         }
-        // TODO: Report on Record
-
     }
 
     public void onSuccess(CommandReturn commandReturn) {
+        if (!invertCheck) {
+            internalOnSuccess(commandReturn);
+        } else {
+            internalOnError(commandReturn);
+        }
+    }
+
+    private void internalOnError(CommandReturn commandReturn) {
+        if (getReportOnPath() && getOnErrorPathCommand() != null) {
+            String action = null;
+            try {
+                action = String.format(getOnErrorPathCommand(), getCurrentArgs());
+            } catch (Throwable t) {
+                throw new RuntimeException("Bad string format in 'errorPath' action command of CommandReturnCheck", t);
+            }
+            if (action != null)
+            error.println(action);
+        }
+
+        if (getReportOnResults() && getOnErrorRecordCommand() != null) {
+            for (List<String> record : commandReturn.getRecords()) {
+                String action = null;
+                try {
+                    action = String.format(getOnErrorRecordCommand(), record.toArray());
+                } catch (Throwable t) {
+                    throw new RuntimeException("Bad string format in 'errorRecord' action command of CommandReturnCheck", t);
+                }
+                if (action != null)
+                    error.println(action);
+            }
+        }
+    }
+
+    private void internalOnSuccess(CommandReturn commandReturn) {
         // TODO: Report on Path
-
+        if (getReportOnPath() && getOnSuccessPathCommand() != null) {
+            String action = null;
+            try {
+                action = String.format(getOnSuccessPathCommand(), getCurrentArgs());
+            } catch (Throwable t) {
+                throw new RuntimeException("Bad string format in 'successPath' action command of CommandReturnCheck", t);
+            }
+            if (action != null)
+            error.println(action);
+        }
         // TODO: Report on Record
+        if (getReportOnResults() && getOnSuccessRecordCommand() != null) {
+            for (List<String> record : commandReturn.getRecords()) {
+                Object[] rec = new Object[record.size()];
+                for (int i=0;i<record.size();i++) {
+                    rec[i] = record.get(i);
+                }
+                String action = null;
+                try {
+                    action = String.format(getOnSuccessRecordCommand(), rec);
+                } catch (Throwable t) {
+                    throw new RuntimeException("Bad string format in 'successRecord' action command of CommandReturnCheck", t);
+                }
+                if (action != null)
+                    error.println(action);
+            }
+        }
 
+    }
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Boolean getInvertCheck() {
+        return invertCheck;
+    }
+
+    public void setInvertCheck(Boolean invertCheck) {
+        this.invertCheck = invertCheck;
     }
 
     public String getPathCommand() {
@@ -66,20 +146,20 @@ public class CommandReturnCheck implements Counter, Cloneable {
         this.pathCommand = pathCommand;
     }
 
-    public String getOnSuccessCommand() {
-        return onSuccessCommand;
+    public String getOnSuccessRecordCommand() {
+        return onSuccessRecordCommand;
     }
 
-    public void setOnSuccessCommand(String onSuccessCommand) {
-        this.onSuccessCommand = onSuccessCommand;
+    public void setOnSuccessRecordCommand(String onSuccessRecordCommand) {
+        this.onSuccessRecordCommand = onSuccessRecordCommand;
     }
 
-    public String getOnErrorCommand() {
-        return onErrorCommand;
+    public String getOnErrorRecordCommand() {
+        return onErrorRecordCommand;
     }
 
-    public void setOnErrorCommand(String onErrorCommand) {
-        this.onErrorCommand = onErrorCommand;
+    public void setOnErrorRecordCommand(String onErrorRecordCommand) {
+        this.onErrorRecordCommand = onErrorRecordCommand;
     }
 
     public Boolean getReportOnResults() {
@@ -114,23 +194,31 @@ public class CommandReturnCheck implements Counter, Cloneable {
         this.processOnSuccess = processOnSuccess;
     }
 
-    @Override
-    public String getName() {
-        return name;
+    public String getOnSuccessPathCommand() {
+        return onSuccessPathCommand;
     }
 
-    public void setName(String name) {
-        this.name = name;
-//        counter = new ReportCounter();
-//        counter.setName(name);
+    public void setOnSuccessPathCommand(String onSuccessPathCommand) {
+        this.onSuccessPathCommand = onSuccessPathCommand;
+    }
+
+    public String getOnErrorPathCommand() {
+        return onErrorPathCommand;
+    }
+
+    public void setOnErrorPathCommand(String onErrorPathCommand) {
+        this.onErrorPathCommand = onErrorPathCommand;
     }
 
     public String getFullCommand(String[] args) {
-        StringBuilder sb = new StringBuilder(getPathCommand());
-        for (int i = 0; i < args.length; i++) {
-            sb.append(" ").append(args[i]);
-        }
-        return sb.toString();
+        setCurrentArgs(args);
+        String action = String.format(getPathCommand(), getCurrentArgs());
+//        StringBuilder sb = new StringBuilder(getPathCommand());
+//        for (int i = 0; i < args.length; i++) {
+//            sb.append(" ").append(args[i]);
+//        }
+//        return sb.toString();
+        return action;
     }
 
     public ReportCounter getCounter() {
@@ -216,12 +304,27 @@ public class CommandReturnCheck implements Counter, Cloneable {
         counter.setError(error);
     }
 
+    public String[] getCurrentArgs() {
+        return currentArgs;
+    }
+
+    public void setCurrentArgs(String[] currentArgs) {
+        this.currentArgs = new String[currentArgs.length];
+        for (int i = 0; i<currentArgs.length;i++) {
+            if (currentArgs[i] != null && currentArgs[i].contains(" ")) {
+                this.currentArgs[i] = "\"" + currentArgs[i] + "\"";
+            } else {
+                this.currentArgs[i] = currentArgs[i];
+            }
+        }
+    }
+
     @Override
     protected Object clone() throws CloneNotSupportedException {
-        CommandReturnCheck clone = (CommandReturnCheck)super.clone();
+        CommandReturnCheck clone = (CommandReturnCheck) super.clone();
         clone.setName(this.name);
-        clone.setOnErrorCommand(this.onErrorCommand);
-        clone.setOnSuccessCommand(this.onSuccessCommand);
+        clone.setOnErrorRecordCommand(this.onErrorRecordCommand);
+        clone.setOnSuccessRecordCommand(this.onSuccessRecordCommand);
         clone.setReportOnPath(this.reportOnPath);
         clone.setReportOnResults(this.reportOnResults);
         clone.setProcessOnError(this.processOnError);

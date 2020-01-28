@@ -4,13 +4,32 @@ processes:
     name: "Hive 3 Upgrade Checks - Locations Scan"
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     dbListingQuery: "db_tbl_count"
+    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
     pathsListingQuery: "tbl_part_locations"
     checks:
-      -
-        name: "Missing Directories"
-        pathCommand: "lsp -f path -t"
-        onErrorCommand: "mkdir -p %s"
+      - name: "Missing Directories"
+        invertCheck: false
+        pathCommand: "lsp -f path -t %5$s"
+        onErrorPathCommand: "mkdir -p %5$s"
         reportOnResults: false
+        reportOnPath: true
+        processOnError: true
+        processOnSuccess: false
+  -
+    type: "dbSet"
+    name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
+    pathsListingQuery: "tbl_mngd_non_acid_locations"
+    checks:
+      -
+        name: "Bad Filename Format"
+        invertCheck: true
+        pathCommand: "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)\" -i -Fe file -v -f parent,file %5$s"
+        onErrorPathCommand: "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
+        onErrorRecordCommand: "# Bad filename %2$s in directory: %1$s "
+        reportOnResults: true
         reportOnPath: true
         processOnError: true
         processOnSuccess: false

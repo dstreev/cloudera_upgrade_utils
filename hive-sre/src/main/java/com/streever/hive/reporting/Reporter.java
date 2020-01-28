@@ -26,6 +26,7 @@ public class Reporter implements Runnable {
     private boolean tictoc = false;
 
     private String name;
+    private Date startTime = new Date();
 
     private Map<String, List<ReportCounter>> counterGroups = new HashMap<String, List<ReportCounter>>();
 
@@ -47,23 +48,23 @@ public class Reporter implements Runnable {
         }
     }
 
-    private Wrap getCounterDisplay(ReportCounter counter) {
+    private Wrap getCounterDisplay(String prefix, ReportCounter counter) {
         List<String> displayLines = new LinkedList<String>();
         long total = counter.getTotalCount();
         long processed = counter.getProcessed();
         double percentProcessed = (double) processed / (double) total;
-        int percentProcessWidth = (int) (percentProcessed * WIDTH);
+        int percentProcessWidth = (int) (percentProcessed * (WIDTH-(prefix.length())));
 
-        displayLines.add(ANSI_YELLOW + counter.getName() + " : " + counter.getStatusStr() + ANSI_RESET);
+        displayLines.add(prefix + ANSI_YELLOW + counter.getName() + " : " + counter.getStatusStr() + ANSI_RESET);
         String processedStr = StringUtils.rightPad("|", percentProcessWidth, "=");
-        String remainingStr = StringUtils.leftPad("|", WIDTH - percentProcessWidth, ".");
-        displayLines.add(ANSI_GREEN + processedStr + ANSI_RED + remainingStr + ANSI_RESET);
-        displayLines.add(ANSI_BLUE + "[" + ANSI_GREEN + counter.getSuccess() + ANSI_BLUE +
+        String remainingStr = StringUtils.leftPad("|", WIDTH - prefix.length() - percentProcessWidth, ".");
+        displayLines.add(prefix + ANSI_GREEN + processedStr + ANSI_RED + remainingStr + ANSI_RESET);
+        displayLines.add(prefix + ANSI_BLUE + "[" + ANSI_GREEN + counter.getSuccess() + ANSI_BLUE +
                 "/" + ANSI_RED + counter.getError() + ANSI_BLUE + "/" +
                 ANSI_GREEN + total + ANSI_BLUE + "]" + ANSI_RESET);
 
         for (ReportCounter child : counter.getChildren()) {
-            displayLines.addAll(Arrays.asList(getShortCounterDisplay(child)));
+            displayLines.addAll(Arrays.asList(getShortCounterDisplay(prefix, child)));
         }
         Wrap rtn = new Wrap();
         rtn.status = counter.getStatus();
@@ -71,13 +72,13 @@ public class Reporter implements Runnable {
         return rtn;
     }
 
-    private String[] getShortCounterDisplay(ReportCounter counter) {
+    private String[] getShortCounterDisplay(String prefix, ReportCounter counter) {
         String[] cStatusOutput = new String[1];
 //        long total = counter.getTotalCount();
         long processed = counter.getProcessed();
         long errors = counter.getError();
         long successes = counter.getSuccess();
-        String line = StringUtils.leftPad(counter.getName() + ANSI_YELLOW + " -> " +
+        String line = StringUtils.leftPad(prefix + counter.getName() + ANSI_YELLOW + " -> " +
                 ANSI_BLUE + "[" + ANSI_GREEN + successes + ANSI_BLUE + "/" +
                 ANSI_RED + errors + ANSI_BLUE + "/" + ANSI_GREEN + processed +
                 ANSI_BLUE + "]" + ANSI_RESET, WIDTH + (9 * ANSI_SIZE), " ");
@@ -108,18 +109,23 @@ public class Reporter implements Runnable {
         int ERROR = 0;
         int SUCCESS = 1;
         boolean rtn = false;
+        String INDENT = "    ";
 
-        // TODO: Need to rework to ReportCountGroups.
         if (counterGroups.size() == 0)
             return true;
+        resetLines();
+        if (tictoc) {
+            pushLine(" ");
+        } else {
+            pushLine("*");
+        }
         for (String groupName : this.counterGroups.keySet()) {
             List<ReportCounter> counters = counterGroups.get(groupName);
 
             List<String> currentProcessing = new ArrayList<String>();
-            resetLines();
-            pushLine(StringUtils.leftPad("=", WIDTH, "="));
+            pushLine(StringUtils.rightPad("=", WIDTH, "="));
             pushLine(StringUtils.center(groupName, WIDTH));
-            pushLine(StringUtils.leftPad("=", WIDTH, "="));
+            pushLine(StringUtils.rightPad("=", WIDTH, "="));
 
             Map<Integer, AtomicLong> totals = new TreeMap<Integer, AtomicLong>();
             totals.put(ERROR, new AtomicLong(0));
@@ -139,7 +145,7 @@ public class Reporter implements Runnable {
 //                case STARTED:
 //                    break;
                     case PROCESSING:
-                        Wrap cd = getCounterDisplay(ctr);
+                        Wrap cd = getCounterDisplay(INDENT, ctr);
                         currentProcessing.addAll(cd.details);
                         break;
 //                case ERROR:
@@ -179,6 +185,8 @@ public class Reporter implements Runnable {
 
             String summary = overallStatusSb.toString();
 
+            // TODO: Add duration output.
+
             StringBuilder overallTotalsSb = new StringBuilder();
             overallTotalsSb.append(ANSI_BLUE).append("[").append(ANSI_GREEN);
             overallTotalsSb.append(totals.get(ERROR).get()).append(ANSI_BLUE).append("/").append(ANSI_GREEN);
@@ -186,14 +194,10 @@ public class Reporter implements Runnable {
             String totalsSummary = overallTotalsSb.toString();
             totalsSummary = StringUtils.leftPad(totalsSummary, WIDTH - (summary.length() + 1) + (20 * 5), " ");
 //        summary = StringUtils.leftPad(summary, WIDTH + (8 * 5), " ");
-            if (tictoc) {
-                pushLine(StringUtils.leftPad(" ", WIDTH, "="));
-            } else {
-                pushLine(StringUtils.leftPad("*", WIDTH, "="));
-            }
-            tictoc = !tictoc;
+            pushLine(StringUtils.leftPad(" ", WIDTH, "="));
             pushLine(summary + totalsSummary);
         }
+        tictoc = !tictoc;
         return rtn;
     }
 

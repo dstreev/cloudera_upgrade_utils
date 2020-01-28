@@ -101,6 +101,24 @@ public class ResultArray {
         return rtn;
     }
 
+    public String[][] getColumns(String[] columns) {
+        int[] columnIndexes = new int[columns.length];
+        String[][] rtn = new String[columns.length][records.size()];
+
+        for (int i=0;i<columns.length;i++) {
+            columnIndexes[i] = find(header, columns[i]);
+        }
+
+        int i = 0;
+        for (String[] record: records) {
+            for (int c = 0;c < columnIndexes.length;c++) {
+                rtn[c][i] = record[columnIndexes[c]];
+            }
+            i++;
+        }
+        return rtn;
+    }
+
     public long getCount() {
         return records.size();
     }
