@@ -10,7 +10,10 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -18,13 +21,14 @@ import java.util.concurrent.ScheduledFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-@JsonIgnoreProperties({"config", "reporter", "threadPool", "processThreads", "connectionPools"})
-public class SreProcesses {
+@JsonIgnoreProperties({"config", "reporter", "threadPool", "processThreads", "connectionPools", "outputDirectory"})
+public class ProcessContainer {
     private SreProcessesConfig config;
     private Reporter reporter = new Reporter();
     private ScheduledExecutorService threadPool;
     private List<ScheduledFuture> processThreads;
     private ConnectionPools connectionPools;
+    private String outputDirectory;
 
     private List<SreProcessBase> processes = new ArrayList<SreProcessBase>();
     private int parallelism = 3;
@@ -71,6 +75,14 @@ public class SreProcesses {
         this.connectionPools = connectionPools;
     }
 
+    public String getOutputDirectory() {
+        return outputDirectory;
+    }
+
+    public void setOutputDirectory(String outputDirectory) {
+        this.outputDirectory = outputDirectory;
+    }
+
     public List<SreProcessBase> getProcesses() {
         return processes;
     }
@@ -102,9 +114,18 @@ public class SreProcesses {
         getThreadPool().shutdown();
     }
 
-    public void init(String config, String outputDirectory) {
+    public void init(String config, String outputDirectory, String[] dbsOverride) {
+        String job_run_dir = null;
         if (config == null || outputDirectory == null) {
             throw new RuntimeException("Config File and Output Directory must be set before init.");
+        } else {
+            Date now = new Date();
+            DateFormat df = new SimpleDateFormat("YY-MM-dd_HH-mm-ss");
+            job_run_dir = outputDirectory + System.getProperty("file.separator") + df.format(now);
+            File jobDir = new File(job_run_dir);
+            if (!jobDir.exists()) {
+                jobDir.mkdirs();
+            }
         }
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -125,7 +146,8 @@ public class SreProcesses {
             getProcessThreads().add(getThreadPool().schedule(getReporter(), 1, MILLISECONDS));
 
             for (SreProcessBase process: getProcesses()) {
-                process.init(this, "need to set output directory");
+                process.setDbsOverride(dbsOverride);
+                process.init(this, job_run_dir);
             }
 
 

@@ -2,6 +2,8 @@ processes:
   -
     type: "dbSet"
     name: "Hive 3 Upgrade Checks - Locations Scan"
+    errorFilename: h3_upgrade_loc_scan.err
+    successFilename: h3_upgrade_loc_scan.txt
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
@@ -18,6 +20,8 @@ processes:
   -
     type: "dbSet"
     name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
+    errorFilename: h3_upgrade_filename_scan.err
+    successFilename: h3_upgrade_filename_scan.txt
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]

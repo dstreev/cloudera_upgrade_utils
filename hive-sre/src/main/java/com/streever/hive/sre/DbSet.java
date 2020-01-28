@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.streever.hadoop.HadoopSession;
 import com.streever.hive.config.QueryDefinitions;
 import com.streever.hive.config.SreProcessesConfig;
 import com.streever.sql.JDBCUtils;
@@ -12,6 +11,8 @@ import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
 import org.apache.commons.io.IOUtils;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,7 +27,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 
 @JsonIgnoreProperties({"parent", "config", "queryDefinitions", "metastoreDirectDataSource", "h2DataSource",
-        "outputDirectory", "dbPaths", "cliSession"})
+        "outputDirectory", "dbPaths", "cliSession", "success", "error"})
 public class DbSet extends SreProcessBase {
 
     // Build after construction
@@ -36,7 +37,6 @@ public class DbSet extends SreProcessBase {
     // Set during init.
     private String outputDirectory = null;
     // Set by parent, when specified.
-    private String[] dbCmdlineOverride = null;
 
     private List<DbPaths> dbPaths;
     private List<CommandReturnCheck> checks;
@@ -44,11 +44,15 @@ public class DbSet extends SreProcessBase {
     private String dbListingQuery;
     private String[] listingColumns;
     private String pathsListingQuery;
-//    private HadoopSession cliSession;
-//
-//    public HadoopSession getCliSession() {
-//        return cliSession;
-//    }
+
+    /**
+     * allows stdout to be captured if necessary
+     */
+    public PrintStream success = System.out;
+    /**
+     * allows stderr to be captured if necessary
+     */
+    public PrintStream error = System.err;
 
     public String getQueryDefinitionReference() {
         return queryDefinitionReference;
@@ -112,14 +116,6 @@ public class DbSet extends SreProcessBase {
         this.pathsListingQuery = pathsListingQuery;
     }
 
-    public String[] getDbCmdlineOverride() {
-        return dbCmdlineOverride;
-    }
-
-    public void setDbCmdlineOverride(String[] dbCmdlineOverride) {
-        this.dbCmdlineOverride = dbCmdlineOverride;
-    }
-
     public List<DbPaths> getDbPaths() {
         return dbPaths;
     }
@@ -129,25 +125,20 @@ public class DbSet extends SreProcessBase {
     }
 
     @Override
-    public void init(SreProcesses parent, String outputDirectory) {
+    public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
         setParent(parent);
         if (outputDirectory == null) {
             throw new RuntimeException("Config File and Output Directory must be set before init.");
+        } else {
+
         }
 
-//        this.cliSession = HadoopSession.get("DB Paths for: " + getName());
-//        String[] api = {"-api"};
-//        try {
-//            this.cliSession.start(api);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-
-        // TODO: Setup output paths.
+        PrintStream errFile = outputFile(outputDirectory + System.getProperty("file.separator") + this.getErrorFilename());
+        PrintStream outFile = outputFile(outputDirectory + System.getProperty("file.separator") + this.getSuccessFilename());
 
         String[] dbs = null;
-        if (this.dbCmdlineOverride != null) {
-            dbs = this.dbCmdlineOverride;
+        if (getDbsOverride() != null && getDbsOverride().length > 0) {
+            dbs = getDbsOverride();
         } else {
             try (Connection conn = getParent().getConnectionPools().getMetastoreDirectConnection()) {
                 String targetQueryDef = this.dbListingQuery;
@@ -174,6 +165,9 @@ public class DbSet extends SreProcessBase {
         List<SRERunnable> sres = new ArrayList<SRERunnable>();//[dbs.length];
         for (String database : dbs) {
             DbPaths paths = new DbPaths(database, this);
+            paths.error = errFile;
+            paths.success = outFile;
+            paths.init();
             paths.setStatus(CONSTRUCTED);
             sres.add(paths);
         }

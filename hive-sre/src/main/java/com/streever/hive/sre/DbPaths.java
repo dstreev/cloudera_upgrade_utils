@@ -49,26 +49,34 @@ public class DbPaths extends SRERunnable {
     public DbPaths(String name, DbSet dbSet) {
         setName(name);
         setParent(dbSet);
-        for (CommandReturnCheck check : dbSet.getChecks()) {
+    }
+
+    @Override
+    public void init() {
+        for (CommandReturnCheck check : parent.getChecks()) {
             try {
                 CommandReturnCheck newCheck = (CommandReturnCheck) check.clone();
                 checks.add(newCheck);
                 // Connect CommandReturnCheck counter to this counter as a child.
                 // TODO: Need to set Counters name from the 'check'
                 getCounter().addChild(newCheck.getCounter());
+                // Redirect Output.
+                newCheck.error = this.error;
+                newCheck.success = this.success;
                 // TODO: Set success and error printstreams to output files.
             } catch (CloneNotSupportedException e) {
                 e.printStackTrace();
             }
         }
 
-        this.cliSession = HadoopSession.get("DB Paths for: " + name);
+        this.cliSession = HadoopSession.get("DB Paths for: " + getName());
         String[] api = {"-api"};
         try {
             this.cliSession.start(api);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     @Override
@@ -89,8 +97,6 @@ public class DbPaths extends SRERunnable {
             ResultArray rarray = new ResultArray(epRs);
             epRs.close();
 
-            // TODO: Need to get 'path_check' into a parameter in config files.
-            String[] columnArray = rarray.getColumn("path_check");
             String[] columns = getParent().getListingColumns();
 
             String[][] columnsArray = rarray.getColumns(columns);
@@ -104,15 +110,10 @@ public class DbPaths extends SRERunnable {
                     for (int a = 0; a < columnsArray.length; a++) {
                         args[a] = columnsArray[a][i];
                     }
-//                path = columnArray[i];
-                    // Match path is not null.
                     for (CommandReturnCheck lclCheck : getChecks()) {
-//                        String[] commandArgs = {args};
                         try {
                             String rcmd = lclCheck.getFullCommand(args);
                             if (rcmd != null) {
-//                            System.err.println("Rcmd: " + rcmd);
-//                            try {
                                 CommandReturn cr = getCliSession().processInput(rcmd);
                                 lclCheck.incProcessed(1);
                                 if (!cr.isError()) {
@@ -124,10 +125,6 @@ public class DbPaths extends SRERunnable {
                                     lclCheck.incError(1);
                                     this.incError(1);
                                 }
-//                            } catch (Throwable npe) {
-//                                npe.printStackTrace();
-//                                throw new RuntimeException(rcmd, npe);
-//                            }
                             }
                         } catch (RuntimeException t) {
                             // Malformed cli request.  Input is missing an element required to complete call.

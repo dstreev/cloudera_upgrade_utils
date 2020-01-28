@@ -3,7 +3,7 @@ package com.streever.hive;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.streever.hive.sre.SreProcesses;
+import com.streever.hive.sre.ProcessContainer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
@@ -14,24 +14,43 @@ import java.net.URL;
  */
 public class Sre {
 
-    private SreProcesses processes;
+    private ProcessContainer processContainer;
 //    private String outputDirectory;
-//    private String[] overrideDbs;
+    private String[] dbsOverride;
 
+//    public String getOutputDirectory() {
+//        return outputDirectory;
+//    }
+//
+//    public void setOutputDirectory(String outputDirectory) {
+//        this.outputDirectory = outputDirectory;
+//    }
 
-    public SreProcesses getProcesses() {
-        return processes;
+    public String[] getDbsOverride() {
+        return dbsOverride;
     }
 
-    public void setProcesses(SreProcesses processes) {
-        this.processes = processes;
+    public void setDbsOverride(String[] dbsOverride) {
+        this.dbsOverride = dbsOverride;
+    }
+
+    public ProcessContainer getProcessContainer() {
+        return processContainer;
+    }
+
+    public void setProcessContainer(ProcessContainer processContainer) {
+        this.processContainer = processContainer;
     }
 
     public static void main(String[] args) {
         Sre sre = new Sre();
         try {
             sre.init(args);
-            sre.getProcesses().start();
+//            if (sre.getDbsOverride() != null && sre.getDbsOverride().length > 0) {
+//                sre.getProcessContainer().set;
+//            }
+//            sre.getProcessContainer().setOutputDirectory(sre.getOutputDirectory());
+            sre.getProcessContainer().start();
             System.exit(0);
         } catch (Throwable t) {
             t.printStackTrace();
@@ -49,12 +68,19 @@ public class Sre {
             cmd = parser.parse(options, args);
         } catch (ParseException pe) {
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp("Eval", options);
+            formatter.printHelp("Sre", options);
             System.exit(-1);
         }
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        if (cmd.hasOption("db")) {
+            dbsOverride = cmd.getOptionValues("db");
+        }
+//        if (cmd.hasOption("o")) {
+//            this.outputDirectory = cmd.getOptionValue("o");
+//        }
 
         if (cmd.hasOption("u3")) {
             // Load Hive Upgrade Stack.
@@ -66,14 +92,42 @@ public class Sre {
                     throw new RuntimeException("Can build URL for Hive Upgrade Stack Resource: " + stackResource);
                 }
                 String yamlConfigDefinition = IOUtils.toString(configURL);
-                setProcesses(mapper.readerFor(SreProcesses.class).readValue(yamlConfigDefinition));
+                setProcessContainer(mapper.readerFor(ProcessContainer.class).readValue(yamlConfigDefinition));
                 // Initialize with config and output directory.
-                getProcesses().init(cmd.getOptionValue("cfg"), cmd.getOptionValue("o"));
+                getProcessContainer().init(cmd.getOptionValue("cfg"), cmd.getOptionValue("o"), getDbsOverride());
 
             } catch (Exception e) {
                 throw new RuntimeException("Missing resource file: " + stackResource, e);
             }
         }
+        if (cmd.hasOption("sre")) {
+            // Load Hive Upgrade Stack.
+            String stackResource = "/h3_perf_procs.yaml";
+
+            try {
+                URL configURL = this.getClass().getResource(stackResource);
+                if (configURL == null) {
+                    throw new RuntimeException("Can build URL for Hive Upgrade Stack Resource: " + stackResource);
+                }
+                String yamlConfigDefinition = IOUtils.toString(configURL);
+                setProcessContainer(mapper.readerFor(ProcessContainer.class).readValue(yamlConfigDefinition));
+
+                //                if (getOverrideDbs() != null && getOverrideDbs().length > 0) {
+                //                    for (SreProcesses processes: getProcesses()) {
+                //
+                //                    }
+                //                }
+                // Initialize with config and output directory.
+
+                getProcessContainer().init(cmd.getOptionValue("cfg"), cmd.getOptionValue("o"), getDbsOverride());
+
+            } catch (Exception e) {
+                throw new RuntimeException("Missing resource file: " + stackResource, e);
+            }
+        }
+
+//        System.out.println(dbsOpt);
+
     }
 
     private Options getOptions() {
@@ -87,22 +141,29 @@ public class Sre {
 
         // create Options object
         Options options = new Options();
+        OptionGroup procGroup = new OptionGroup();
 
         // add i option
         Option sreOption = new Option("sre", "sre", false, "Run the SRE suite of checks.");
-        sreOption.setRequired(false);
+        sreOption.setRequired(true);
         // Commons-Cli v1.3+ (can use currently because of Hadoop Commons-cli version is at 1.2.
         //        Option initOption = Option.builder("i").required(false)
         //                .argName("init set").desc("Initialize with set")
         //                .longOpt("init")
         //                .hasArg(true).numberOfArgs(1)
         //                .build();
-        options.addOption(sreOption);
+        procGroup.addOption(sreOption);
+//        options.addOption(sreOption);
+
 
         Option u3Option = new Option("u3", "upgrade3", false,
                 "Upgrade to Hive3 Checks");
-        u3Option.setRequired(false);
-        options.addOption(u3Option);
+        u3Option.setRequired(true);
+        procGroup.addOption(u3Option);
+//        options.addOption(u3Option);
+
+        procGroup.setRequired(true);
+        options.addOptionGroup(procGroup);
 
         // add f option
         Option outputOption = new Option("o", "output-dir", true,
@@ -112,7 +173,9 @@ public class Sre {
 
         // TODO: Need to figure out way to pass in an array of dbs.
         Option dbOption = new Option("db", "database", true,
-                "Comman separated list of Databases.  Will override config.");
+                "Comma separated list of Databases.  Will override config. (upto 100)");
+        dbOption.setValueSeparator(',');
+        dbOption.setArgs(100);
         dbOption.setRequired(false);
         options.addOption(dbOption);
 

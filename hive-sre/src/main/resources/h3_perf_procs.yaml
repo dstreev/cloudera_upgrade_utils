@@ -1,0 +1,20 @@
+processes:
+  -
+    type: "dbSet"
+    name: "Hive 3 Performance Checks - Locations Scan"
+    errorFilename: h3_perf_scan.err
+    successFilename: h3_perf_scan.txt
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
+    pathsListingQuery: "tbl_part_locations"
+    checks:
+      - name: "Small Files"
+        invertCheck: false
+        pathCommand: "count %5$s"
+        onSuccessPathCommand: "# %1$s.%2$s [Partition: %4$s]"
+        onSuccessRecordCommand: "# %s"
+        reportOnResults: true
+        reportOnPath: true
+        processOnError: false
+        processOnSuccess: true
