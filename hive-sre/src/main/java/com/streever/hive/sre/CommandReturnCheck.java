@@ -5,9 +5,12 @@ import com.streever.hadoop.shell.command.CommandReturn;
 import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 
 //@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
 //        include = JsonTypeInfo.As.PROPERTY,
@@ -18,7 +21,7 @@ import java.util.Properties;
 //        @JsonSubTypes.Type(value = FilenameFormatCheck.class, name = "filename.format"),
 //        @JsonSubTypes.Type(value = DirectoryExistsCheck.class, name = "directory.exists")
 //})
-@JsonIgnoreProperties({"counter", "properties"})
+@JsonIgnoreProperties({"counter", "properties", "calculationResults", "scriptEngine"})
 public class CommandReturnCheck implements Counter, Cloneable {
 
     private String name;
@@ -36,6 +39,9 @@ public class CommandReturnCheck implements Counter, Cloneable {
     private String onErrorRecordCommand;
     private String onSuccessPathCommand;
     private String onErrorPathCommand;
+    private Map<String, String> checkCalculations = null;
+    private ScriptEngine scriptEngine = null;
+    private Map<String, Object> calculationResults = null;
     private String[] currentArgs;
     /**
      * allows stdout to be captured if necessary
@@ -63,8 +69,33 @@ public class CommandReturnCheck implements Counter, Cloneable {
             internalOnError(commandReturn);
         }
     }
+    public String runCalculations(CommandReturn commandReturn) {
+        String rtn = null;
+        if (getCheckCalculations() != null && getCheckCalculations().size() > 0 && getScriptEngine() != null) {
+            StringBuilder sb = new StringBuilder();
+            for (String calcKey: checkCalculations.keySet()) {
+                String calcString = checkCalculations.get(calcKey);
+                String calcStringResolved = String.format(calcString, commandReturn.getRecords().get(0).toArray());
+                Object checkRtn = null;
+                try {
+                    checkRtn = scriptEngine.eval(calcStringResolved);
+                } catch (ScriptException e) {
+                    e.printStackTrace();
+                }
+                if (checkRtn != null)
+                    sb.append(checkRtn).append("\n");
+            }
+            rtn = sb.toString();
+        }
+        return rtn;
+    }
+
+    public ScriptEngine getScriptEngine() {
+        return scriptEngine;
+    }
 
     private void internalOnError(CommandReturn commandReturn) {
+        StringBuilder sb = new StringBuilder();
         if (getReportOnPath() && getOnErrorPathCommand() != null) {
             String action = null;
             try {
@@ -73,11 +104,12 @@ public class CommandReturnCheck implements Counter, Cloneable {
                 throw new RuntimeException("Bad string format in 'errorPath' action command of CommandReturnCheck", t);
             }
             if (action != null)
-            error.println(action);
+                sb.append(action).append("\n");
+//            error.println(action);
         }
 
         if (getReportOnResults() && getOnErrorRecordCommand() != null) {
-            for (List<String> record : commandReturn.getRecords()) {
+            for (List<Object> record : commandReturn.getRecords()) {
                 String action = null;
                 try {
                     action = String.format(getOnErrorRecordCommand(), record.toArray());
@@ -85,13 +117,16 @@ public class CommandReturnCheck implements Counter, Cloneable {
                     throw new RuntimeException("Bad string format in 'errorRecord' action command of CommandReturnCheck", t);
                 }
                 if (action != null)
-                    error.println(action);
+                    sb.append(action).append("\n");
+//                    error.println(action);
             }
         }
+        error.println(sb.toString());
     }
 
     private void internalOnSuccess(CommandReturn commandReturn) {
         // TODO: Report on Path
+        StringBuilder sb = new StringBuilder();
         if (getReportOnPath() && getOnSuccessPathCommand() != null) {
             String action = null;
             try {
@@ -100,11 +135,12 @@ public class CommandReturnCheck implements Counter, Cloneable {
                 throw new RuntimeException("Bad string format in 'successPath' action command of CommandReturnCheck", t);
             }
             if (action != null)
-            error.println(action);
+                sb.append(action).append("\n");
+//            success.println(action);
         }
         // TODO: Report on Record
         if (getReportOnResults() && getOnSuccessRecordCommand() != null) {
-            for (List<String> record : commandReturn.getRecords()) {
+            for (List<Object> record : commandReturn.getRecords()) {
                 Object[] rec = new Object[record.size()];
                 for (int i=0;i<record.size();i++) {
                     rec[i] = record.get(i);
@@ -116,10 +152,14 @@ public class CommandReturnCheck implements Counter, Cloneable {
                     throw new RuntimeException("Bad string format in 'successRecord' action command of CommandReturnCheck", t);
                 }
                 if (action != null)
-                    error.println(action);
+                    sb.append(action).append("\n");
+//                    error.println(action);
             }
         }
-
+        String checkCalcs = runCalculations(commandReturn);
+        if (checkCalcs != null)
+            sb.append(checkCalcs);
+        success.println(sb.toString());
     }
     @Override
     public String getName() {
@@ -208,6 +248,18 @@ public class CommandReturnCheck implements Counter, Cloneable {
 
     public void setOnErrorPathCommand(String onErrorPathCommand) {
         this.onErrorPathCommand = onErrorPathCommand;
+    }
+
+    public Map<String, String> getCheckCalculations() {
+        return checkCalculations;
+    }
+
+    public void setCheckCalculations(Map<String, String> checkCalculations) {
+        if (checkCalculations != null && checkCalculations.size() > 0) {
+            ScriptEngineManager sem = new ScriptEngineManager();
+            scriptEngine = sem.getEngineByName("nashorn");
+        }
+        this.checkCalculations = checkCalculations;
     }
 
     public String getFullCommand(String[] args) {
@@ -331,6 +383,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
         clone.setProcessOnSuccess(this.processOnSuccess);
         clone.setCounter(new ReportCounter());
         clone.getCounter().setName(this.name);
+        clone.setCheckCalculations(this.checkCalculations);
         return clone;
 
     }

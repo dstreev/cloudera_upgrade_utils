@@ -1,6 +1,5 @@
 processes:
-  -
-    type: "dbSet"
+  - type: "dbSet"
     name: "Hive 3 Upgrade Checks - Locations Scan"
     errorFilename: h3_upgrade_loc_scan.err
     successFilename: h3_upgrade_loc_scan.txt
@@ -17,18 +16,16 @@ processes:
         reportOnPath: true
         processOnError: true
         processOnSuccess: false
-  -
-    type: "dbSet"
+  - type: "dbSet"
     name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
-    errorFilename: h3_upgrade_filename_scan.err
-    successFilename: h3_upgrade_filename_scan.txt
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "h3_upgrade_filename_scan.err"
+    successFilename: "h3_upgrade_filename_scan.txt"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
     pathsListingQuery: "tbl_mngd_non_acid_locations"
     checks:
-      -
-        name: "Bad Filename Format"
+      - name: "Bad Filename Format"
         invertCheck: true
         pathCommand: "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)\" -i -Fe file -v -f parent,file %5$s"
         onErrorPathCommand: "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
@@ -37,3 +34,11 @@ processes:
         reportOnPath: true
         processOnError: true
         processOnSuccess: false
+  - type: "metastore.query"
+    name: "Questionable Serde's Check"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "hive_questionable_serde.err"
+    successFilename: "hive_questionable_serde.txt"
+    metastoreQuery: "questionable_serdes"
+    listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
+    resultMessage: "hello"

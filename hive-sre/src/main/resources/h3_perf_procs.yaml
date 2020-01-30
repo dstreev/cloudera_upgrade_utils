@@ -12,9 +12,12 @@ processes:
       - name: "Small Files"
         invertCheck: false
         pathCommand: "count %5$s"
-        onSuccessPathCommand: "# %1$s.%2$s [Partition: %4$s]"
-        onSuccessRecordCommand: "# %s"
+        onSuccessPathCommand: "File sizes: %1$s.%2$s [Partition: %4$s]"
+        onSuccessRecordCommand: "# Folders: %1$s Files: %2$s Size: %3$s Path: %4$s"
         reportOnResults: true
         reportOnPath: true
         processOnError: false
         processOnSuccess: true
+        checkCalculations:
+          avgFileSize: "\"Average File Size in Path: \" + java.math.BigDecimal.valueOf((%3$s / %2$s)).divide(new java.math.BigDecimal(1024*1024), 3) + \"Mb\""
+          avgFileSizeTooSmall: "if (%3$s / %2$s < 67108864) \"CHECKPOINT FAILED: Average file size below 64Mb\""

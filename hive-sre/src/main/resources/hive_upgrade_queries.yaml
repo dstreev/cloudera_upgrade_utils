@@ -255,3 +255,133 @@ query_definitions:
         initial: "%"
         sqlType: 12
         location: 1
+  questionable_serdes:
+    statement: "WITH
+      BASE AS
+      (
+      SELECT
+      D.NAME             AS DB_NAME ,
+      D.DB_LOCATION_URI  AS DB_DEFAULT_LOC ,
+      D.OWNER_NAME       AS DB_OWNER ,
+      T.TBL_ID           AS TBL_ID ,
+      T.TBL_NAME         AS TBL_NAME ,
+      T.OWNER            AS TBL_OWNER ,
+      T.TBL_TYPE         AS TBL_TYPE ,
+      S.INPUT_FORMAT     AS TBL_INPUT_FORMAT ,
+      S.OUTPUT_FORMAT    AS TBL_OUTPUT_FORMAT ,
+      S.LOCATION         AS TBL_LOCATION ,
+      S.NUM_BUCKETS      AS TBL_NUM_BUCKETS ,
+      SER.SLIB           AS TBL_SERDE_SLIB ,
+      PARAMS.PARAM_KEY   AS TBL_PARAM_KEY ,
+      PARAMS.PARAM_VALUE AS TBL_PARAM_VALUE ,
+      P.PART_ID          AS PART_ID ,
+      P.PART_NAME        AS PART_NAME ,
+      PS.INPUT_FORMAT    AS PART_INPUT_FORMAT ,
+      PS.OUTPUT_FORMAT   AS PART_OUTPUT_FORMAT,
+      PS.LOCATION        AS PART_LOCATION ,
+      PS.NUM_BUCKETS     AS PART_NUM_BUCKETS ,
+      PSER.SLIB          AS PART_SERDE_SLIB
+      FROM
+      DBS D
+      INNER JOIN
+      TBLS T
+      ON
+      D.DB_ID = T.DB_ID
+      LEFT OUTER JOIN
+      SDS S
+      ON
+      T.SD_ID = S.SD_ID
+      LEFT OUTER JOIN
+      SERDES SER
+      ON
+      S.SERDE_ID = SER.SERDE_ID
+      LEFT OUTER JOIN
+      TABLE_PARAMS PARAMS
+      ON
+      T.TBL_ID = PARAMS.TBL_ID
+      LEFT OUTER JOIN
+      PARTITIONS P
+      ON
+      T.TBL_ID = P.TBL_ID
+      LEFT OUTER JOIN
+      SDS PS
+      ON
+      P.SD_ID = PS.SD_ID
+      LEFT OUTER JOIN
+      SERDES PSER
+      ON
+      PS.SERDE_ID = PSER.SERDE_ID
+      )
+      ,
+      ALL_SERDES AS
+      (
+      SELECT DISTINCT
+      sub.serde
+      FROM
+      (
+      SELECT DISTINCT
+      tbl_serde_slib AS serde
+      FROM
+      BASE
+      UNION ALL
+      SELECT
+      part_serde_slib AS serde
+      FROM
+      BASE ) AS sub
+      )
+      ,
+      TBL_WITH_SERDES AS
+      (
+      SELECT
+      db_name,
+      tbl_name,
+      tbl_serde_slib,
+      COUNT(*)
+      FROM
+      BASE
+      GROUP BY
+      db_name,
+      tbl_name,
+      tbl_serde_slib
+      )
+      ,
+      QUESTIONABLE_SERDE AS
+      (
+      SELECT
+      a.serde AS serde
+      FROM
+      ALL_SERDES a
+      WHERE
+      a.serde NOT IN ('org.apache.hadoop.hive.ql.io.orc.OrcSerde',
+      'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe',
+      'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe',
+      'org.apache.hadoop.hive.hbase.HBaseSerDe',
+      'org.apache.hive.storage.jdbc.JdbcSerDe',
+      'org.apache.hadoop.hive.druid.DruidStorageHandler',
+      'org.apache.phoenix.hive.PhoenixStorageHandler',
+      'org.apache.hadoop.hive.serde2.avro.AvroSerDe',
+      'org.apache.hadoop.hive.serde2.RegexSerDe',
+      'parquet.hive.serde.ParquetHiveSerDe',
+      'org.apache.hadoop.hive.serde2.OpenCSVSerde',
+      'org.apache.hive.hcatalog.data.JsonSerDe')
+      )
+      SELECT DISTINCT
+      db_name ,
+      tbl_name ,
+      tbl_serde_slib
+      FROM
+      TBL_WITH_SERDES t
+      WHERE
+      t.tbl_serde_slib IN
+      (
+      SELECT
+      a.serde
+      FROM
+      ALL_SERDES a
+      WHERE
+      a.serde IN
+      (
+      SELECT
+      *
+      FROM
+      QUESTIONABLE_SERDE ) );"

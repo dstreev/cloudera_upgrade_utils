@@ -26,17 +26,9 @@ import static com.streever.hive.reporting.ReportCounter.WAITING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 
-@JsonIgnoreProperties({"parent", "config", "queryDefinitions", "metastoreDirectDataSource", "h2DataSource",
+@JsonIgnoreProperties({"parent", "config", "metastoreDirectDataSource", "h2DataSource",
         "outputDirectory", "dbPaths", "cliSession", "success", "error"})
 public class DbSet extends SreProcessBase {
-
-    // Build after construction
-    private QueryDefinitions queryDefinitions = null;
-    private String queryDefinitionReference = null;
-
-    // Set during init.
-    private String outputDirectory = null;
-    // Set by parent, when specified.
 
     private List<DbPaths> dbPaths;
     private List<CommandReturnCheck> checks;
@@ -44,45 +36,6 @@ public class DbSet extends SreProcessBase {
     private String dbListingQuery;
     private String[] listingColumns;
     private String pathsListingQuery;
-
-    /**
-     * allows stdout to be captured if necessary
-     */
-    public PrintStream success = System.out;
-    /**
-     * allows stderr to be captured if necessary
-     */
-    public PrintStream error = System.err;
-
-    public String getQueryDefinitionReference() {
-        return queryDefinitionReference;
-    }
-
-    public void setQueryDefinitionReference(String queryDefinitionReference) {
-        this.queryDefinitionReference = queryDefinitionReference;
-
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        try {
-            try {
-                URL configURL = this.getClass().getResource(this.queryDefinitionReference);
-                if (configURL == null) {
-                    throw new RuntimeException("Can build URL for Resource: " +
-                            this.queryDefinitionReference);
-                }
-                String yamlConfigDefinition = IOUtils.toString(configURL);
-                setQueryDefinitions(mapper.readerFor(QueryDefinitions.class).readValue(yamlConfigDefinition));
-            } catch (Exception e) {
-                throw new RuntimeException("Missing resource file: " +
-                        this.queryDefinitionReference, e);
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("Issue getting configs", e);
-        }
-
-    }
 
     public List<CommandReturnCheck> getChecks() {
         return checks;
@@ -129,12 +82,9 @@ public class DbSet extends SreProcessBase {
         setParent(parent);
         if (outputDirectory == null) {
             throw new RuntimeException("Config File and Output Directory must be set before init.");
-        } else {
-
         }
 
-        PrintStream errFile = outputFile(outputDirectory + System.getProperty("file.separator") + this.getErrorFilename());
-        PrintStream outFile = outputFile(outputDirectory + System.getProperty("file.separator") + this.getSuccessFilename());
+        setOutputDirectory(outputDirectory);
 
         String[] dbs = null;
         if (getDbsOverride() != null && getDbsOverride().length > 0) {
@@ -165,8 +115,8 @@ public class DbSet extends SreProcessBase {
         List<SRERunnable> sres = new ArrayList<SRERunnable>();//[dbs.length];
         for (String database : dbs) {
             DbPaths paths = new DbPaths(database, this);
-            paths.error = errFile;
-            paths.success = outFile;
+            paths.error = this.error;
+            paths.success = this.success;
             paths.init();
             paths.setStatus(CONSTRUCTED);
             sres.add(paths);
@@ -180,77 +130,6 @@ public class DbSet extends SreProcessBase {
             getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
         }
 
-    }
-
-    public String getOutputDirectory() {
-        return outputDirectory;
-    }
-
-    public void setOutputDirectory(String outputDirectory) {
-        this.outputDirectory = outputDirectory;
-    }
-
-    protected QueryDefinitions getQueryDefinitions() {
-        return queryDefinitions;
-    }
-
-    protected void setQueryDefinitions(QueryDefinitions queryDefinitions) {
-        this.queryDefinitions = queryDefinitions;
-    }
-
-    protected QueryDefinition getQueryOverride(String definitionName) {
-        QueryDefinition rtn = null;
-        rtn = getParent().getConfig().getQuery(definitionName);
-        return rtn;
-    }
-
-//    public void start() {
-    // Identify which Database(s) to run process(s) against.
-
-//        String[] dbs = null;
-//        if (this.dbCmdlineOverride != null) {
-//            dbs = this.dbCmdlineOverride;
-//        } else {
-//            try (Connection conn = getParent().getMetastoreConnection()) {
-//                String targetQueryDef = this.dbListingQuery;
-//                // build prepared statement for targetQueryDef
-//                QueryDefinition queryDefinition = getQueryDefinitions().getQueryDefinition(targetQueryDef);
-//                PreparedStatement preparedStatement = JDBCUtils.getPreparedStatement(conn, queryDefinition);
-//                // apply any overrides from the user configuration.
-//                QueryDefinition queryOverride = getQueryOverride(targetQueryDef);
-//                JDBCUtils.setPreparedStatementParameters(preparedStatement, queryDefinition, queryOverride);
-//                // Run
-//                ResultSet check = preparedStatement.executeQuery();
-//                // Convert Result to an array
-//                ResultArray rarray = new ResultArray(check);
-//                // Close ResultSet
-//                check.close();
-//                // build array of tables.
-//                dbs = rarray.getColumn("name");
-//            } catch (SQLException e) {
-//                throw new RuntimeException("Issue getting 'databases' to process.", e);
-//            }
-//        }
-//
-//        // Build an Element Path for each database.  This will be use to divide the work.
-//        List<SRERunnable> sres = new ArrayList<SRERunnable>();//[dbs.length];
-//        for (String database : dbs) {
-//            DbPaths paths = new DbPaths(database, this);
-//            paths.setStatus(CONSTRUCTED);
-//            sres.add(paths);
-//        }
-//
-//        for (SRERunnable sre : sres) {
-//            sre.setStatus(WAITING);
-//            // Add Counter to Main Reporter
-//            getParent().getReporter().addCounter(sre.getName(), sre.getCounter());
-//            // Add Runnable to Main ThreadPool
-//            getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
-//        }
-//    }
-
-    public SreProcessesConfig getConfig() {
-        return getParent().getConfig();
     }
 
 }

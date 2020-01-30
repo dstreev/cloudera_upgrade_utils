@@ -7,6 +7,9 @@ import com.streever.hive.sre.ProcessContainer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.net.URL;
 
 /**
@@ -44,6 +47,19 @@ public class Sre {
 
     public static void main(String[] args) {
         Sre sre = new Sre();
+//        ScriptEngineManager sem = new ScriptEngineManager();
+//        ScriptEngine nashorn = sem.getEngineByName("nashorn");
+//
+//        String name = "David";
+//        Integer result = null;
+//
+//        try {
+//            nashorn.eval("print('" + name + "')");
+//            result = (Integer) nashorn.eval("10 + 2");
+//
+//        } catch (ScriptException se) {
+//
+//        }
         try {
             sre.init(args);
 //            if (sre.getDbsOverride() != null && sre.getDbsOverride().length > 0) {
