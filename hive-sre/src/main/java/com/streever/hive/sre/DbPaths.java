@@ -108,7 +108,10 @@ public class DbPaths extends SRERunnable {
                 for (int i = 0; i < columnsArray[0].length; i++) { //String path : columnArray) {
                     String[] args = new String[columnsArray.length];
                     for (int a = 0; a < columnsArray.length; a++) {
+                        if (columnsArray[a][i] != null)
                         args[a] = columnsArray[a][i];
+                        else
+                            args[a] = " "; // Prevent null in array.  Messes up String.format when array has nulls.
                     }
                     for (CommandReturnCheck lclCheck : getChecks()) {
                         try {

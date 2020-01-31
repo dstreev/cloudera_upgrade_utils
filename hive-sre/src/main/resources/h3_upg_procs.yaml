@@ -41,4 +41,8 @@ processes:
     successFilename: "hive_questionable_serde.txt"
     metastoreQuery: "questionable_serdes"
     listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
-    resultMessage: "hello"
+    resultMessageHeader: "***********************************************************\n
+  Listed tables should be review to ensure the Serde is still available.\n
+  Missing Serde's can disrupt a Hive Upgrade/Migration Process\n
+  ***********************************************************"
+    resultMessageDetailTemplate: "%1$s.%2$s is using a non-base serde '%3$s'"

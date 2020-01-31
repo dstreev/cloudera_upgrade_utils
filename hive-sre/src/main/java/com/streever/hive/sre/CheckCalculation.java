@@ -1,12 +1,17 @@
 package com.streever.hive.sre;
 
 public class CheckCalculation implements Cloneable {
+
     // Needs to return a boolean.
     private String test;
     // On Pass, use Success Message
     private String pass;
     // On Fail, use Fail Message
     private String fail;
+    // Include external values in calculations.
+    // These parameters are added to the end of the record set
+    //   passed to the engine.
+    private String[] params;
 
     public String getTest() {
         return test;
@@ -30,6 +35,14 @@ public class CheckCalculation implements Cloneable {
 
     public void setFail(String fail) {
         this.fail = fail;
+    }
+
+    public String[] getParams() {
+        return params;
+    }
+
+    public void setParams(String[] params) {
+        this.params = params;
     }
 
     @Override

@@ -9,8 +9,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.PrintStream;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 //@JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
 //        include = JsonTypeInfo.As.PROPERTY,
@@ -39,7 +38,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
     private String onErrorRecordCommand;
     private String onSuccessPathCommand;
     private String onErrorPathCommand;
-    private Map<String, String> checkCalculations = null;
+    private Map<String, Map<CheckSearch, CheckCalculation>> checkCalculations = null;
     private ScriptEngine scriptEngine = null;
     private Map<String, Object> calculationResults = null;
     private String[] currentArgs;
@@ -69,23 +68,98 @@ public class CommandReturnCheck implements Counter, Cloneable {
             internalOnError(commandReturn);
         }
     }
+
     public String runCalculations(CommandReturn commandReturn) {
         String rtn = null;
-        if (getCheckCalculations() != null && getCheckCalculations().size() > 0 && getScriptEngine() != null) {
-            StringBuilder sb = new StringBuilder();
-            for (String calcKey: checkCalculations.keySet()) {
-                String calcString = checkCalculations.get(calcKey);
-                String calcStringResolved = String.format(calcString, commandReturn.getRecords().get(0).toArray());
-                Object checkRtn = null;
-                try {
-                    checkRtn = scriptEngine.eval(calcStringResolved);
-                } catch (ScriptException e) {
-                    e.printStackTrace();
+        try {
+            if (getCheckCalculations() != null && getCheckCalculations().size() > 0 && getScriptEngine() != null) {
+                StringBuilder sb = new StringBuilder();
+                for (String calcKey : checkCalculations.keySet()) {
+                    Map<CheckSearch, CheckCalculation> checkSearchCalculation = checkCalculations.get(calcKey);
+                    for (CheckSearch checkSearch : checkSearchCalculation.keySet()) {
+                        CheckCalculation checkCalculation = checkSearchCalculation.get(checkSearch);
+                        String testStr = null;
+                        String failStr = null;
+                        String passStr = null;
+                        switch (checkSearch) {
+                            case PATH:
+                                if (checkCalculation.getTest() != null) {
+                                    // Params
+                                    List combined = new LinkedList(Arrays.asList(getCurrentArgs()));
+                                    // Configured Params
+                                    if (checkCalculation.getParams() != null)
+                                        combined.addAll(Arrays.asList(checkCalculation.getParams()));
+                                    try {
+                                        testStr = String.format(checkCalculation.getTest(), combined.toArray());
+                                        Boolean checkTest = null;
+                                        checkTest = (Boolean) scriptEngine.eval(testStr);
+                                        if (checkTest) {
+                                            if (checkCalculation.getPass() != null) {
+                                                passStr = String.format(checkCalculation.getPass(), combined.toArray());
+                                                String passResult = (String) scriptEngine.eval(passStr);
+                                                sb.append(passResult).append("\n");
+                                            }
+
+                                        } else {
+                                            if (checkCalculation.getFail() != null) {
+                                                failStr = String.format(checkCalculation.getFail(), combined.toArray());
+                                                String failResult = (String) scriptEngine.eval(failStr);
+                                                sb.append(failResult).append("\n");
+                                            }
+                                        }
+                                    } catch (ScriptException e) {
+                                        e.printStackTrace();
+                                    } catch (MissingFormatArgumentException mfa) {
+                                        mfa.printStackTrace();
+                                        System.err.println("Bad Argument Match up for PATH check rule: " + this.getName() + ":" + calcKey);
+                                    }
+                                }
+                                break;
+                            case RECORDS:
+                                // Loop Through Records.
+                                if (checkCalculation.getTest() != null) {
+                                    for (List<Object> record : commandReturn.getRecords()) {
+                                        // Params
+                                        List combined = new LinkedList(Arrays.asList(getCurrentArgs()));
+                                        // Current Record
+                                        combined.addAll(record);
+                                        // Configured Params
+                                        if (checkCalculation.getParams() != null)
+                                            combined.addAll(Arrays.asList(checkCalculation.getParams()));
+                                        try {
+                                            testStr = String.format(checkCalculation.getTest(), combined.toArray());
+                                            Boolean checkTest = null;
+                                            checkTest = (Boolean) scriptEngine.eval(testStr);
+                                            if (checkTest) {
+                                                if (checkCalculation.getPass() != null) {
+                                                    passStr = String.format(checkCalculation.getPass(), combined.toArray());
+                                                    String passResult = (String) scriptEngine.eval(passStr);
+                                                    sb.append(passResult).append("\n");
+                                                }
+
+                                            } else {
+                                                if (checkCalculation.getFail() != null) {
+                                                    failStr = String.format(checkCalculation.getFail(), combined.toArray());
+                                                    String failResult = (String) scriptEngine.eval(failStr);
+                                                    sb.append(failResult).append("\n");
+                                                }
+                                            }
+                                        } catch (ScriptException e) {
+                                            e.printStackTrace();
+                                        } catch (MissingFormatArgumentException mfa) {
+                                            mfa.printStackTrace();
+                                            System.err.println("Bad Argument Match up for RECORDS check rule: " + this.getName() + ":" + calcKey);
+                                        }
+                                    }
+                                }
+                                break;
+                        }
+                    }
                 }
-                if (checkRtn != null)
-                    sb.append(checkRtn).append("\n");
+                rtn = sb.toString();
             }
-            rtn = sb.toString();
+        } catch (RuntimeException re) {
+            re.printStackTrace();
         }
         return rtn;
     }
@@ -105,7 +179,6 @@ public class CommandReturnCheck implements Counter, Cloneable {
             }
             if (action != null)
                 sb.append(action).append("\n");
-//            error.println(action);
         }
 
         if (getReportOnResults() && getOnErrorRecordCommand() != null) {
@@ -118,14 +191,17 @@ public class CommandReturnCheck implements Counter, Cloneable {
                 }
                 if (action != null)
                     sb.append(action).append("\n");
-//                    error.println(action);
             }
         }
-        error.println(sb.toString());
+        if (getProcessOnError()) {
+            String checkCalcs = runCalculations(commandReturn);
+            if (checkCalcs != null)
+                sb.append(checkCalcs);
+        }
+        error.print(sb.toString());
     }
 
     private void internalOnSuccess(CommandReturn commandReturn) {
-        // TODO: Report on Path
         StringBuilder sb = new StringBuilder();
         if (getReportOnPath() && getOnSuccessPathCommand() != null) {
             String action = null;
@@ -136,13 +212,11 @@ public class CommandReturnCheck implements Counter, Cloneable {
             }
             if (action != null)
                 sb.append(action).append("\n");
-//            success.println(action);
         }
-        // TODO: Report on Record
         if (getReportOnResults() && getOnSuccessRecordCommand() != null) {
             for (List<Object> record : commandReturn.getRecords()) {
                 Object[] rec = new Object[record.size()];
-                for (int i=0;i<record.size();i++) {
+                for (int i = 0; i < record.size(); i++) {
                     rec[i] = record.get(i);
                 }
                 String action = null;
@@ -153,14 +227,16 @@ public class CommandReturnCheck implements Counter, Cloneable {
                 }
                 if (action != null)
                     sb.append(action).append("\n");
-//                    error.println(action);
             }
         }
-        String checkCalcs = runCalculations(commandReturn);
-        if (checkCalcs != null)
-            sb.append(checkCalcs);
-        success.println(sb.toString());
+        if (getProcessOnSuccess()) {
+            String checkCalcs = runCalculations(commandReturn);
+            if (checkCalcs != null)
+                sb.append(checkCalcs);
+        }
+        success.print(sb.toString());
     }
+
     @Override
     public String getName() {
         return name;
@@ -250,11 +326,11 @@ public class CommandReturnCheck implements Counter, Cloneable {
         this.onErrorPathCommand = onErrorPathCommand;
     }
 
-    public Map<String, String> getCheckCalculations() {
+    public Map<String, Map<CheckSearch, CheckCalculation>> getCheckCalculations() {
         return checkCalculations;
     }
 
-    public void setCheckCalculations(Map<String, String> checkCalculations) {
+    public void setCheckCalculations(Map<String, Map<CheckSearch, CheckCalculation>> checkCalculations) {
         if (checkCalculations != null && checkCalculations.size() > 0) {
             ScriptEngineManager sem = new ScriptEngineManager();
             scriptEngine = sem.getEngineByName("nashorn");
@@ -362,12 +438,12 @@ public class CommandReturnCheck implements Counter, Cloneable {
 
     public void setCurrentArgs(String[] currentArgs) {
         this.currentArgs = new String[currentArgs.length];
-        for (int i = 0; i<currentArgs.length;i++) {
-            if (currentArgs[i] != null && currentArgs[i].contains(" ")) {
-                this.currentArgs[i] = "\"" + currentArgs[i] + "\"";
-            } else {
-                this.currentArgs[i] = currentArgs[i];
-            }
+        for (int i = 0; i < currentArgs.length; i++) {
+//            if (currentArgs[i] != null && currentArgs[i].contains(" ")) {
+//                this.currentArgs[i] = "\"" + currentArgs[i] + "\"";
+//            } else {
+            this.currentArgs[i] = currentArgs[i];
+//            }
         }
     }
 
