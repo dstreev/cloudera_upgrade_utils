@@ -25,13 +25,15 @@ public class JDBCUtils {
             lclOverrides = new Properties();
         }
         try {
-            for (String key : query.getParameters().keySet()) {
-                Parameter param = query.getParameters().get(key);
-                String value = lclOverrides.getProperty(key, param.getInitial());
-                switch (param.getSqlType()) {
-                    case VARCHAR:
-                        preparedStatement.setString(param.getLocation(), value);
-                        break;
+            if (query.getParameters() != null) {
+                for (String key : query.getParameters().keySet()) {
+                    Parameter param = query.getParameters().get(key);
+                    String value = lclOverrides.getProperty(key, param.getInitial());
+                    switch (param.getSqlType()) {
+                        case VARCHAR:
+                            preparedStatement.setString(param.getLocation(), value);
+                            break;
+                    }
                 }
             }
         } catch (SQLException se) {

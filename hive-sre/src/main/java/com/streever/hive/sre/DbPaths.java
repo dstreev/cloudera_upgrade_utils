@@ -72,6 +72,7 @@ public class DbPaths extends SRERunnable {
         this.cliSession = HadoopSession.get("DB Paths for: " + getName());
         String[] api = {"-api"};
         try {
+            // TODO: Need to promote failure when keytab doesn't exist.
             this.cliSession.start(api);
         } catch (Exception e) {
             e.printStackTrace();
@@ -102,7 +103,7 @@ public class DbPaths extends SRERunnable {
             String[][] columnsArray = rarray.getColumns(columns);
             this.setTotalCount(rarray.getCount() * this.getCounterChildren().size());
             // Loop through the paths
-            if (columnsArray[0].length > 0) {
+            if (columnsArray[0] != null && columnsArray[0].length > 0) {
                 this.setStatus(PROCESSING);
 
                 for (int i = 0; i < columnsArray[0].length; i++) { //String path : columnArray) {

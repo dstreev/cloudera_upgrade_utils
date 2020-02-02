@@ -23,6 +23,8 @@ import java.net.URL;
         @JsonSubTypes.Type(value = MetastoreQuery.class, name = "metastore.query")})
 public abstract class SreProcessBase {
     private String name;
+    private Boolean active = Boolean.TRUE;
+
     private ProcessContainer parent;
 
     // Build after construction
@@ -54,6 +56,14 @@ public abstract class SreProcessBase {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Boolean isActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 
     public ProcessContainer getParent() {

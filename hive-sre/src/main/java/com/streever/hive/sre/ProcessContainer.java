@@ -146,8 +146,10 @@ public class ProcessContainer {
             getProcessThreads().add(getThreadPool().schedule(getReporter(), 1, MILLISECONDS));
 
             for (SreProcessBase process: getProcesses()) {
-                process.setDbsOverride(dbsOverride);
-                process.init(this, job_run_dir);
+                if (process.isActive()) {
+                    process.setDbsOverride(dbsOverride);
+                    process.init(this, job_run_dir);
+                }
             }
 
 

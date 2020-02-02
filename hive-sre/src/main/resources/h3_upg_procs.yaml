@@ -1,5 +1,6 @@
 processes:
   - type: "dbSet"
+    active: false
     name: "Hive 3 Upgrade Checks - Locations Scan"
     errorFilename: h3_upgrade_loc_scan.err
     successFilename: h3_upgrade_loc_scan.txt
@@ -17,6 +18,7 @@ processes:
         processOnError: true
         processOnSuccess: false
   - type: "dbSet"
+    active: false
     name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     errorFilename: "h3_upgrade_filename_scan.err"
@@ -34,7 +36,39 @@ processes:
         reportOnPath: true
         processOnError: true
         processOnSuccess: false
+  - type: "dbSet"
+    active: true
+    name: "Hive 3 Upgrade Checks - Managed Table Migrations"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "managed_upgrade_2_acid.err"
+    successFilename: "managed_upgrade_2_acid.txt"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"tbl_location"]
+    pathsListingQuery: "managed_2_acid"
+    checks:
+      - name: "Ownership Check"
+        invertCheck: false
+        pathCommand: "lsp -f user -self %4$s"
+        onSuccessPathCommand: "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
+        onSuccessRecordCommand: "# Bad filename %2$s in directory: %1$s "
+        reportOnResults: false
+        reportOnPath: false
+        processOnError: false
+        processOnSuccess: true
+        checkCalculations:
+          ownershipCheck:
+            RECORDS:
+              test: "if (\"%5$s\".equals(\"%6$s\")) true; else false;"
+              pass: "\"Table is OWNED by '%6$s' and not currently ACID.\\n
+                    This table will be migrated unless changed.\\n
+                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              fail: "\"Table is NOT owned by '%6$s' and NOT currently ACID.\\n
+                    This table 'could' be migrated to an ACID table unless changed.\\n
+                    Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
+                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              params: ["hive"]
   - type: "metastore.query"
+    active: false
     name: "Questionable Serde's Check"
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     errorFilename: "hive_questionable_serde.err"
