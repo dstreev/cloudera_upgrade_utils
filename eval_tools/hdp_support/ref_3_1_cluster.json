@@ -3641,7 +3641,7 @@
           "hive.stats.dbclass" : "fs",
           "hive.exec.parallel" : "false",
           "hive.exec.submitviachild" : "false",
-          "hive.strict.managed.tables" : "false",
+          "hive.strict.managed.tables" : "true",
           "hive.fetch.task.conversion" : "more",
           "hive.server2.authentication" : "KERBEROS",
           "hive.map.aggr.hash.force.flush.memory.threshold" : "0.9",
