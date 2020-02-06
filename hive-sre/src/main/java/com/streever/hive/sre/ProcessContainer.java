@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.streever.hive.config.SreProcessesConfig;
+import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.Reporter;
 import org.apache.commons.io.FileUtils;
 
@@ -112,6 +113,13 @@ public class ProcessContainer {
                 break;
         }
         getThreadPool().shutdown();
+        for (SreProcessBase process: getProcesses()) {
+            System.out.println(process.getName());
+            System.out.println("  success -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
+                    process.getErrorFilename());
+            System.out.println("  failure -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
+                    process.getSuccessFilename());
+        }
     }
 
     public void init(String config, String outputDirectory, String[] dbsOverride) {
@@ -149,6 +157,11 @@ public class ProcessContainer {
                 if (process.isActive()) {
                     process.setDbsOverride(dbsOverride);
                     process.init(this, job_run_dir);
+                    if (process instanceof Runnable && process instanceof Counter) {
+                        getReporter().addCounter(process.getName(), ((Counter)process).getCounter());
+                        getProcessThreads().add(getThreadPool().schedule((Runnable)process, 1, MILLISECONDS));
+
+                    }
                 }
             }
 

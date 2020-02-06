@@ -1,12 +1,12 @@
 processes:
   - type: "dbSet"
-    active: false
+    active: true
     name: "Hive 3 Upgrade Checks - Locations Scan"
     errorFilename: h3_upgrade_loc_scan.err
     successFilename: h3_upgrade_loc_scan.txt
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     dbListingQuery: "db_tbl_count"
-    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
+    listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
     pathsListingQuery: "tbl_part_locations"
     checks:
       - name: "Missing Directories"
@@ -18,7 +18,7 @@ processes:
         processOnError: true
         processOnSuccess: false
   - type: "dbSet"
-    active: false
+    active: true
     name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     errorFilename: "h3_upgrade_filename_scan.err"
@@ -67,8 +67,39 @@ processes:
                     Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
               params: ["hive"]
+  - type: "dbSet"
+    active: true
+    name: "Hive 3 Upgrade Checks - Compaction Check"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "managed_compactions.err"
+    successFilename: "managed_compactions.txt"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location"]
+    pathsListingQuery: "managed_tbl_locations"
+    checks:
+      - name: "Compaction Check"
+        invertCheck: true
+        pathCommand: "lsp -R -F .*delta_.* -t -sp -f path %5$s"
+        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
+        reportOnResults: false
+        reportOnPath: false
+        processOnError: false
+        processOnSuccess: true
+        checkCalculations:
+          partitionCheck:
+            PATH:
+              test: "if (\"%4$s\".equals(\"%6$s\")) true; else false;"
+              pass: "\"Table is OWNED by '%6$s' and not currently ACID.\\n
+                    This table will be migrated unless changed.\\n
+                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              fail: "\"Table is NOT owned by '%6$s' and NOT currently ACID.\\n
+                    This table 'could' be migrated to an ACID table unless changed.\\n
+                    Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
+                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              params: ["hive"]
+
   - type: "metastore.query"
-    active: false
+    active: true
     name: "Questionable Serde's Check"
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     errorFilename: "hive_questionable_serde.err"
@@ -80,3 +111,13 @@ processes:
   Missing Serde's can disrupt a Hive Upgrade/Migration Process\n
   ***********************************************************"
     resultMessageDetailTemplate: "%1$s.%2$s is using a non-base serde '%3$s'"
+  - type: "metastore.query"
+    active: true
+    name: "Managed Table Shadows"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "managed_tbl_shadows.err"
+    successFilename: "managed_tbl_shadows.txt"
+    metastoreQuery: "managed_tbl_shadows"
+    listingColumns: ["db_name" ,"tbl_name", "tbl_location"]
+    resultMessageHeader: "***********************************************************"
+    resultMessageDetailTemplate: "Table %1$s.%2$s at location %3$s is sharing location with another managed table."

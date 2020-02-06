@@ -120,7 +120,7 @@ public class DbPaths extends SRERunnable {
                             if (rcmd != null) {
                                 CommandReturn cr = getCliSession().processInput(rcmd);
                                 lclCheck.incProcessed(1);
-                                if (!cr.isError()) {
+                                if (!cr.isError() || (lclCheck.getInvertCheck() && cr.isError())) {
                                     lclCheck.onSuccess(cr);
                                     lclCheck.incSuccess(1);
                                     this.incSuccess(1);
