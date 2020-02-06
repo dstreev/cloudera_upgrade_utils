@@ -1,10 +1,3 @@
-# Cloudera Cluster Upgrade Utils
-
-## Eval Tools
-
-[Ambari Configuration Diff](./eval_tools/README_ambari_cfg_diff.md)
-[HDP Eval Tool](./eval_tools/README_hdp_eval.md)
-
 ## Hive SRE Tooling
 
 The Sre Tool brings together information from the HMS RDBMS and HDFS to provide reports and potential actions to address areas of concern.  This process is a READ-ONLY process and does not perform any actions automatically.
