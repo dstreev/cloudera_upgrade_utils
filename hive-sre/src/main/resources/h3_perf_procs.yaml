@@ -1,0 +1,33 @@
+processes:
+  - type: "dbSet"
+    name: "Hive 3 Performance Checks - Locations Scan"
+    errorFilename: h3_perf_scan.err
+    successFilename: h3_perf_scan.txt
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
+    pathsListingQuery: "tbl_part_locations"
+    checks:
+      - name: "Small Files"
+        invertCheck: false
+        pathCommand: "count %5$s"
+        reportOnResults: false
+        reportOnPath: false
+        processOnError: false
+        processOnSuccess: true
+        checkCalculations:
+          avgFileSizeCheck:
+            RECORDS:
+              test: "if ((%6$s > 0) && (%8$s / %7$s < %10$s)) false; else true;"
+              fail: "\"SMALLFILES: %1$s\t%2$s\t[:%4$s]\t%5$s\t%6$s\t%7$s\t%8$s\t\" + java.math.BigDecimal.valueOf((%8$s / %7$s)).divide(new java.math.BigDecimal(1024*1024), 3) + \"Mb\""
+              params: ["67108864"]
+  - type: "metastore.query"
+    active: true
+    name: "Table Partition Count"
+    queryDefinitionReference: "/hive_perf_queries.yaml"
+    errorFilename: "tbl_partition_count.err"
+    successFilename: "tbl_partition_count.txt"
+    metastoreQuery: "tbl_partition_count"
+    listingColumns: ["db_name" ,"tbl_name", "tbl_type", "num_of_partitions"]
+    resultMessageHeader: "***********************************************************"
+    resultMessageDetailTemplate: "Table %1$s.%2$s has %4$s partitions"

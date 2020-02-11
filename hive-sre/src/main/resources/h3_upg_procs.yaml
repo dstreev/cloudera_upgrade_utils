@@ -1,0 +1,123 @@
+processes:
+  - type: "dbSet"
+    active: true
+    name: "Hive 3 Upgrade Checks - Locations Scan"
+    errorFilename: h3_upgrade_loc_scan.err
+    successFilename: h3_upgrade_loc_scan.txt
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
+    pathsListingQuery: "tbl_part_locations"
+    checks:
+      - name: "Missing Directories"
+        invertCheck: false
+        pathCommand: "lsp -f path -t %5$s"
+        onErrorPathCommand: "mkdir -p %5$s"
+        reportOnResults: false
+        reportOnPath: true
+        processOnError: true
+        processOnSuccess: false
+  - type: "dbSet"
+    active: true
+    name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "h3_upgrade_filename_scan.err"
+    successFilename: "h3_upgrade_filename_scan.txt"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
+    pathsListingQuery: "tbl_mngd_non_acid_locations"
+    checks:
+      - name: "Bad Filename Format"
+        invertCheck: true
+        pathCommand: "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)\" -i -Fe file -v -f parent,file %5$s"
+        onErrorPathCommand: "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
+        onErrorRecordCommand: "# Bad filename %2$s in directory: %1$s "
+        reportOnResults: true
+        reportOnPath: true
+        processOnError: true
+        processOnSuccess: false
+  - type: "dbSet"
+    active: true
+    name: "Hive 3 Upgrade Checks - Managed Table Migrations"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "managed_upgrade_2_acid.err"
+    successFilename: "managed_upgrade_2_acid.txt"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"tbl_location"]
+    pathsListingQuery: "managed_2_acid"
+    checks:
+      - name: "Ownership Check"
+        invertCheck: false
+        pathCommand: "lsp -f user -self %4$s"
+        onSuccessPathCommand: "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
+        onSuccessRecordCommand: "# Bad filename %2$s in directory: %1$s "
+        reportOnResults: false
+        reportOnPath: false
+        processOnError: false
+        processOnSuccess: true
+        checkCalculations:
+          ownershipCheck:
+            RECORDS:
+              test: "if (\"%5$s\".equals(\"%6$s\")) true; else false;"
+              pass: "\"Table is OWNED by '%6$s' and not currently ACID.\\n
+                    This table will be migrated unless changed.\\n
+                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              fail: "\"Table is NOT owned by '%6$s' and NOT currently ACID.\\n
+                    This table 'could' be migrated to an ACID table unless changed.\\n
+                    Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
+                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              params: ["hive"]
+  - type: "dbSet"
+    active: true
+    name: "Hive 3 Upgrade Checks - Compaction Check"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "managed_compactions.err"
+    successFilename: "managed_compactions.txt"
+    dbListingQuery: "db_tbl_count"
+    listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location"]
+    pathsListingQuery: "managed_tbl_locations"
+    checks:
+      - name: "Compaction Check"
+        invertCheck: true
+        pathCommand: "lsp -R -F .*delta_.* -t -sp -f path %5$s"
+        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
+        reportOnResults: false
+        reportOnPath: false
+        processOnError: false
+        processOnSuccess: true
+        checkCalculations:
+          partitionCheck:
+            PATH:
+              test: "if (\"%4$s\".equals(\"%6$s\")) true; else false;"
+              pass: "\"Table is OWNED by '%6$s' and not currently ACID.\\n
+                    This table will be migrated unless changed.\\n
+                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              fail: "\"Table is NOT owned by '%6$s' and NOT currently ACID.\\n
+                    This table 'could' be migrated to an ACID table unless changed.\\n
+                    Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
+                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              params: ["hive"]
+
+  - type: "metastore.query"
+    active: true
+    name: "Questionable Serde's Check"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "hive_questionable_serde.err"
+    successFilename: "hive_questionable_serde.txt"
+    metastoreQuery: "questionable_serdes"
+    listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
+    resultMessageHeader: "***********************************************************\n
+  Listed tables should be review to ensure the Serde is still available.\n
+  Missing Serde's can disrupt a Hive Upgrade/Migration Process\n
+  ***********************************************************"
+    resultMessageDetailTemplate: "%1$s.%2$s is using a non-base serde '%3$s'"
+  - type: "metastore.query"
+    active: true
+    name: "Managed Table Shadows"
+    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    errorFilename: "managed_tbl_shadows.err"
+    successFilename: "managed_tbl_shadows.txt"
+    metastoreQuery: "managed_tbl_shadows"
+    listingColumns: ["db_name" ,"tbl_name", "tbl_location"]
+    resultMessageHeader: "***********************************************************"
+    resultMessageDetailTemplate: "Table %1$s.%2$s at location %3$s is sharing location with another managed table."

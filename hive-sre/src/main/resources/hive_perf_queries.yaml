@@ -1,0 +1,71 @@
+query_definitions:
+  tbl_partition_count:
+    statement: "WITH
+      BASE AS
+      (
+      SELECT
+      D.NAME             AS DB_NAME ,
+      D.DB_LOCATION_URI  AS DB_DEFAULT_LOC ,
+      D.OWNER_NAME       AS DB_OWNER ,
+      T.TBL_ID           AS TBL_ID ,
+      T.TBL_NAME         AS TBL_NAME ,
+      T.OWNER            AS TBL_OWNER ,
+      T.TBL_TYPE         AS TBL_TYPE ,
+      S.INPUT_FORMAT     AS TBL_INPUT_FORMAT ,
+      S.OUTPUT_FORMAT    AS TBL_OUTPUT_FORMAT ,
+      S.LOCATION         AS TBL_LOCATION ,
+      S.NUM_BUCKETS      AS TBL_NUM_BUCKETS ,
+      SER.SLIB           AS TBL_SERDE_SLIB ,
+      PARAMS.PARAM_KEY   AS TBL_PARAM_KEY ,
+      PARAMS.PARAM_VALUE AS TBL_PARAM_VALUE ,
+      P.PART_ID          AS PART_ID ,
+      P.PART_NAME        AS PART_NAME ,
+      PS.INPUT_FORMAT    AS PART_INPUT_FORMAT ,
+      PS.OUTPUT_FORMAT   AS PART_OUTPUT_FORMAT,
+      PS.LOCATION        AS PART_LOCATION ,
+      PS.NUM_BUCKETS     AS PART_NUM_BUCKETS ,
+      PSER.SLIB          AS PART_SERDE_SLIB
+      FROM
+      DBS D
+      INNER JOIN
+      TBLS T
+      ON
+      D.DB_ID = T.DB_ID
+      LEFT OUTER JOIN
+      SDS S
+      ON
+      T.SD_ID = S.SD_ID
+      LEFT OUTER JOIN
+      SERDES SER
+      ON
+      S.SERDE_ID = SER.SERDE_ID
+      LEFT OUTER JOIN
+      TABLE_PARAMS PARAMS
+      ON
+      T.TBL_ID = PARAMS.TBL_ID
+      LEFT OUTER JOIN
+      PARTITIONS P
+      ON
+      T.TBL_ID = P.TBL_ID
+      LEFT OUTER JOIN
+      SDS PS
+      ON
+      P.SD_ID = PS.SD_ID
+      LEFT OUTER JOIN
+      SERDES PSER
+      ON
+      PS.SERDE_ID = PSER.SERDE_ID
+      )
+      SELECT DISTINCT
+      db_name ,
+      tbl_name ,
+      tbl_type,
+      count(part_id) as num_of_partitions
+      FROM
+      BASE b
+      GROUP BY
+      db_name, tbl_name, tbl_type
+      HAVING
+      num_of_partitions > 0
+      ORDER BY
+      num_of_partitions DESC"

@@ -1,0 +1,19 @@
+metastore_direct:
+  uri: "FULL_DB_URL"
+  connectionProperties:
+    user: "DB_USER"
+    password: "DB_PASSWORD"
+  connectionPool:
+    min: 3
+    max: 5
+hs2:
+  uri: "<OPTIONAL>"
+  connectionPool:
+    min: 3
+    max: 5
+parallelism: 4
+queries:
+  db_tbl_count:
+    parameters:
+      dbs:
+        override: "%"
