@@ -19,6 +19,39 @@ SERVICES = {}
 CONTROL = {}
 glayout = {}
 
+# A bitmask to associate to a hostgroup
+componentDict = {}
+
+
+def addToComponentDictionary(item):
+    components = item["host_components"]
+    for component in components:
+        for ckey, cvalue in component.items():
+            if ckey == "HostRoles":
+                for hkey, hvalue in cvalue.items():
+                    if hkey == "component_name":
+                        if hvalue not in componentDict.keys():
+                            dl = len(componentDict)
+                            if dl == 0:
+                                componentDict[hvalue] = 1
+                            elif dl == 1:
+                                componentDict[hvalue] = 2
+                            else:
+                                componentDict[hvalue] = 2**dl
+
+
+def getHostGroup(item):
+    location = 0
+    components = item["host_components"]
+    for component in components:
+        for ckey, cvalue in component.items():
+            if ckey == "HostRoles":
+                for hkey, hvalue in cvalue.items():
+                    if hkey == "component_name":
+                        location = location | componentDict[hvalue]
+    return location
+
+
 def buildFieldPathFromAbbr(abbrs):
     fields = []
     paths = {}
@@ -54,6 +87,7 @@ def aggregateComponents(item):
 
 
 def is_component(item, componentName):
+    # addToComponentDictionary(componentName)
     components = item["host_components"]
     for component in components:
         for ckey, cvalue in component.items():
@@ -61,20 +95,21 @@ def is_component(item, componentName):
                 for hkey, hvalue in cvalue.items():
                     if hkey == "component_name":
                         if hvalue == componentName:
-                            return True
-    return False
+                            return True, componentDict[hvalue]
+    return False, 0
 
 
 def is_componentX(item, componentName):
-    if is_component(item, componentName):
+    found, location = is_component(item, componentName)
+    if found:
         return 'X'
     else:
         return ''
 
 
-def loadControl ( controlFile ):
+def loadControl(controlFile):
     global CONTROL
-    CONTROL = json.loads(open (controlFile).read())
+    CONTROL = json.loads(open(controlFile).read())
 
 
 def get_info(layoutFile):
@@ -107,7 +142,7 @@ def report(layoutFile):
     count_types['Storage'] = ['DATANODE']
     count_types['Compute'] = ['NODEMANAGER']
     count_types['Master'] = ['NAMENODE', 'RESOURCEMANAGER', 'OOZIE_SERVER', 'HIVE_SERVER', 'HIVE_SERVER_INTERACTIVE',
-                'HIVE_METASTORE']
+                             'HIVE_METASTORE']
     count_types['Kafka'] = ['KAFKA_BROKER']
 
     rpt_count_type(count_types)
@@ -184,7 +219,8 @@ def gen_hosttable(items):
                                           'mount': [diskMount.encode("utf-8")],
                                           'format': [diskFormat.encode("utf-8")]}
                 record.append(disks)
-                hostRecord = {'os_type': hostItem["os_type"], 'cpu_count': hostItem["cpu_count"], 'total_mem': hostItem["total_mem"] / (1024 * 1024),
+                hostRecord = {'os_type': hostItem["os_type"], 'cpu_count': hostItem["cpu_count"],
+                              'total_mem': hostItem["total_mem"] / (1024 * 1024),
                               'rack': hostItem["rack_info"], 'components': components, 'disks': disks}
 
             except:
@@ -219,6 +255,7 @@ def buildHostMatrix():
     for item in items:
         # Build total component counts for cluster while examining each item.
         aggregateComponents(item)
+        addToComponentDictionary(item)
 
         hostItem = item["Hosts"]
 
@@ -227,19 +264,24 @@ def buildHostMatrix():
         host['Hostname'] = hostItem['host_name']
         host['OS'] = hostItem['os_type']
         host['vC'] = hostItem['cpu_count']
-        host['Gb'] = hostItem['total_mem'] / (1024*1024)
+        host['Gb'] = hostItem['total_mem'] / (1024 * 1024)
         host['Rack'] = hostItem['rack_info']
 
         components = {}
+        hostGroup = 0
         for componentGroup in CONTROL:
             components[componentGroup] = {}
             for cKey in CONTROL[componentGroup]:
                 # print cKey
                 # print CONTROL[componentGroup][cKey]
-                if is_component(item, cKey):
+                found, location = is_component(item, cKey)
+                if location > 0:
+                    hostGroup = hostGroup | location
+                if found:
                     cValue = CONTROL[componentGroup][cKey]
                     components[componentGroup].update({cKey: {'abbr': cValue['abbr']}})
         host['components'] = components
+        host['HostGroupMask'] = getHostGroup(item)
 
         disks = {}
         # Loop through the disks
@@ -265,14 +307,32 @@ def buildHostMatrix():
         HOSTS[hostItem['host_name']] = host
 
 
+def calcHostGroupBitMasks(hostgroups):
+    for hostgroup in hostgroups:
+        hgbitmask = 0
+        for component in hostgroup['components']:
+            try:
+                hgbitmask = hgbitmask | componentDict[component['name']]
+            except:
+                print 'Component in Host that is not in the Layouts: ' + component['name']
+        hostgroup['HostGroupMask'] = hgbitmask
+    print "hello"
+
+
 def mergeConfigsWithHostMatrix(blueprintFile):
     blueprint = json.loads(open(blueprintFile).read())
     configurations = blueprint['configurations']
+    hostgroups = blueprint['host_groups']
+    calcHostGroupBitMasks(hostgroups)
+
     # Loop through Hosts
     for hostKey in HOSTS:
         # Retrieve Host
         host = HOSTS[hostKey]
         # print host
+        for hostgroup in hostgroups:
+            if host['HostGroupMask'] == hostgroup['HostGroupMask']:
+                host['host_group'] = str(hostgroup['name'])
         # Loop Host Components
         for cGroup in host['components']:
             # Proceed if component has a setting.
@@ -288,6 +348,10 @@ def mergeConfigsWithHostMatrix(blueprintFile):
                         #  Cycle through the configs in the Control File
                         cfgSection = config['section']
                         # bpProperties = {}
+                        hostgroup = []
+                        for shg in hostgroups:
+                            if shg['name'] == host['host_group']:
+                                hostgroup = shg
                         for bpSections in configurations:
                             if bpSections.keys()[0] == cfgSection:
                                 # print "Config Section: " + cfgSection
@@ -305,7 +369,7 @@ def mergeConfigsWithHostMatrix(blueprintFile):
                                             pValue = int(pValue)
                                         except:
                                             # It could have a trailing char for type
-                                            if localProperty in ['heap','off.heap']:
+                                            if localProperty in ['heap', 'off.heap']:
                                                 pValue = int(pValue[:-1])
                                         if isinstance(pValue, int):
                                             # Account for some mem settings in Kb
@@ -317,6 +381,39 @@ def mergeConfigsWithHostMatrix(blueprintFile):
                                             host['components'][cGroup][component][localProperty] = pValue
                                     except:
                                         print "Missing from Blueprint: " + component + ":" + cfgSection + ":" + targetProperty
+                                    # print pValue
+                                break
+                        #  go through the overrides
+                        hostgroupCfg = hostgroup['configurations']
+                        for bpSections in hostgroupCfg:
+                            if bpSections.keys()[0] == cfgSection:
+                                # print "Config Section: " + cfgSection
+                                bpProperties = bpSections.get(cfgSection)
+                                #  Lookup Configuration in BP
+                                for localProperty in config['configs']:
+                                    # Get the Target BP Property to Lookup
+                                    targetProperty = config['configs'][localProperty]
+                                    # Find property in BP
+                                    # print 'Local Prop: ' + localProperty + '\tTarget Prop: ' + targetProperty
+                                    try:
+                                        pValue = bpProperties[targetProperty]
+                                        # print 'BP Property Value: ' + pValue
+                                        try:
+                                            pValue = int(pValue)
+                                        except:
+                                            # It could have a trailing char for type
+                                            if localProperty in ['heap', 'off.heap']:
+                                                pValue = int(pValue[:-1])
+                                        if isinstance(pValue, int):
+                                            # Account for some mem settings in Kb
+                                            if localProperty in ['heap', 'off.heap'] and pValue > 1000000:
+                                                host['components'][cGroup][component][localProperty] = pValue / 1024
+                                            else:
+                                                host['components'][cGroup][component][localProperty] = pValue
+                                        else:
+                                            host['components'][cGroup][component][localProperty] = pValue
+                                    except:
+                                        print "No override for: " + component + ":" + cfgSection + ":" + targetProperty
                                     # print pValue
                                 break
 
@@ -345,7 +442,8 @@ def rpt_mem():
                                     # No off.heap information
                                     pass
                             except:
-                                print 'No HEAP Information->' + host['Hostname'] + ':' + component + ':' + hostGroupKey + ':' + hostComponentKey
+                                print 'No HEAP Information->' + host[
+                                    'Hostname'] + ':' + component + ':' + hostGroupKey + ':' + hostComponentKey
                             # print hostComponentKey
                             if len(mem) > 0:
                                 mem_rec['Components'][hostComponentKey] = mem
@@ -399,9 +497,9 @@ def rpt_hosttable():
     fields_base = ['Hostname', 'OS', 'vC', 'Gb', 'Rack']
 
     paths, bfields = buildFieldPathFromAbbr(['KX', 'NN', 'JN', 'ZKFC', 'DN', 'RM', 'NM',
-                                            'ZK', 'HMS', 'HS2', 'HS2i', 'OZ', 'HM', 'RS',
-                                            'KB', 'NF', 'LV2', 'S2H', 'DR', 'DO', 'DB',
-                                            'DM', 'DH', 'DH'])
+                                             'ZK', 'HMS', 'HS2', 'HS2i', 'OZ', 'HM', 'RS',
+                                             'KB', 'NF', 'LV2', 'S2H', 'DR', 'DO', 'DB',
+                                             'DM', 'DH', 'DH'])
 
     fields = fields_base + bfields
 
@@ -459,7 +557,8 @@ def rpt_count_type(types):
         for item in items:
             found = 0
             for comp in types[category]:
-                if is_component(item, comp):
+                componentFound, hgbitmask = is_component(item, comp)
+                if componentFound:
                     found += 1
                     host = item['Hosts']
                     mem = host['total_mem'] / (1024 * 1024)
@@ -478,7 +577,6 @@ def rpt_count_type(types):
                 if found == 1:
                     found += 1;
                     type_rec['Count'] += 1
-
 
     pprinttable2(table, fields)
 
