@@ -66,6 +66,6 @@ query_definitions:
       GROUP BY
       db_name, tbl_name, tbl_type
       HAVING
-      num_of_partitions > 0
+      count(part_id) > 0
       ORDER BY
       num_of_partitions DESC"
