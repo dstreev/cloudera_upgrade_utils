@@ -54,7 +54,7 @@ query_definitions:
                  WHERE
                      dbs.name LIKE ?
                  GROUP BY
-                     db_name"
+                     name"
     parameters:
       dbs:
         initial: "%"
