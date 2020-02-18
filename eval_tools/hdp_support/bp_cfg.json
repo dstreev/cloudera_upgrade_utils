@@ -33,7 +33,7 @@
           "fs.protected.directories",
           "fs.defaultFS"
         ],
-        "skip": []
+        "skip": ["hadoop.http.authentication.public.key.pem"]
       }
     },
     {
@@ -84,7 +84,7 @@
           "dfs.datanode.kerberos.principal",
           "dfs.datanode.data.dir"
         ],
-        "skip": []
+        "skip": ["hadoop.http.authentication.public.key.pem"]
       }
     },    {
       "hive-env": {
@@ -190,7 +190,7 @@
           "mapreduce.jobhistory.webapp.spnego-principal",
           "mapreduce.jobhistory.address"
         ],
-        "skip": []
+        "skip": ["hadoop.http.authentication.public.key.pem"]
       }
     },
     {
@@ -199,7 +199,7 @@
           "oozie.base.url",
           "local.realm"
         ],
-        "skip": []
+        "skip": ["oozie.authentication.public.key.pem"]
       }
     },
     {
@@ -322,7 +322,7 @@
           "yarn.log.server.web-service.url",
           "yarn.log.server.url"
         ],
-        "skip": []
+        "skip": ["hadoop.http.authentication.public.key.pem"]
       }
     },
     {

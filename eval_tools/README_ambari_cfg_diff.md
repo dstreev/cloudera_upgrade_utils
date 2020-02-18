@@ -14,7 +14,7 @@ Options:
   -c CHECK, --check-file=CHECK
                         The file (check-file) that you want to compare.
   -o OUTPUT, --output=OUTPUT
-                        The output report file.
+                        The output report file will be in 'markdown'.
 ```
                         
 ## Uses for this tool

@@ -224,3 +224,125 @@ def buildtable2(rows, fields):
         str_list.append(headerRowSeparator)
         # print headerRowSeparator
     return str_list
+
+
+def writehtmltable(rows, fields, outputFile):
+    output = buildhtmltable(rows, fields)
+    for line in output:
+        outputFile.write(line)
+
+
+def pprinthtmltable(rows, fields):
+    output = buildhtmltable(rows, fields)
+    for line in output:
+        print(line)
+
+
+def buildhtmltable(rows, fields):
+    str_list = []
+
+    if len(rows) > 0:
+        # headers = HEADER._fields
+        # headers = HEADER
+        # lens = []
+        # for field in fields:
+        #     lens.append(len(field))
+        #
+        # for row in rows:
+        #     inc = 0
+        #     for field in fields:
+        #         try:
+        #             value = row[field]
+        #             if isinstance(row[field], (int, float, long)):
+        #                 if lens[inc] < 4:
+        #                     lens[inc] = 4
+        #                 if lens[inc] < len(str(row[field])):
+        #                     lens[inc] = len(str(row[field]))
+        #                 # if lens[inc] < 16:
+        #                 #     lens[inc] = 16
+        #             elif isinstance(row[field], (list, tuple)):
+        #                 size = 2
+        #                 for i in range(len(row[field])):
+        #                     size += len(row[field][i]) + 3
+        #                 if size > lens[inc]:
+        #                     lens[inc] = size
+        #             elif isinstance(row[field], (dict)):
+        #                 size = 2
+        #                 for i in range(len(row[field])):
+        #                     size += len(row[field]) + 3
+        #                 if size > lens[inc]:
+        #                     lens[inc] = size
+        #             else:
+        #                 if row[field] is not None and (len(row[field]) > lens[inc]):
+        #                     lens[inc] = len(row[field])
+        #         except:
+        #             pass
+        #         inc += 1
+        str_list.append('<table class="TFtable">')
+        headerRowSeparator = '|'
+        headerRow = '<tr>'
+        loc = 0
+        for field in fields:
+            headerRow = headerRow + '<th>'
+            # try:
+            #     # for loc in range(len(fields)):
+            #     if isinstance(rows[0][field], int) or isinstance(rows[0][field], float) or isinstance(rows[0][field], long):
+            #         headerRowSeparator = headerRowSeparator + '---:|'
+            #     else:
+            #         headerRowSeparator = headerRowSeparator + ':---|'
+            # except:
+            #     headerRowSeparator = headerRowSeparator + ':---|'
+            # loc += 1
+            headerRow = headerRow + field
+            headerRow = headerRow + '</th>'
+
+        headerRow = headerRow + '</tr>'
+
+        str_list.append(headerRow)
+        # str_list.append(headerRowSeparator)
+
+        for row in rows:
+            inc = 0
+            recordRow = '<tr> '
+            offset = 0
+            for field in fields:
+                recordRow = recordRow + '<td>'
+                try:
+                    value = str(row[field])
+                    # if isinstance(row[field], int) or isinstance(row[field], float) or isinstance(row[field], long):
+                    #     recordRow = recordRow + "| " + right(row[field], lens[inc])
+                    if isinstance(row[field], (dict)):
+                        # recordRow = recordRow + '| '
+                        # offset = len(recordRow)
+                        it = 0
+                        if len(row[field]) > 0:
+                            recordRow = recordRow + '<table class="TFtable">'
+                            for item in row[field]:
+                                recordRow = recordRow + '<tr><td>'
+                                dictItem = str(item) + ':' + str(row[field][item])
+                                if it == len(row[field]) - 1:
+                                    recordRow = recordRow + dictItem + ' <br> '
+                                else:
+                                    recordRow = recordRow + dictItem + ' <br> '
+                                it += 1
+                                recordRow = recordRow + '</td></tr>'
+                            recordRow = recordRow + '</table>'
+                        # else:
+                        #     recordRow = recordRow + ' | '
+                    else:
+                        recordRow = recordRow + value
+                except:
+                    pass
+
+                recordRow = recordRow + '</td>'
+
+                inc += 1
+            recordRow = recordRow + '</tr>'
+            # recordRow = recordRow + ' | '
+
+            str_list.append(recordRow)
+            # print recordRow
+        str_list.append('</table>')
+        # str_list.append(headerRowSeparator)
+        # print headerRowSeparator
+    return str_list

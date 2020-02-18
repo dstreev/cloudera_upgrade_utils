@@ -26,4 +26,5 @@ Options:
   -l AMBARI_LAYOUT, --ambari-layout=AMBARI_LAYOUT
                         .
   -b AMBARI_BLUEPRINT, --ambari-blueprint=AMBARI_BLUEPRINT
+  -o OUTPUT_DIR, --output_dir
 ```

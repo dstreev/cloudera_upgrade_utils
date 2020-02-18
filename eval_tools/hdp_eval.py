@@ -8,9 +8,11 @@ import optparse
 import logging
 import sys
 import json
-from common import pprinttable, pprinttable2
+from common import pprinttable, pprinttable2, pprinthtmltable, writehtmltable
+from datetime import date
 
-VERSION = "0.1.2"
+
+VERSION = "0.1.4"
 
 logger = logging.getLogger('HDP_Eval')
 
@@ -18,6 +20,10 @@ HOSTS = {}
 SERVICES = {}
 CONTROL = {}
 glayout = {}
+
+layout_file = ''
+bp_file = ''
+run_date = ''
 
 # A bitmask to associate to a hostgroup
 componentDict = {}
@@ -121,10 +127,71 @@ def get_info(layoutFile):
     return hosttable, compute_count, other_count
 
 
-def report(layoutFile):
-    rpt_services()
+def appendCSS(output):
+    output.write('<style type="text/css">.TFtable{    width:100%;border-collapse:collapse;}.TFtable td{    padding:7px; border:#332200 1px solid;}')
+    # /* provide some minimal visual accomodation for IE8 and below */
+    output.write('    .TFtable tr{    background: #FFF7E6;}')
+    # /*  Define the background color for all the ODD background rows  */
+    output.write('    .TFtable tr:nth-child(odd){    background: #FFE6B3;}')
+    # /*  Define the background color for all the EVEN background rows  */
+    output.write('.TFtable tr:nth-child(even){    background: ##FF9966;}</style>')
 
-    rpt_hosttable()
+
+def report(layoutFile, output_dir):
+
+    index_filename = output_dir + '/index.html'
+    index_output = open(index_filename, 'w')
+    writeHeader(index_output)
+    index_output.write('<ol>')
+    index_output.write('<li><a href="./services.html">Services</a></li>')
+    index_output.write('<li><a href="./count_types.html">Count Types</a></li>')
+    index_output.write('<li><a href="./hosttable.html">Host Table</a></li>')
+    index_output.write('<li><a href="./hoststorage.html">Host Storage</a></li>')
+    index_output.write('<li><a href="./mem_alloc.html">Host Memory Allocation</a></li>')
+    index_output.write('<li><a href="./hosts.json">Hosts json</a></li>')
+    index_output.write('</ol>')
+    index_output.close()
+
+    services_filename = output_dir + '/services.html'
+    services_output = open(services_filename, 'w')
+    appendCSS(services_output)
+    writeHeader(services_output)
+    rpt_services(services_output)
+    services_output.close()
+
+    count_types = {}
+    count_types['Storage'] = ['DATANODE']
+    count_types['Compute'] = ['NODEMANAGER']
+    count_types['Master'] = ['NAMENODE', 'RESOURCEMANAGER', 'OOZIE_SERVER', 'HIVE_SERVER', 'HIVE_SERVER_INTERACTIVE',
+                             'HIVE_METASTORE']
+    count_types['Kafka'] = ['KAFKA_BROKER']
+
+
+    count_types_filename = output_dir + '/count_types.html'
+    count_types_output = open(count_types_filename, 'w')
+    appendCSS(count_types_output)
+    writeHeader(count_types_output)
+    rpt_count_type(count_types, count_types_output)
+    count_types_output.close()
+
+
+    mem_alloc_filename = output_dir + '/mem_alloc.html'
+    mem_alloc_output = open(mem_alloc_filename, 'w')
+    appendCSS(mem_alloc_output)
+    writeHeader(mem_alloc_output)
+    rpt_mem_allocations(mem_alloc_output)
+    mem_alloc_output.close()
+
+    # rpt_mem_allocations()
+
+    hosttable_filename = output_dir + '/hosttable.html'
+    hosttable_output = open(hosttable_filename, 'w')
+    appendCSS(hosttable_output)
+    writeHeader(hosttable_output)
+    rpt_hosttable(hosttable_output)
+    hosttable_output.close()
+
+    # rpt_hosttable()
 
     # print ''
     # print '======================================='
@@ -135,27 +202,29 @@ def report(layoutFile):
     # print ''
 
     # TODO: Get Memory Settings and use to find over allocated Hosts.
+    hoststorage_filename = output_dir + '/hoststorage.html'
+    hoststorage_output = open(hoststorage_filename, 'w')
+    appendCSS(hoststorage_output)
+    writeHeader(hoststorage_output)
+    rpt_hoststorage(hoststorage_output)
+    hoststorage_output.close()
 
-    rpt_hoststorage()
+    # rpt_hoststorage()
 
-    count_types = {}
-    count_types['Storage'] = ['DATANODE']
-    count_types['Compute'] = ['NODEMANAGER']
-    count_types['Master'] = ['NAMENODE', 'RESOURCEMANAGER', 'OOZIE_SERVER', 'HIVE_SERVER', 'HIVE_SERVER_INTERACTIVE',
-                             'HIVE_METASTORE']
-    count_types['Kafka'] = ['KAFKA_BROKER']
+    # print ''
+    # print '======================================='
+    # print '  Host Details'
+    # print '---------------------------------------'
 
-    rpt_count_type(count_types)
+    hostdump_filename = output_dir + '/hosts.json'
+    hostdump_output = open(hostdump_filename, 'w')
+    # appendCSS(hostdump_output)
+    hostdump_output.write(json.dumps(HOSTS, indent=2, sort_keys=True))
+    hostdump_output.close()
 
-    rpt_mem()
-
-    print ''
-    print '======================================='
-    print '  Host Details'
-    print '---------------------------------------'
-    print json.dumps(HOSTS, indent=2, sort_keys=True)
-    print '======================================='
-    print ''
+    # print json.dumps(HOSTS, indent=2, sort_keys=True)
+    # print '======================================='
+    # print ''
 
 
 def gen_hosttable(items):
@@ -226,7 +295,7 @@ def gen_hosttable(items):
             except:
                 host_detail = " No host detail information supplied"
         except:
-            print "No host information supplied"
+            hello = "No host information supplied"
 
         records.append(record)
 
@@ -314,9 +383,8 @@ def calcHostGroupBitMasks(hostgroups):
             try:
                 hgbitmask = hgbitmask | componentDict[component['name']]
             except:
-                print 'Component in Host that is not in the Layouts: ' + component['name']
+                check = 'Component in Host that is not in the Layouts: ' + component['name']
         hostgroup['HostGroupMask'] = hgbitmask
-    print "hello"
 
 
 def mergeConfigsWithHostMatrix(blueprintFile):
@@ -333,6 +401,13 @@ def mergeConfigsWithHostMatrix(blueprintFile):
         for hostgroup in hostgroups:
             if host['HostGroupMask'] == hostgroup['HostGroupMask']:
                 host['host_group'] = str(hostgroup['name'])
+                hosts = []
+                if 'hosts' in hostgroup.keys():
+                    hosts = hostgroup['hosts']
+                    hosts.append(host['Hostname'])
+                else:
+                    hosts.append(host['Hostname'])
+                    hostgroup['hosts'] = hosts
         # Loop Host Components
         for cGroup in host['components']:
             # Proceed if component has a setting.
@@ -380,7 +455,7 @@ def mergeConfigsWithHostMatrix(blueprintFile):
                                         else:
                                             host['components'][cGroup][component][localProperty] = pValue
                                     except:
-                                        print "Missing from Blueprint: " + component + ":" + cfgSection + ":" + targetProperty
+                                        missing = "Missing from Blueprint: " + component + ":" + cfgSection + ":" + targetProperty
                                     # print pValue
                                 break
                         #  go through the overrides
@@ -413,12 +488,14 @@ def mergeConfigsWithHostMatrix(blueprintFile):
                                         else:
                                             host['components'][cGroup][component][localProperty] = pValue
                                     except:
-                                        print "No override for: " + component + ":" + cfgSection + ":" + targetProperty
+                                        override = "No override for: " + component + ":" + cfgSection + ":" + targetProperty
                                     # print pValue
                                 break
+    return blueprint
 
 
-def rpt_mem():
+def rpt_mem_allocations(output):
+    output.write('\n<h2>Host Memory Allocations</h2>\n')
     fields = ['Hostname', 'Gb', 'Allocated', 'Components']
     mem_recs = []
     for hostKey in HOSTS:
@@ -442,7 +519,7 @@ def rpt_mem():
                                     # No off.heap information
                                     pass
                             except:
-                                print 'No HEAP Information->' + host[
+                                no_heap = 'No HEAP Information->' + host[
                                     'Hostname'] + ':' + component + ':' + hostGroupKey + ':' + hostComponentKey
                             # print hostComponentKey
                             if len(mem) > 0:
@@ -460,10 +537,11 @@ def rpt_mem():
                 total_mem += mem
         mem_rec['Allocated'] = total_mem / 1024
         mem_recs.append(mem_rec)
-    pprinttable2(mem_recs, fields)
+    writehtmltable(mem_recs, fields, output)
 
 
-def rpt_services():
+def rpt_services(output):
+    output.write('\n<h2>Service Counts</h2>\n')
     lcl_services = []
     fields = ['Service', 'Count']
     for service in SERVICES:
@@ -471,7 +549,7 @@ def rpt_services():
         lcl_service['Service'] = service
         lcl_service['Count'] = SERVICES[service]
         lcl_services.append(lcl_service)
-    pprinttable2(lcl_services, fields)
+    writehtmltable(lcl_services, fields, output)
 
 
 def get_hostbase(host, fields):
@@ -492,7 +570,8 @@ def populate_components(paths, hostComponents, hostRec):
             pass
 
 
-def rpt_hosttable():
+def rpt_hosttable(output):
+    output.write('\n<h2>Host Table</h2>\n')
     # master = datanode & compute
     fields_base = ['Hostname', 'OS', 'vC', 'Gb', 'Rack']
 
@@ -511,10 +590,11 @@ def rpt_hosttable():
 
         hosttable.append(hostRec)
 
-    pprinttable2(hosttable, fields)
+    writehtmltable(hosttable, fields, output)
 
 
-def rpt_hoststorage():
+def rpt_hoststorage(output):
+    output.write('\n<h2>Host Storage</h2>\n')
     fields_base = ['Hostname', 'vC', 'Gb', 'Rack']
 
     paths, bfields = buildFieldPathFromAbbr(['NN', 'JN', 'DN', 'ZK', 'KB', 'NF'])
@@ -532,10 +612,11 @@ def rpt_hoststorage():
 
         hosttable.append(hostRec)
 
-    pprinttable2(hosttable, fields)
+    writehtmltable(hosttable, fields, output)
 
 
-def rpt_count_type(types):
+def rpt_count_type(types, output):
+    output.write('\n<h2>Count Types</h2>\n')
     # layout = json.loads(open(layoutFile).read())
     items = glayout['items']
 
@@ -578,10 +659,12 @@ def rpt_count_type(types):
                     found += 1;
                     type_rec['Count'] += 1
 
-    pprinttable2(table, fields)
+    writehtmltable(table, fields, output)
 
 
-def rpt_totals(hosttable):
+def rpt_totals(hosttable, output):
+
+    output.write('\n<h2>Totals</h2>\n')
     totalFields = [[0, "Type"], [1, "Count"], [2, "OS"], [3, "CPU-Min"], [4, "CPU-Max"], [5, "Mem-Min"], [6, "Mem-Max"]]
     totalType = []
 
@@ -627,17 +710,36 @@ def rpt_totals(hosttable):
 
     totalType.append(computeNodes)
 
-    pprinttable(totalType, totalFields)
+    writehtmltable(totalType, totalFields, output)
+
+def writeHeader(output):
+    output.write('<table class="TFtable">')
+    output.write('<tr>')
+    output.write('<th>Date</th>')
+    output.write('<td>' + run_date + '</td>')
+    output.write('</tr><tr>')
+    output.write('<th>Blueprint</th>')
+    output.write('<td>' + bp_file + '</td>')
+    output.write('</tr><tr>')
+    output.write('<th>Layout</th>')
+    output.write('<td>' + layout_file + '</td>')
+    output.write('</tr><tr>')
+    output.write('</table>')
 
 
 def main():
     global cluster
     global glayout
+    global layout_file
+    global bp_file
+    global run_date
+
 
     parser = optparse.OptionParser(usage="usage: %prog [options]")
 
-    parser.add_option("-l", "--ambari-layout", dest="ambari_layout", help=".")
-    parser.add_option("-b", "--ambari-blueprint", dest="ambari_blueprint", help=".")
+    parser.add_option("-l", "--ambari-layout", dest="ambari_layout", help="Ambari Layout File")
+    parser.add_option("-b", "--ambari-blueprint", dest="ambari_blueprint", help="Ambari Blueprint File")
+    parser.add_option("-o", "--output-dir", dest="output_dir", help="Output Directory")
 
     (options, args) = parser.parse_args()
 
@@ -651,13 +753,35 @@ def main():
     loadControl(os.path.dirname(os.path.realpath(__file__)) + "/control.json")
 
     if options.ambari_layout:
+        layout_file = options.ambari_layout
         glayout = json.loads(open(options.ambari_layout).read())
         buildHostMatrix()
 
     if options.ambari_blueprint:
+        bp_file = options.ambari_blueprint
         mergeConfigsWithHostMatrix(options.ambari_blueprint)
 
-    report(options.ambari_layout)
+    run_date = str(date.today())
+
+    output_dir = ''
+    if options.output_dir:
+        output_dir = options.output_dir
+    else:
+        output_dir = './' + str(date.today()) + '_' + options.ambari_blueprint[:-5] + '_eval'
+
+    try:
+        os.stat(output_dir)
+    except:
+        os.mkdir(output_dir)
+
+    if options.ambari_blueprint:
+        newblueprint = mergeConfigsWithHostMatrix(options.ambari_blueprint)
+        new_bp_filename = output_dir + '/' + options.ambari_blueprint[:-5] + '_cm.json'
+        new_bp_output = open(new_bp_filename, 'w')
+        new_bp_output.write(json.dumps(newblueprint, indent=2, sort_keys=False))
+        new_bp_output.close()
+
+    report(options.ambari_layout, output_dir)
 
 
 main()

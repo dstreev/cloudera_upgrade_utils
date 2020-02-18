@@ -3343,7 +3343,7 @@
           "mapreduce.reduce.speculative" : "false",
           "mapreduce.output.fileoutputformat.compress.type" : "BLOCK",
           "mapreduce.task.io.sort.mb" : "2047",
-          "mapred.local.dir" : "/hadoop/mapred,/var/lib/docker/overlay2/06e51be0cc3fa04a1ed2cf040d04e51f607efcdebaafb667b6a3916659a089a0/merged/hadoop/mapred,/var/lib/docker/overlay2/0d54911915b71e30a6f79e3799e842244d67367bfcd4adf7423b517009dde43c/merged/hadoop/mapred,/var/lib/docker/overlay2/13a0633df3140a36a78c514c87bc46a28239a1d72d576e41952e774eea59546e/merged/hadoop/mapred,/var/lib/docker/overlay2/7c590106a8399cfb8bca2e6141b4f9113252fe039bf64b89d83f833975415363/merged/hadoop/mapred,/var/lib/docker/overlay2/aa504826164948d4aeba8c536e35a2393e5140e83b50f5d5058bf57584ed588c/merged/hadoop/mapred,/var/lib/docker/overlay2/da23e6d872b12cbb38b40b8f2d032d8f0b3e302c453b36e9d84684e2e6076b0d/merged/hadoop/mapred,/var/lib/docker/overlay2/de20f207ec7a105b4f8c4f3ffcb2f645017d99133d95a091ec7eef630e378fb6/merged/hadoop/mapred",
+          "mapred.local.dir" : "/hadoop/mapred",
           "mapreduce.cluster.administrators" : " hadoop",
           "mapreduce.reduce.shuffle.fetch.retry.timeout-ms" : "30000",
           "mapreduce.jobhistory.webapp.spnego-principal" : "HTTP/_HOST@STREEVER.LOCAL",

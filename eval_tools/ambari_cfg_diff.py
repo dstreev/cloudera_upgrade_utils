@@ -9,7 +9,7 @@ import json
 from dict_diff import dict_compare
 from datetime import date
 
-VERSION = "0.1.2"
+VERSION = "0.1.4"
 
 logger = logging.getLogger('Ambari_cfg_diff')
 
@@ -21,120 +21,146 @@ eval_file = open(appdir + '/hdp_support/bp_cfg.json', 'r')
 eval_cfg = json.load(eval_file)
 eval_sections = sorted(eval_cfg['evaluate_cfgs'])
 
-section_width=100
+section_width = 100
 
-part_sep = '{message:{fill}{align}{width}}\n'.format(
-    message='',
-    fill='-',
-    align='^',
-    width=section_width)
+part_sep = '***\n'
 
-part_title = ">>> %s <<<\n"
+
+# part_sep = '{message:{fill}{align}{width}}\n'.format(
+#     message='',
+#     fill='-',
+#     align='^',
+#     width=3)
+
+# part_title = ">>> %s <<<\n"
+
+
+def fix(text):
+    return text.replace('|', '\|<br>').replace(',', ',<br>').replace('_', '\_').replace('\n', '<br>').replace('*',
+                                                                                                          '\*').replace(
+        ';', ';<br>')
 
 
 def write(key, added, removed, modified, env_dep, same, output):
     output.write("\n\n")
-    output.write('{message:{fill}{align}{width}}\n'.format(
-        message='',
-        fill='=',
-        align='^',
-        width=section_width,
-    ))
-    output.write('{message:{fill}{align}{width}}\n'.format(
-        message=key,
-        fill=' ',
-        align='^',
-        width=section_width,
-    ))
-    output.write('{message:{fill}{align}{width}}\n'.format(
-        message='',
-        fill='=',
-        align='^',
-        width=section_width,
-    ))
+    # output.write('{message:{fill}{align}{width}}\n'.format(
+    #     message='',
+    #     fill='=',
+    #     align='^',
+    #     width=section_width,
+    # ))## For Configuration Sections
+    output.write('## [' + key + '](#forconfigurationsections)\n')
+    # output.write('## {message:{fill}{align}{width}}\n'.format(
+    #     message=key,
+    #     fill=' ',
+    #     align='<',
+    #     width=section_width,
+    # ))
+    # output.write('{message:{fill}{align}{width}}\n'.format(
+    #     message='',
+    #     fill='=',
+    #     align='^',
+    #     width=section_width,
+    # ))
 
     output.write(part_sep)
-    output.write('{message:{fill}{align}{width}}\n'.format(
-        message='\tADDITIONAL --> ('+key+')',
-        fill=' ',
-        align='<',
-        width=section_width,
-    ))
-    # output.write(part_title % ("Extras",))
-    output.write(part_sep)
+    if len(added) > 0:
+        output.write('{message:{fill}{align}{width}}\n'.format(
+            message='##### [ADDITIONAL ' + key + '](#forconfigurationsections)',
+            fill=' ',
+            align='<',
+            width=section_width,
+        ))
+        # output.write(part_title % ("Extras",))
+        # output.write(part_sep)
 
-    for akey in sorted(added):
-        if len(akey) <= (section_width/10*6):
-            output.write('{message:{fill}{align}{width}}'.format(
-                message=akey,
-                fill=' ',
-                align='<',
-                width=section_width/10*6,
-            ) + ': ' + added.get(akey) + '\n')
-        else:
-            output.write("%s : %s\n" % (akey, added.get(akey)))
-    output.write(part_sep)
-    output.write('{message:{fill}{align}{width}}\n'.format(
-        message='\tMISSING -----> ('+key+')',
-        fill=' ',
-        align='<',
-        width=section_width,
-    ))
-    output.write(part_sep)
+        output.write("| Property | Current Value |\n|:---|:---|\n")
+        for akey in sorted(added):
+            if len(akey) <= (section_width / 10 * 6):
+                output.write('| ' + akey + ' | ' + fix(added.get(akey)) + ' |\n')
+            else:
+                output.write("| %s | %s |\n" % (fix(akey), fix(added.get(akey))))
 
-    for rkey in sorted(removed):
-        if len(rkey) <= (section_width/10*6):
-            output.write('{message:{fill}{align}{width}}'.format(
-                message=rkey,
-                fill=' ',
-                align='<',
-                width=section_width/10*6,
-            ) + ': ' + removed.get(rkey) + '\n')
-        else:
-            output.write("%s : %s\n" % (rkey, removed.get(rkey)))
+    # output.write(part_sep)
+    if len(removed) > 0:
+        output.write('{message:{fill}{align}{width}}\n'.format(
+            message='##### [MISSING ' + key + '](#forconfigurationsections)',
+            fill=' ',
+            align='<',
+            width=section_width,
+        ))
+        # output.write(part_sep)
 
-    output.write(part_sep)
-    output.write('{message:{fill}{align}{width}}\n'.format(
-        message='\tDIFFER ------> ('+key+')',
-        fill=' ',
-        align='<',
-        width=section_width,
-    ))
-    output.write(part_sep)
-    for mkey in sorted(modified):
-        output.write("%s\n\t\tref    : %s\n\t\tcheck  : %s\n" % (mkey, modified[mkey][0], modified[mkey][1]))
+        output.write("| Property | Missing Value |\n|:---|:---|\n")
 
-    output.write(part_sep)
-    output.write('{message:{fill}{align}{width}}\n'.format(
-        message='\tENV. DIFF ---> ('+key+')',
-        fill=' ',
-        align='<',
-        width=section_width,
-    ))
-    output.write(part_sep)
-    for ekey in sorted(env_dep):
-        output.write("%s\n\t\tref    : %s\n\t\tcheck  : %s\n" % (ekey, env_dep[ekey][0], env_dep[ekey][1]))
-    output.write(part_sep)
-    output.write('{message:{fill}{align}{width}}\n'.format(
-        message='\tMATCHED -----> ('+key+')',
-        fill=' ',
-        align='<',
-        width=section_width,
-    ))
-    output.write(part_sep)
-    for item in sorted(same):
-        output.write("%s\n" % (item,))
+        for rkey in sorted(removed):
+            if len(rkey) <= (section_width / 10 * 6):
+                output.write('| ' + rkey + ' | ' + fix(removed.get(rkey)) + ' |\n')
+            else:
+                output.write("| %s | %s |\n" % (rkey, fix(removed.get(rkey))))
+
+    # output.write(part_sep)
+    if len(modified) > 0:
+        output.write('{message:{fill}{align}{width}}\n'.format(
+            message='##### [DIFF ' + key + '](#forconfigurationsections)',
+            fill=' ',
+            align='<',
+            width=section_width,
+        ))
+        # output.write(part_sep)
+        output.write("<table><tr><th>Property</th><th>Reference Value</th><th>Check Value</th><tr>")
+        # output.write("| Property | Reference Value | Check Value |\n|:---|:---|:---|\n")
+
+        for mkey in sorted(modified):
+            output.write('<tr><td>' + mkey + '</td>\n<td>' +
+                         fix(modified[mkey][0]) + '</td>\n<td>' +
+                         fix(modified[mkey][1]) + '</td></tr>\n')
+            # output.write('| ' + mkey + ' | ' + modified[mkey][0].replace('\n', ' <br>').replace('|', '&#124') + ' | ' +
+            #              modified[mkey][1].replace('\n', ' <br>').replace('|', '&#124') + ' |\n')
+        output.write("</table>\n")
+
+    # output.write(part_sep)
+    if len(env_dep) > 0:
+        output.write('{message:{fill}{align}{width}}\n'.format(
+            message='##### [ENV. DIFF ' + key + '](#forconfigurationsections)',
+            fill=' ',
+            align='<',
+            width=section_width,
+        ))
+        # output.write(part_sep)
+        output.write("| Property | Reference Value | Check Value |\n|:---|:---|:---|\n")
+
+        for ekey in sorted(env_dep):
+            output.write('| ' + ekey + ' | ' + fix(env_dep[ekey][0]) + ' | ' +
+                         fix(env_dep[ekey][1]) + ' |\n')
+            # output.write("| %s | %s | %s |\n" % (ekey, env_dep[ekey][0], env_dep[ekey][1]))
+
+    # output.write(part_sep)
+    if len(same) > 0:
+        output.write('{message:{fill}{align}{width}}\n'.format(
+            message='##### [SAME ' + key + '](#forconfigurationsections)',
+            fill=' ',
+            align='<',
+            width=section_width,
+        ))
+        # output.write(part_sep)
+        output.write("| Property |\n|:---|\n")
+
+        for item in sorted(same):
+            output.write("| %s |\n" % (item,))
+
+    output.write("\n")
 
 
 def compare(referencebp, checkbp, output):
-    output.write("\n")
-    output.write("This is a comparison of the 'reference' blueprint and the 'check' blueprint.\n")
-    output.write(" The output will include 5 sections:\n")
-    output.write("  ADDITIONAL : Keys present in the 'check' blueprint and not in the 'reference' blueprint.\n")
-    output.write("  MISSING    : Keys missing from the 'check' blueprint, compared to the 'reference' blueprint.\n")
-    output.write("  DIFFER     : Keys the differ between the 'check' and 'reference' blueprint.\n")
-    output.write("  ENV. DIFF  : Keys that are in both blueprints, but differ mostly due to environment.\n")
-    output.write("  MATCHED    : Keys that match between the two blueprints.\n")
+    output.write("# Ambari Configuration Diff Tool\n")
+    output.write("> This is a comparison of the 'reference' blueprint and the 'check' blueprint.\n")
+    output.write(" The output will include 5 parts for each section examined:\n")
+    output.write(" - ADDITIONAL : Keys present in the 'check' blueprint and not in the 'reference' blueprint.\n")
+    output.write(" - MISSING    : Keys missing from the 'check' blueprint, compared to the 'reference' blueprint.\n")
+    output.write(" - DIFFER     : Keys the differ between the 'check' and 'reference' blueprint.\n")
+    output.write(" - ENV. DIFF  : Keys that are in both blueprints, but differ mostly due to environment.\n")
+    output.write(" - SAME       : Keys that match between the two blueprints.\n")
     output.write("\n")
 
     referencebpfile = open(referencebp, 'r')
@@ -151,56 +177,74 @@ def compare(referencebp, checkbp, output):
     for eSection in eval_sections:
         for eKey in eSection:
             eSections.append(eKey)
-    output.write("For Configuration Sections:\n\t")
-    output.write("\n\t".join(eSections))
-    output.write("\n\n")
+    output.write("## For Configuration Sections\n")
+    output.write('| Section | Added | Missing | Diff | Env Diff | Same |\n')
+    output.write('|:---|---|---|---|---|---|\n')
+    cfg_list = map(lambda section: '| [' + section + '](#' + section.replace(' ', '-').lower() + ')' +
+                                   ' | [link](#additional' + section.replace(' ',
+                                                                             '-').lower() + ')' + ' | [link](#missing' + section.replace(
+        ' ', '-').lower() + ')' +
+                                   ' | [link](#diff' + section.replace(' ',
+                                                                       '-').lower() + ')' + ' | [link](#envdiff' + section.replace(
+        ' ', '-').lower() + ')' +
+                                   ' | [link](#same' + section.replace(' ', '-').lower() + ')' + ' |', eSections)
+    # output.write("\n- ".join('[' + eSections + '](' + eSections.replace(' ', '-').lower() + ')'))
+    output.writelines(["%s\n" % item for item in cfg_list])
+    # output.write(*cfg_list, sep='\n')
+    output.write('\n|---:|:---|\n')
+    output.write('| Date | ' + str(date.today()) + ' |\n')
+    # today = date.today()
+    # tdy = '{message:{fill}{align}{width}}'.format(
+    #     message='Date',
+    #     fill=' ',
+    #     align='>',
+    #     width=section_width/5,
+    # ) + " : " + str(today) + "\n"
+    #
+    # output.write(tdy)
 
-    today = date.today()
-    tdy = '{message:{fill}{align}{width}}'.format(
-        message='Date',
-        fill=' ',
-        align='>',
-        width=section_width/5,
-    ) + " : " + str(today) + "\n"
+    # ref = '{message:{fill}{align}{width}}'.format(
+    #     message='Reference Blueprint',
+    #     fill=' ',
+    #     align='>',
+    #     width=section_width/5,
+    # ) + " : " + referencebp
+    output.write('| Reference Blueprint | ' + referencebp + ' |\n')
+    print('\n\nReference Blueprint : ' + referencebp)
+    # print (ref)
 
-    output.write(tdy)
+    # output.write("\n")
+    # check = '{message:{fill}{align}{width}}'.format(
+    #     message='Check Blueprint',
+    #     fill=' ',
+    #     align='>',
+    #     width=section_width/5,
+    # ) + " : " + checkbp
+    output.write('| Check Blueprint | ' + checkbp + ' |\n')
+    print('Check Blueprint : ' + checkbp)
+    # print (check)
+    # output.write(check)
 
-    ref = '{message:{fill}{align}{width}}'.format(
-        message='Reference Blueprint',
-        fill=' ',
-        align='>',
-        width=section_width/5,
-    ) + " : " + referencebp
-    output.write(ref)
-    print (ref)
+    # otpt = '{message:{fill}{align}{width}}'.format(
+    #     message='Output Filename',
+    #     fill=' ',
+    #     align='>',
+    #     width=section_width/5,
+    # ) + " : " + output_filename
+    output.write('| Output Filename | ' + output_filename + ' |\n')
+    print('Output Filename : ' + output_filename)
 
-    output.write("\n")
-    check = '{message:{fill}{align}{width}}'.format(
-        message='Check Blueprint',
-        fill=' ',
-        align='>',
-        width=section_width/5,
-    ) + " : " + checkbp
-    print (check)
-    output.write(check)
+    # print(otpt)
 
-    otpt = '{message:{fill}{align}{width}}'.format(
-        message='Output Filename',
-        fill=' ',
-        align='>',
-        width=section_width/5,
-    ) + " : " + output_filename
-
-    print(otpt)
-
-    output.write("\n")
-
-    output.write('{message:{fill}{align}{width}}'.format(
-        message='Tool Version',
-        fill=' ',
-        align='>',
-        width=section_width/5,
-    ) + " : " + VERSION)
+    # output.write("\n")
+    #
+    # output.write('{message:{fill}{align}{width}}'.format(
+    #     message='Tool Version',
+    #     fill=' ',
+    #     align='>',
+    #     width=section_width/5,
+    # ) + " : " + VERSION)
+    output.write('| Tool Version | ' + VERSION + ' |\n')
     output.write("\n")
 
     # iterate over the reference cfgs:
@@ -238,7 +282,7 @@ def main():
     parser.add_option("-r", "--reference-file", dest="reference",
                       help="The standard (reference-file) file to compare against.")
     parser.add_option("-c", "--check-file", dest="check", help="The file (check-file) that you want to compare.")
-    parser.add_option("-o", "--output", dest="output", help="The output report file.")
+    parser.add_option("-o", "--output", dest="output", help="The output report file will be in 'markdown'.")
 
     (options, args) = parser.parse_args()
 
@@ -247,10 +291,10 @@ def main():
 
     if not options.check:
         print("Required: -c <check_blueprint_file>")
-        exit -1
+        exit - 1
     else:
         check_filename = options.check
-        output_filename = os.path.splitext(check_filename)[0] + "_diff.txt"
+        output_filename = os.path.splitext(check_filename)[0] + "_diff.md"
         # output_filename =
 
     if options.reference:
@@ -263,5 +307,6 @@ def main():
 
     compare(ref_cluster_filename, check_filename, output)
     output.close()
+
 
 main()
