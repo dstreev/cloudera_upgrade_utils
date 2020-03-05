@@ -319,7 +319,7 @@ def buildhtmltable(rows, fields):
                             recordRow = recordRow + '<table class="TFtable">'
                             for item in row[field]:
                                 recordRow = recordRow + '<tr><td>'
-                                dictItem = str(item) + ':' + str(row[field][item])
+                                dictItem = str(item) + ':' + str(row[field][item]).replace(',', '<br>')
                                 if it == len(row[field]) - 1:
                                     recordRow = recordRow + dictItem + ' <br> '
                                 else:

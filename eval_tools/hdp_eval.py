@@ -335,6 +335,7 @@ def buildHostMatrix():
         host['vC'] = hostItem['cpu_count']
         host['Gb'] = hostItem['total_mem'] / (1024 * 1024)
         host['Rack'] = hostItem['rack_info']
+        host['ip'] = hostItem['ip']
 
         components = {}
         hostGroup = 0
@@ -404,9 +405,17 @@ def mergeConfigsWithHostMatrix(blueprintFile):
                 hosts = []
                 if 'hosts' in hostgroup.keys():
                     hosts = hostgroup['hosts']
-                    hosts.append(host['Hostname'])
+                    lclHost = {}
+                    lclHost['hostname'] = host['Hostname']
+                    lclHost['rackId'] = host['Rack']
+                    lclHost['ip'] = host['ip']
+                    hosts.append(lclHost)
                 else:
-                    hosts.append(host['Hostname'])
+                    lclHost = {}
+                    lclHost['hostname'] = host['Hostname']
+                    lclHost['rackId'] = host['Rack']
+                    lclHost['ip'] = host['ip']
+                    hosts.append(lclHost)
                     hostgroup['hosts'] = hosts
         # Loop Host Components
         for cGroup in host['components']:
@@ -600,6 +609,7 @@ def rpt_hoststorage(output):
     paths, bfields = buildFieldPathFromAbbr(['NN', 'JN', 'DN', 'ZK', 'KB', 'NF'])
 
     fields = fields_base + bfields
+    fields.append('DataDirs')
     fields.append('Disks')
 
     hosttable = []
@@ -607,12 +617,23 @@ def rpt_hoststorage(output):
         host = HOSTS[hostKey]
         hostRec = get_hostbase(host, fields_base)
         populate_components(paths, host['components'], hostRec)
-
+        hostRec['DataDirs'] = getDataDirs(host['components'])
         hostRec['Disks'] = host['Disks']
 
         hosttable.append(hostRec)
 
     writehtmltable(hosttable, fields, output)
+
+
+def getDataDirs(components):
+    dataDirs = {}
+    for componentKey in components:
+        for partKey in components[componentKey]:
+            part = components[componentKey][partKey]
+            if 'data.dir' in part.keys():
+                dataDirs[partKey] = part['data.dir']
+    return dataDirs
+
 
 
 def rpt_count_type(types, output):
@@ -752,36 +773,37 @@ def main():
 
     loadControl(os.path.dirname(os.path.realpath(__file__)) + "/control.json")
 
-    if options.ambari_layout:
+    if options.ambari_layout and options.ambari_layout:
         layout_file = options.ambari_layout
         glayout = json.loads(open(options.ambari_layout).read())
         buildHostMatrix()
 
     if options.ambari_blueprint:
         bp_file = options.ambari_blueprint
-        mergeConfigsWithHostMatrix(options.ambari_blueprint)
-
-    run_date = str(date.today())
-
-    output_dir = ''
-    if options.output_dir:
-        output_dir = options.output_dir
-    else:
-        output_dir = './' + str(date.today()) + '_' + options.ambari_blueprint[:-5] + '_eval'
-
-    try:
-        os.stat(output_dir)
-    except:
-        os.mkdir(output_dir)
-
-    if options.ambari_blueprint:
         newblueprint = mergeConfigsWithHostMatrix(options.ambari_blueprint)
+
+        run_date = str(date.today())
+
+        output_dir = ''
+        if options.output_dir:
+            output_dir = options.output_dir
+        else:
+            output_dir = './' + run_date + '_' + options.ambari_blueprint[:-5] + '_eval'
+
+        try:
+            os.stat(output_dir)
+        except:
+            os.mkdir(output_dir)
+
+    # if options.ambari_blueprint:
+    #     newblueprint = mergeConfigsWithHostMatrix(options.ambari_blueprint)
         new_bp_filename = output_dir + '/' + options.ambari_blueprint[:-5] + '_cm.json'
         new_bp_output = open(new_bp_filename, 'w')
         new_bp_output.write(json.dumps(newblueprint, indent=2, sort_keys=False))
         new_bp_output.close()
 
-    report(options.ambari_layout, output_dir)
-
+        report(options.ambari_layout, output_dir)
+    else:
+        print ("Missing input")
 
 main()
