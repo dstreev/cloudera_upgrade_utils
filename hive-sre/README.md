@@ -1,10 +1,30 @@
 ## Hive SRE Tooling
 
-### Hive JDBC Performance Testing Tool
+### Hive JDBC Performance Testing Tool (perf)
 
+#### Environment and Connection via Knox
+```
+URL="jdbc:hive2://os06.streever.local:8443/;ssl=true;sslTrustStore=/home/dstreev/certs/bm90-gateway.jks;trustStorePassword=hortonworks;transportMode=http;httpPath=gateway/default/hive"
+QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
+SRE_CP=./hive-sre-<version>-SNAPSHOT-shaded.jar:/usr/hdp/current/hive-client/jdbc/hive-jdbc-3.1.0.3.1.5.0-152-standalone.jar
+BATCH_SIZE=50000
+PW=<set_me>
 
+java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p ${PW} 
+```
 
-### SRE Application
+# Environment and Connection via Kerberos from Edge
+```
+URL="jdbc:hive2://os05.streever.local:10601/default;httpPath=cliservice;principal=hive/_HOST@STREEVER.LOCAL;transportMode=http"
+QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
+# Note that `hadoop classpath` statement to bring in all necessary libs.
+SRE_CP=./hive-sre-2.0.1-SNAPSHOT-shaded.jar:/usr/hdp/current/hive-client/jdbc/hive-jdbc-3.1.0.3.1.5.0-152-standalone.jar:`hadoop classpath`
+BATCH_SIZE=50000
+
+java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
+```
+
+### SRE Application (sre)
 
 The Sre Tool brings together information from the HMS RDBMS and HDFS to provide reports and potential actions to address areas of concern.  This process is a READ-ONLY process and does not perform any actions automatically.
 
@@ -15,17 +35,14 @@ This process is driven by a control file.  A template is [here](configs/driver.y
 #### Application Help
 
 ```
-usage: java -cp <Sre-uber.jar> -h
+Launching: sre
+usage: Sre
  -cfg,--config <arg>     Config with details for the Sre Job.  Must match
                          the either sre or u3 selection.
  -db,--database <arg>    Comma separated list of Databases.  Will override
                          config. (upto 100)
  -o,--output-dir <arg>   Output Directory to save results from Sre.
- -sre,--sre              Run the SRE suite of checks.
- -u3,--upgrade3          Upgrade to Hive3 Checks
 ```
-
-There are two modes for running the application.  `-u3` or `-sre`.  These are details below.
 
 The `-db` parameter is optional.  When specified, it will limit the search to the databases listed as a parameter.  IE: `-db my_db,test_db`
 
@@ -64,18 +81,28 @@ queries:
 
 #### Running
 
-`java -cp /tmp/mariadb-java-client-2.5.3.jar:/tmp/hive-sre-1.0-SNAPSHOT-uber.jar com.streever.hive.Sre -sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
+`java -cp ./mariadb-java-client-2.5.3.jar:./hive-sre-<version>-SNAPSHOT-shaded.jar com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
 
-#### Modes
 
-##### Hive SRE `-sre`
-1. Hive 3 Performance Checks - Locations Scan
-    - Small Files
-2. Table Partition Count
-
-##### Hive Upgrade Check `-u3`
+### Hive Upgrade Check (u3)`
 
 Review Hive Metastore Databases and Tables for upgrade or simply to evaluate potential issues.  Using [HDP Upgrade Utils](https://github.com/dstreev/hdp3_upgrade_utils) as the baseline for this effort.  The intent is to make that process much more prescriptive and consumable by Cloudera customers.  The application is 'Hive' based, so it should work against both 'HDP', 'CDH', and 'CDP' clusters.
+
+#### Application Help
+
+```
+Launching: u3
+usage: Sre
+ -cfg,--config <arg>     Config with details for the Sre Job.  Must match
+                         the either sre or u3 selection.
+ -db,--database <arg>    Comma separated list of Databases.  Will override
+                         config. (upto 100)
+ -o,--output-dir <arg>   Output Directory to save results from Sre.
+ ```
+
+#### Running
+
+`java -cp ./mariadb-java-client-2.5.3.jar:./hive-sre-<version>-SNAPSHOT-shaded.jar com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
 
 #### Check and Validations Performed
 
