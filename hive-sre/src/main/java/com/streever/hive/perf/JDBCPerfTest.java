@@ -1,5 +1,6 @@
 package com.streever.hive.perf;
 
+import com.streever.hive.SreSubApp;
 import org.apache.commons.cli.*;
 
 import java.sql.*;
@@ -13,7 +14,7 @@ import java.util.concurrent.ScheduledFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class JDBCPerfTest {
+public class JDBCPerfTest implements SreSubApp {
 
     public static final Integer STATUS_INTERVAL = 1000;
     public static final Integer REFRESH_INTERVAL = 1000;
@@ -48,7 +49,7 @@ public class JDBCPerfTest {
         return stats;
     }
 
-    private Options getOptions() {
+    public Options getOptions() {
         Options options = new Options();
 
         Option url = new Option("u", "url", true,
@@ -147,16 +148,15 @@ public class JDBCPerfTest {
 
     }
 
-    private void init(String[] args) {
+    public void init(String[] args) {
         Options options = getOptions();
         setOptions(options, args);
         stats = new CollectStatistics(getJri());
     }
 
-    public void start() throws SQLException {
+    public void start() {
         getProcessThreads().add(getThreadPool().schedule(this.getJri(), 1, MILLISECONDS));
         getStats().start();
-//        getProcessThreads().add(getThreadPool().schedule(this.getStats(), 1, MILLISECONDS));
 
         while (true) {
             boolean check = true;
@@ -183,13 +183,7 @@ public class JDBCPerfTest {
     public static void main(String[] args) {
         JDBCPerfTest test = new JDBCPerfTest();
         test.init(args);
-
-        try {
-            test.start();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
+        test.start();
     }
 
 }

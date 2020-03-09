@@ -1,12 +1,18 @@
 ## Hive SRE Tooling
 
+### Hive JDBC Performance Testing Tool
+
+
+
+### SRE Application
+
 The Sre Tool brings together information from the HMS RDBMS and HDFS to provide reports and potential actions to address areas of concern.  This process is a READ-ONLY process and does not perform any actions automatically.
 
 Action commands for identified scenarios are written out to file(s), which can be reviewed / edited and run through either "beeline" for "hive" actions or in [Hadoop-CLI](https://github.com/dstreev/hadoop-cli) for hdfs commands.
 
 This process is driven by a control file.  A template is [here](configs/driver.yaml.template).  Make a copy, edit the needed parameters and reference it with the '-cfg' parameter when running the process.
 
-### Application Help
+#### Application Help
 
 ```
 usage: java -cp <Sre-uber.jar> -h
@@ -27,7 +33,7 @@ The `-o` parameter is *required*.
 
 Sre needs to be run by a user with READ access to all the potential HDFS locations presented by the database/table/partition defined locations.
  
-### The Configuration File
+#### The Configuration File
 
 ```
 # Required to connect to Metastore RDBMS.  RDBMS driver needs to be included in the classpath
@@ -56,17 +62,18 @@ queries:
         override: "%"
 ```
 
-### Running
+#### Running
 
 `java -cp /tmp/mariadb-java-client-2.5.3.jar:/tmp/hive-sre-1.0-SNAPSHOT-uber.jar com.streever.hive.Sre -sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
 
+#### Modes
 
-### Hive SRE `-sre`
+##### Hive SRE `-sre`
 1. Hive 3 Performance Checks - Locations Scan
     - Small Files
 2. Table Partition Count
 
-### Hive Upgrade Check `-u3`
+##### Hive Upgrade Check `-u3`
 
 Review Hive Metastore Databases and Tables for upgrade or simply to evaluate potential issues.  Using [HDP Upgrade Utils](https://github.com/dstreev/hdp3_upgrade_utils) as the baseline for this effort.  The intent is to make that process much more prescriptive and consumable by Cloudera customers.  The application is 'Hive' based, so it should work against both 'HDP', 'CDH', and 'CDP' clusters.
 

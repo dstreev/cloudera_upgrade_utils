@@ -1,18 +1,16 @@
 package com.streever.hive.perf;
 
 import com.streever.hive.reporting.ReportingConf;
-import org.apache.commons.cli.*;
+import org.apache.commons.lang3.time.StopWatch;
 
-import java.io.IOException;
 import java.sql.*;
-import java.util.*;
 import java.util.Date;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.sql.Types.*;
-import static java.sql.Types.TIMESTAMP;
-//import org.apache.hive.jdbc.HiveDriver;
 
 public class JDBCRecordIterator implements Runnable {
 
@@ -23,10 +21,11 @@ public class JDBCRecordIterator implements Runnable {
     private Integer batchSize = 10000;
     private Integer delayWarning = 1000;
     private Boolean lite = Boolean.FALSE;
+    private StringBuilder connectionDetails = new StringBuilder();
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
     private Date start;
-//    private Delay[] delays = new Delay[10];
+
     private Deque<Delay> delays = new ConcurrentLinkedDeque<Delay>();
 
     public AtomicLong getCount() {
@@ -93,6 +92,10 @@ public class JDBCRecordIterator implements Runnable {
         this.lite = lite;
     }
 
+    public StringBuilder getConnectionDetails() {
+        return connectionDetails;
+    }
+
     public Date getStart() {
         return start;
     }
@@ -108,26 +111,41 @@ public class JDBCRecordIterator implements Runnable {
             delays.removeFirst();
     }
 
-    public void printDelays() {
+    public String getDelays() {
+        StringBuilder sb = new StringBuilder();
         if (delays.size() > 0) {
-            System.out.println(ReportingConf.ANSI_GREEN + "-----------------------------------" + ReportingConf.ANSI_RED);
+            sb.append(ReportingConf.ANSI_GREEN + "-----------------------------------" + ReportingConf.ANSI_RED).append("\n");
             for (Iterator iter = delays.iterator(); iter.hasNext(); ) {
                 Delay delay = (Delay) iter.next();
-                System.out.println(delay);
+                sb.append(delay).append("\n");
             }
-            System.out.println(ReportingConf.ANSI_GREEN + "-----------------------------------" + ReportingConf.ANSI_RESET);
+            sb.append(ReportingConf.ANSI_GREEN + "-----------------------------------" + ReportingConf.ANSI_RESET).append("\n");
         }
+        return sb.toString();
     }
 
     @Override
     public void run() {
         start = new Date();
-
+        StopWatch stopWatch = new StopWatch();
+        Connection conn = null;
         try  {
-            Connection conn = DriverManager.getConnection(this.jdbcUrl, this.username, this.password);
+            long splitTime = 0;
+            stopWatch.start();
+            stopWatch.split();
+            connectionDetails.append("Connect Attempt  : " + stopWatch.getSplitTime()).append("ms\n");
+            conn = DriverManager.getConnection(this.jdbcUrl, this.username, this.password);
+            stopWatch.split();
+            connectionDetails.append("Connected        : " + stopWatch.getSplitTime()).append("ms\n");
             Statement stmt = conn.createStatement();
+            stopWatch.split();
+            connectionDetails.append("Create Statement : " + stopWatch.getSplitTime()).append("ms\n");
             stmt.setFetchSize(this.batchSize);
+            stopWatch.split();
+            connectionDetails.append("Before Query     : " + stopWatch.getSplitTime()).append("ms\n");
             ResultSet rs = stmt.executeQuery(this.query);
+            stopWatch.split();
+            connectionDetails.append("Query Return     : " + stopWatch.getSplitTime()).append("ms\n");
             int[] columnTypes = null;
             if (!lite) {
                 columnTypes = new int[rs.getMetaData().getColumnCount()];
@@ -135,6 +153,8 @@ public class JDBCRecordIterator implements Runnable {
                     columnTypes[i] = rs.getMetaData().getColumnType(i+1);
                 }
             }
+            stopWatch.split();
+            connectionDetails.append("Start Iterating Results   : " + stopWatch.getSplitTime()).append("ms\n");
             long marker = System.currentTimeMillis();
             while (rs.next()) {
                 if (System.currentTimeMillis() - marker > delayWarning) {
@@ -191,12 +211,34 @@ public class JDBCRecordIterator implements Runnable {
                     }
                 }
             }
+            stopWatch.split();
+            connectionDetails.append("Completed Iterating Results: " + stopWatch.getSplitTime()).append("ms\n");
             stmt.close();
+            stopWatch.split();
+            connectionDetails.append("Statement Closed           : " + stopWatch.getSplitTime()).append("ms\n");
             rs.close();
+            stopWatch.split();
+            connectionDetails.append("Resultset Closed           : " + stopWatch.getSplitTime()).append("ms\n");
         } catch (SQLException se) {
-            System.out.println("Error" + se.getMessage());
-//        } catch (ClassNotFoundException cnfe) {
-//            System.out.println("Error" + cnfe.getMessage());
+            stopWatch.split();
+            connectionDetails.append("SQL Issue                  : " + stopWatch.getSplitTime()).append("ms\n");
+            connectionDetails.append("** Message **\n").append(se.getMessage()).append("\n");
+        } catch (RuntimeException rt) {
+            stopWatch.split();
+            connectionDetails.append("Processing Issue           : " + stopWatch.getSplitTime()).append("ms\n");
+            connectionDetails.append("   Message:\n").append(rt.getMessage()).append("\n");
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+            stopWatch.split();
+            connectionDetails.append("Process Completed          : " + stopWatch.getSplitTime()).append("ms\n");
+            stopWatch.stop();
+
         }
     }
 

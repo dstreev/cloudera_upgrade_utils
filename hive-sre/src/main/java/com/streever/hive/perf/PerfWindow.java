@@ -59,9 +59,14 @@ public class PerfWindow {
         Long perInterval = getAverage();
         Long perSecond = getPerSec();
         StringBuilder sb = new StringBuilder();
-        sb.append("WindowAverage: ").append(getAverage());
-        sb.append("\tPer/Sec: ").append(getPerSec());
-        sb.append("\tSize/Sec: ").append(getSizePerSec());
+//        sb.append("WindowAverage: ");
+        sb.append(getAverage());
+        sb.append("\t\t");
+//        sb.append("\tPer/Sec: ");
+        sb.append(getPerSec());
+        sb.append("\t\t");
+//        sb.append("\tSize/Sec: ");
+        sb.append(getSizePerSec());
         return sb.toString();
     }
 }
