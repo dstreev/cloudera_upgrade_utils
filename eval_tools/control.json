@@ -152,6 +152,8 @@
           "yarn.nodemanager.remote-app-log-dir": "yarn.nodemanager.remote-app-log-dir",
           "yarn.nodemanager.log-dirs": "yarn.nodemanager.log-dirs",
           "yarn.nodemanager.recovery.dir": "yarn.nodemanager.recovery.dir",
+          "data.dir": "yarn.nodemanager.local-dirs",
+          "logs.dir": "yarn.nodemanager.log-dirs",
           "off.heap": "yarn.nodemanager.resource.memory-mb"
         }
       },
@@ -223,7 +225,7 @@
       "environment": {
         "section": "hive-env",
         "configs": {
-          "heap": "non-set-yet"
+          "heap": "hive.heapsize"
         }
       }
     },
@@ -238,6 +240,7 @@
       "environment": {
         "section": "hive-interactive-env",
         "configs": {
+          "heap": "hive.heapsize"
         }
       }
     }

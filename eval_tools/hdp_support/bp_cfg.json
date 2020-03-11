@@ -167,6 +167,12 @@
       }
     },
     {
+      "kafka-env": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
       "kms-site": {
         "environment_dependent": [],
         "skip": []

@@ -606,10 +606,11 @@ def rpt_hoststorage(output):
     output.write('\n<h2>Host Storage</h2>\n')
     fields_base = ['Hostname', 'vC', 'Gb', 'Rack']
 
-    paths, bfields = buildFieldPathFromAbbr(['NN', 'JN', 'DN', 'ZK', 'KB', 'NF'])
+    paths, bfields = buildFieldPathFromAbbr(['NN', 'JN', 'DN', 'ZK', 'NM', 'KB', 'NF'])
 
     fields = fields_base + bfields
     fields.append('DataDirs')
+    fields.append('LogsDirs')
     fields.append('Disks')
 
     hosttable = []
@@ -618,6 +619,7 @@ def rpt_hoststorage(output):
         hostRec = get_hostbase(host, fields_base)
         populate_components(paths, host['components'], hostRec)
         hostRec['DataDirs'] = getDataDirs(host['components'])
+        hostRec['LogsDirs'] = getLogsDirs(host['components'])
         hostRec['Disks'] = host['Disks']
 
         hosttable.append(hostRec)
@@ -634,6 +636,15 @@ def getDataDirs(components):
                 dataDirs[partKey] = part['data.dir']
     return dataDirs
 
+
+def getLogsDirs(components):
+    logsDirs = {}
+    for componentKey in components:
+        for partKey in components[componentKey]:
+            part = components[componentKey][partKey]
+            if 'logs.dir' in part.keys():
+                logsDirs[partKey] = part['logs.dir']
+    return logsDirs
 
 
 def rpt_count_type(types, output):
