@@ -20,6 +20,7 @@ HOSTS = {}
 SERVICES = {}
 CONTROL = {}
 glayout = {}
+blueprint = {}
 
 layout_file = ''
 bp_file = ''
@@ -419,10 +420,10 @@ def calcHostGroupBitMasks(hostgroups):
         hostgroup['HostGroupMask'] = hgbitmask
 
 
-def mergeConfigsWithHostMatrix(blueprintFile):
+def mergeConfigsWithHostMatrix():
     global stack
 
-    blueprint = json.loads(open(blueprintFile).read())
+    # blueprint = json.loads(open(blueprintFile).read())
     configurations = blueprint['configurations']
     stack = blueprint['Blueprints']['stack_name'] + ' ' + blueprint['Blueprints']['stack_version']
     hostgroups = blueprint['host_groups']
@@ -727,6 +728,30 @@ def rpt_count_type(types, output):
 
     writehtmltable(table, fields, output)
 
+    # Generate Counts for Blueprint Host Groups.
+    # Go through the Merged Blueprint and count the hosts in each host_group.
+    hg_table = []
+    hg_fields = ['Host Group', 'Count', 'Components', 'Hosts']
+
+    host_groups = blueprint['host_groups']
+    for host_group in host_groups:
+        hgrec = {}
+        hgrec['Host Group'] = host_group['name']
+        hgrec['Count'] = len(host_group['hosts'])
+        hgrec_components = []
+        for comps in host_group['components']:
+            hgrec_components.append(comps['name'])
+        hgrec['Components'] = hgrec_components
+        hgrec_hosts = []
+        for hst in host_group['hosts']:
+            hgrec_hosts.append(hst['hostname'])
+        hgrec['Hosts'] = hgrec_hosts
+        hg_table.append(hgrec)
+
+    output.write('\n<h2>Ambari Host Group Info</h2>\n')
+
+    writehtmltable(hg_table, hg_fields, output)
+
 
 def rpt_totals(hosttable, output):
 
@@ -803,7 +828,7 @@ def main():
     global layout_file
     global bp_file
     global run_date
-
+    global blueprint
 
     parser = optparse.OptionParser(usage="usage: %prog [options]")
 
@@ -829,7 +854,9 @@ def main():
 
     if options.ambari_blueprint:
         bp_file = options.ambari_blueprint
-        newblueprint = mergeConfigsWithHostMatrix(options.ambari_blueprint)
+        blueprint = json.loads(open(bp_file).read())
+
+        newblueprint = mergeConfigsWithHostMatrix()
 
         run_date = str(date.today())
 
