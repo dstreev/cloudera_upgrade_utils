@@ -9,7 +9,7 @@ import json
 from dict_diff import dict_compare
 from datetime import date
 
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
 logger = logging.getLogger('Ambari_cfg_diff')
 
@@ -209,7 +209,10 @@ def compare(referencebp, checkbp, output):
     #     align='>',
     #     width=section_width/5,
     # ) + " : " + referencebp
+    output.write('| * | |\n')
     output.write('| Reference Blueprint | ' + referencebp + ' |\n')
+    output.write('| Reference Blueprint Stack | ' + referencedict['Blueprints']['stack_name'] + " " +
+                 referencedict['Blueprints']['stack_version'] + ' |\n')
     print('\n\nReference Blueprint : ' + referencebp)
     # print (ref)
 
@@ -220,7 +223,10 @@ def compare(referencebp, checkbp, output):
     #     align='>',
     #     width=section_width/5,
     # ) + " : " + checkbp
+    output.write('| * | |\n')
     output.write('| Check Blueprint | ' + checkbp + ' |\n')
+    output.write('| Check Blueprint Stack | ' + checkdict['Blueprints']['stack_name'] + " " +
+                 checkdict['Blueprints']['stack_version'] + ' |\n')
     print('Check Blueprint : ' + checkbp)
     # print (check)
     # output.write(check)
@@ -231,6 +237,7 @@ def compare(referencebp, checkbp, output):
     #     align='>',
     #     width=section_width/5,
     # ) + " : " + output_filename
+    output.write('| * | |\n')
     output.write('| Output Filename | ' + output_filename + ' |\n')
     print('Output Filename : ' + output_filename)
 

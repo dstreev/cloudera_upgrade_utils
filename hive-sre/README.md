@@ -35,23 +35,25 @@ Running for: 80966ms		Started: 2020-03-06 13:57:40.492		Record Count: 10020000		
 ```
 
 #### Environment and Connection via Knox
+*Example*
 ```
 URL="jdbc:hive2://os06.streever.local:8443/;ssl=true;sslTrustStore=/home/dstreev/certs/bm90-gateway.jks;trustStorePassword=hortonworks;transportMode=http;httpPath=gateway/default/hive"
 QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
-SRE_CP=./hive-sre-<version>-SNAPSHOT-shaded.jar:/usr/hdp/current/hive-client/jdbc/hive-jdbc-3.1.0.3.1.5.0-152-standalone.jar
-BATCH_SIZE=50000
+SRE_CP=./hive-sre-<version>-SNAPSHOT-shaded.jar:<hive-standalone-jdbc-driver.jar>
+BATCH_SIZE=10000
 PW=<set_me>
 
-java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p ${PW} 
+java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p <password> 
 ```
 
 #### Environment and Connection via Kerberos from Edge
+*Example*
 ```
 URL="jdbc:hive2://os05.streever.local:10601/default;httpPath=cliservice;principal=hive/_HOST@STREEVER.LOCAL;transportMode=http"
 QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
 # Note that `hadoop classpath` statement to bring in all necessary libs.
-SRE_CP=./hive-sre-2.0.1-SNAPSHOT-shaded.jar:/usr/hdp/current/hive-client/jdbc/hive-jdbc-3.1.0.3.1.5.0-152-standalone.jar:`hadoop classpath`
-BATCH_SIZE=50000
+SRE_CP=./hive-sre-<version>-SNAPSHOT-shaded.jar:<hive-standalone-jdbc-driver.jar>:`hadoop classpath`
+BATCH_SIZE=10000
 
 java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
 ```

@@ -60,6 +60,12 @@
       }
     },
     {
+      "kerberos-env": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
       "hdfs-site": {
         "environment_dependent": [
           "dfs.secondary.namenode.kerberos.principal",

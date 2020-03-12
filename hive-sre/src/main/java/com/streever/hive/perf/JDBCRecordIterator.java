@@ -223,10 +223,18 @@ public class JDBCRecordIterator implements Runnable {
             stopWatch.split();
             connectionDetails.append("SQL Issue                  : " + stopWatch.getSplitTime()).append("ms\n");
             connectionDetails.append("** Message **\n").append(se.getMessage()).append("\n");
+            se.printStackTrace();
         } catch (RuntimeException rt) {
             stopWatch.split();
             connectionDetails.append("Processing Issue           : " + stopWatch.getSplitTime()).append("ms\n");
             connectionDetails.append("   Message:\n").append(rt.getMessage()).append("\n");
+            rt.printStackTrace();
+        } catch (Throwable t) {
+            stopWatch.split();
+            connectionDetails.append("Processing Issue           : " + stopWatch.getSplitTime()).append("ms\n");
+            connectionDetails.append("   Message:\n").append(t.getMessage()).append("\n");
+            connectionDetails.append("   Kerberos Attempted connections without the proper Hadoop Libs will cause this.\n");
+            t.printStackTrace();
         } finally {
             if (conn != null) {
                 try {

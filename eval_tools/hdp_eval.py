@@ -24,6 +24,7 @@ glayout = {}
 layout_file = ''
 bp_file = ''
 run_date = ''
+stack = ''
 
 # A bitmask to associate to a hostgroup
 componentDict = {}
@@ -141,15 +142,45 @@ def report(layoutFile, output_dir):
 
     index_filename = output_dir + '/index.html'
     index_output = open(index_filename, 'w')
+    appendCSS(index_output)
     writeHeader(index_output)
-    index_output.write('<ol>')
-    index_output.write('<li><a href="./services.html">Services</a></li>')
-    index_output.write('<li><a href="./count_types.html">Count Types</a></li>')
-    index_output.write('<li><a href="./hosttable.html">Host Table</a></li>')
-    index_output.write('<li><a href="./hoststorage.html">Host Storage</a></li>')
-    index_output.write('<li><a href="./mem_alloc.html">Host Memory Allocation</a></li>')
-    index_output.write('<li><a href="./hosts.json">Hosts json</a></li>')
-    index_output.write('</ol>')
+    index_output.write('<br/>')
+    index_output.write('<table class="TFtable">')
+    index_output.write('<tr>')
+    index_output.write('<th>')
+    index_output.write('<a href="./services.html">Services</a>')
+    index_output.write('</th></tr>')
+    index_output.write('<tr>')
+    index_output.write('<th>')
+    index_output.write('<a href="./count_types.html">Count Types</a>')
+    index_output.write('</th></tr>')
+    index_output.write('<tr>')
+    index_output.write('<th>')
+    index_output.write('<a href="./hosttable.html">Host Table</a>')
+    index_output.write('</th></tr>')
+    index_output.write('<tr>')
+    index_output.write('<th>')
+    index_output.write('<a href="./hoststorage.html">Host Storage</a>')
+    index_output.write('</th></tr>')
+    index_output.write('<tr>')
+    index_output.write('<th>')
+    index_output.write('<a href="./mem_alloc.html">Host Memory Allocation</a>')
+    index_output.write('</th></tr>')
+    index_output.write('<tr>')
+    index_output.write('<th>')
+    index_output.write('<a href="./hosts.json">Hosts json</a>')
+    index_output.write('</th></tr>')
+    index_output.write('</table>')
+
+    # index_output.write('<ol>')
+    # index_output.write('<li><a href="./services.html">Services</a></li>')
+    # index_output.write('<li><a href="./count_types.html">Count Types</a></li>')
+    # index_output.write('<li><a href="./hosttable.html">Host Table</a></li>')
+    # index_output.write('<li><a href="./hoststorage.html">Host Storage</a></li>')
+    # index_output.write('<li><a href="./mem_alloc.html">Host Memory Allocation</a></li>')
+    # index_output.write('<li><a href="./hosts.json">Hosts json</a></li>')
+    # index_output.write('</ol>')
+
     index_output.close()
 
     services_filename = output_dir + '/services.html'
@@ -389,8 +420,11 @@ def calcHostGroupBitMasks(hostgroups):
 
 
 def mergeConfigsWithHostMatrix(blueprintFile):
+    global stack
+
     blueprint = json.loads(open(blueprintFile).read())
     configurations = blueprint['configurations']
+    stack = blueprint['Blueprints']['stack_name'] + ' ' + blueprint['Blueprints']['stack_version']
     hostgroups = blueprint['host_groups']
     calcHostGroupBitMasks(hostgroups)
 
@@ -749,6 +783,10 @@ def writeHeader(output):
     output.write('<tr>')
     output.write('<th>Date</th>')
     output.write('<td>' + run_date + '</td>')
+    output.write('</tr><tr>')
+    output.write('<tr>')
+    output.write('<th>Stack Version</th>')
+    output.write('<td>' + stack + '</td>')
     output.write('</tr><tr>')
     output.write('<th>Blueprint</th>')
     output.write('<td>' + bp_file + '</td>')

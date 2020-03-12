@@ -123,6 +123,8 @@ public class Reporter implements Runnable {
             List<ReportCounter> counters = counterGroups.get(groupName);
 
             List<String> currentProcessing = new ArrayList<String>();
+            String version = ReportingConf.substituteVariables("v.${Implementation-Version}");
+            pushLine(version);
             pushLine(StringUtils.rightPad("=", WIDTH, "="));
             pushLine(StringUtils.center(groupName, WIDTH));
             pushLine(StringUtils.rightPad("=", WIDTH, "="));
