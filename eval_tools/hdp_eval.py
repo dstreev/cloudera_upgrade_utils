@@ -21,6 +21,7 @@ SERVICES = {}
 CONTROL = {}
 glayout = {}
 blueprint = {}
+cluster_creation_template = {}
 
 layout_file = ''
 bp_file = ''
@@ -198,7 +199,6 @@ def report(layoutFile, output_dir):
                              'HIVE_METASTORE']
     count_types['Kafka'] = ['KAFKA_BROKER']
 
-
     count_types_filename = output_dir + '/count_types.html'
     count_types_output = open(count_types_filename, 'w')
     appendCSS(count_types_output)
@@ -206,6 +206,13 @@ def report(layoutFile, output_dir):
     rpt_count_type(count_types, count_types_output)
     count_types_output.close()
 
+    # Save Ambari Cluster Creation Template
+    # https://cwiki.apache.org/confluence/display/AMBARI/Blueprints#Blueprints-ClusterCreationTemplateStructure
+    cluster_creation_template_filename = output_dir + '/cluster_creation_template.json'
+    cluster_creation_template_output = open(cluster_creation_template_filename, 'w')
+    cct_string = json.dumps(cluster_creation_template, indent=2, sort_keys=False)
+    cluster_creation_template_output.write(cct_string)
+    cluster_creation_template_output.close()
 
     mem_alloc_filename = output_dir + '/mem_alloc.html'
     mem_alloc_output = open(mem_alloc_filename, 'w')
@@ -683,6 +690,8 @@ def getLogsDirs(components):
 
 
 def rpt_count_type(types, output):
+    global cluster_creation_template
+
     output.write('\n<h2>Count Types</h2>\n')
     # layout = json.loads(open(layoutFile).read())
     items = glayout['items']
@@ -732,11 +741,16 @@ def rpt_count_type(types, output):
     # Go through the Merged Blueprint and count the hosts in each host_group.
     hg_table = []
     hg_fields = ['Host Group', 'Count', 'Components', 'Hosts']
-
+    cluster_creation_template['blueprint'] = 'need-to-set-me'
     host_groups = blueprint['host_groups']
+    cct_host_groups = []
     for host_group in host_groups:
+        cct_host_group = {}
         hgrec = {}
         hgrec['Host Group'] = host_group['name']
+        cct_host_group['name'] = host_group['name']
+        cct_hosts = []
+
         hgrec['Count'] = len(host_group['hosts'])
         hgrec_components = []
         for comps in host_group['components']:
@@ -745,8 +759,15 @@ def rpt_count_type(types, output):
         hgrec_hosts = []
         for hst in host_group['hosts']:
             hgrec_hosts.append(hst['hostname'])
+            cct_host = {}
+            cct_host['fqdn'] = hst['hostname']
+            cct_hosts.append(cct_host)
+        cct_host_group['hosts'] = cct_hosts
+        cct_host_groups.append(cct_host_group)
+
         hgrec['Hosts'] = hgrec_hosts
         hg_table.append(hgrec)
+    cluster_creation_template['host_groups'] = cct_host_groups
 
     output.write('\n<h2>Ambari Host Group Info</h2>\n')
 
