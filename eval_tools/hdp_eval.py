@@ -11,16 +11,17 @@ import json
 from common import pprinttable, pprinttable2, pprinthtmltable, writehtmltable
 from datetime import date
 
+from ambari import *
 
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
-logger = logging.getLogger('HDP_Eval')
+logger = logging.getLogger('hdp_eval')
 
-HOSTS = {}
-SERVICES = {}
-CONTROL = {}
-glayout = {}
-blueprint = {}
+# HOSTS = {}
+# SERVICES = {}
+# CONTROL = {}
+# glayout = {}
+# blueprint = {}
 cluster_creation_template = {}
 
 layout_file = ''
@@ -28,47 +29,19 @@ bp_file = ''
 run_date = ''
 stack = ''
 
+
 # A bitmask to associate to a hostgroup
-componentDict = {}
+# componentDict = {}
 
 
-def addToComponentDictionary(item):
-    components = item["host_components"]
-    for component in components:
-        for ckey, cvalue in component.items():
-            if ckey == "HostRoles":
-                for hkey, hvalue in cvalue.items():
-                    if hkey == "component_name":
-                        if hvalue not in componentDict.keys():
-                            dl = len(componentDict)
-                            if dl == 0:
-                                componentDict[hvalue] = 1
-                            elif dl == 1:
-                                componentDict[hvalue] = 2
-                            else:
-                                componentDict[hvalue] = 2**dl
-
-
-def getHostGroup(item):
-    location = 0
-    components = item["host_components"]
-    for component in components:
-        for ckey, cvalue in component.items():
-            if ckey == "HostRoles":
-                for hkey, hvalue in cvalue.items():
-                    if hkey == "component_name":
-                        location = location | componentDict[hvalue]
-    return location
-
-
-def buildFieldPathFromAbbr(abbrs):
+def build_field_path_from_abbr(control, abbrs):
     fields = []
     paths = {}
     for abbr in abbrs:
-        for group in CONTROL:
-            for component in CONTROL[group]:
+        for group in control:
+            for component in control[group]:
                 # print group + ":" + component
-                if abbr == CONTROL[group][component]['abbr']:
+                if abbr == control[group][component]['abbr']:
                     # print 'found'
                     path = [group, component]
                     paths[abbr] = path
@@ -82,20 +55,26 @@ def get_hostname(item):
     return host_info["host_name"]
 
 
-def aggregateComponents(item):
-    components = item['host_components']
-    for component in components:
-        for key, value in component.items():
-            if key == 'HostRoles':
-                for rkey, rvalue in value.items():
-                    if rkey == 'component_name':
-                        if rvalue in SERVICES:
-                            SERVICES[rvalue] += 1
-                        else:
-                            SERVICES[rvalue] = 1
+def aggregate_components(layout):
+    services = {}
+
+    items = layout['items']
+
+    for item in items:
+        components = item['host_components']
+        for component in components:
+            for key, value in component.items():
+                if key == 'HostRoles':
+                    for rkey, rvalue in value.items():
+                        if rkey == 'component_name':
+                            if rvalue in services:
+                                services[rvalue] += 1
+                            else:
+                                services[rvalue] = 1
+    return services
 
 
-def is_component(item, componentName):
+def is_component(item, componentName, componentDict):
     # addToComponentDictionary(componentName)
     components = item["host_components"]
     for component in components:
@@ -108,7 +87,7 @@ def is_component(item, componentName):
     return False, 0
 
 
-def is_componentX(item, componentName):
+def is_component_x(item, componentName):
     found, location = is_component(item, componentName)
     if found:
         return 'X'
@@ -116,9 +95,10 @@ def is_componentX(item, componentName):
         return ''
 
 
-def loadControl(controlFile):
-    global CONTROL
-    CONTROL = json.loads(open(controlFile).read())
+def get_control(controlFile):
+    control = {}
+    control = json.loads(open(controlFile).read())
+    return control
 
 
 def get_info(layoutFile):
@@ -130,8 +110,9 @@ def get_info(layoutFile):
     return hosttable, compute_count, other_count
 
 
-def appendCSS(output):
-    output.write('<style type="text/css">.TFtable{    width:100%;border-collapse:collapse;}.TFtable td{    padding:7px; border:#332200 1px solid;}')
+def append_css(output):
+    output.write(
+        '<style type="text/css">.TFtable{    width:100%;border-collapse:collapse;}.TFtable td{    padding:7px; border:#332200 1px solid;}')
     # /* provide some minimal visual accomodation for IE8 and below */
     output.write('    .TFtable tr{    background: #FFF7E6;}')
     # /*  Define the background color for all the ODD background rows  */
@@ -140,11 +121,10 @@ def appendCSS(output):
     output.write('.TFtable tr:nth-child(even){    background: ##FF9966;}</style>')
 
 
-def report(layoutFile, output_dir):
-
+def report(blueprint, hostMatrix, layout, control, componentDict, output_dir):
     index_filename = output_dir + '/index.html'
     index_output = open(index_filename, 'w')
-    appendCSS(index_output)
+    append_css(index_output)
     writeHeader(index_output)
     index_output.write('<br/>')
     index_output.write('<table class="TFtable">')
@@ -187,9 +167,9 @@ def report(layoutFile, output_dir):
 
     services_filename = output_dir + '/services.html'
     services_output = open(services_filename, 'w')
-    appendCSS(services_output)
+    append_css(services_output)
     writeHeader(services_output)
-    rpt_services(services_output)
+    rpt_services(layout, services_output)
     services_output.close()
 
     count_types = {}
@@ -201,33 +181,25 @@ def report(layoutFile, output_dir):
 
     count_types_filename = output_dir + '/count_types.html'
     count_types_output = open(count_types_filename, 'w')
-    appendCSS(count_types_output)
+    append_css(count_types_output)
     writeHeader(count_types_output)
-    rpt_count_type(count_types, count_types_output)
+    rpt_count_type(blueprint, layout, count_types, count_types_output, componentDict)
     count_types_output.close()
-
-    # Save Ambari Cluster Creation Template
-    # https://cwiki.apache.org/confluence/display/AMBARI/Blueprints#Blueprints-ClusterCreationTemplateStructure
-    cluster_creation_template_filename = output_dir + '/cluster_creation_template.json'
-    cluster_creation_template_output = open(cluster_creation_template_filename, 'w')
-    cct_string = json.dumps(cluster_creation_template, indent=2, sort_keys=False)
-    cluster_creation_template_output.write(cct_string)
-    cluster_creation_template_output.close()
 
     mem_alloc_filename = output_dir + '/mem_alloc.html'
     mem_alloc_output = open(mem_alloc_filename, 'w')
-    appendCSS(mem_alloc_output)
+    append_css(mem_alloc_output)
     writeHeader(mem_alloc_output)
-    rpt_mem_allocations(mem_alloc_output)
+    rpt_mem_allocations(hostMatrix, control, mem_alloc_output)
     mem_alloc_output.close()
 
     # rpt_mem_allocations()
 
     hosttable_filename = output_dir + '/hosttable.html'
     hosttable_output = open(hosttable_filename, 'w')
-    appendCSS(hosttable_output)
+    append_css(hosttable_output)
     writeHeader(hosttable_output)
-    rpt_hosttable(hosttable_output)
+    rpt_hosttable(hostMatrix, control, hosttable_output)
     hosttable_output.close()
 
     # rpt_hosttable()
@@ -243,9 +215,9 @@ def report(layoutFile, output_dir):
     # TODO: Get Memory Settings and use to find over allocated Hosts.
     hoststorage_filename = output_dir + '/hoststorage.html'
     hoststorage_output = open(hoststorage_filename, 'w')
-    appendCSS(hoststorage_output)
+    append_css(hoststorage_output)
     writeHeader(hoststorage_output)
-    rpt_hoststorage(hoststorage_output)
+    rpt_hoststorage(hostMatrix, control, hoststorage_output)
     hoststorage_output.close()
 
     # rpt_hoststorage()
@@ -258,7 +230,7 @@ def report(layoutFile, output_dir):
     hostdump_filename = output_dir + '/hosts.json'
     hostdump_output = open(hostdump_filename, 'w')
     # appendCSS(hostdump_output)
-    hostdump_output.write(json.dumps(HOSTS, indent=2, sort_keys=True))
+    hostdump_output.write(json.dumps(hostMatrix, indent=2, sort_keys=True))
     hostdump_output.close()
 
     # print json.dumps(HOSTS, indent=2, sort_keys=True)
@@ -282,32 +254,32 @@ def gen_hosttable(items):
         record.append(hostItem["total_mem"] / (1024 * 1024))
         record.append(hostItem["rack_info"])
 
-        record.append(is_componentX(item, 'KNOX_GATEWAY'))
-        record.append(is_componentX(item, 'NAMENODE'))
-        record.append(is_componentX(item, 'JOURNALNODE'))
-        record.append(is_componentX(item, "ZKFC"))
-        record.append(is_componentX(item, "DATANODE"))
-        record.append(is_componentX(item, "RESOURCEMANAGER"))
-        record.append(is_componentX(item, "NODEMANAGER"))
-        record.append(is_componentX(item, "ZOOKEEPER_SERVER"))
-        record.append(is_componentX(item, "HIVE_METASTORE"))
-        record.append(is_componentX(item, "HIVE_SERVER"))
-        record.append(is_componentX(item, "HIVE_SERVER_INTERACTIVE"))
-        record.append(is_componentX(item, "OOZIE_SERVER"))
-        record.append(is_componentX(item, "HBASE_MASTER"))
-        record.append(is_componentX(item, "HBASE_REGIONSERVER"))
-        record.append(is_componentX(item, "KAFKA_BROKER"))
-        record.append(is_componentX(item, "NIFI_MASTER"))
+        record.append(is_component_x(item, 'KNOX_GATEWAY'))
+        record.append(is_component_x(item, 'NAMENODE'))
+        record.append(is_component_x(item, 'JOURNALNODE'))
+        record.append(is_component_x(item, "ZKFC"))
+        record.append(is_component_x(item, "DATANODE"))
+        record.append(is_component_x(item, "RESOURCEMANAGER"))
+        record.append(is_component_x(item, "NODEMANAGER"))
+        record.append(is_component_x(item, "ZOOKEEPER_SERVER"))
+        record.append(is_component_x(item, "HIVE_METASTORE"))
+        record.append(is_component_x(item, "HIVE_SERVER"))
+        record.append(is_component_x(item, "HIVE_SERVER_INTERACTIVE"))
+        record.append(is_component_x(item, "OOZIE_SERVER"))
+        record.append(is_component_x(item, "HBASE_MASTER"))
+        record.append(is_component_x(item, "HBASE_REGIONSERVER"))
+        record.append(is_component_x(item, "KAFKA_BROKER"))
+        record.append(is_component_x(item, "NIFI_MASTER"))
 
-        record.append(is_componentX(item, "LIVY2_SERVER"))
-        record.append(is_componentX(item, "SPARK2_JOBHISTORY"))
+        record.append(is_component_x(item, "LIVY2_SERVER"))
+        record.append(is_component_x(item, "SPARK2_JOBHISTORY"))
 
-        record.append(is_componentX(item, "DRUID_ROUTER"))
-        record.append(is_componentX(item, "DRUID_OVERLOAD"))
-        record.append(is_componentX(item, "DRUID_BROKER"))
-        record.append(is_componentX(item, "DRUID_MIDDLEMANAGER"))
-        record.append(is_componentX(item, "DRUID_HISTORICAL"))
-        record.append(is_componentX(item, "DRUID_COORDINATOR"))
+        record.append(is_component_x(item, "DRUID_ROUTER"))
+        record.append(is_component_x(item, "DRUID_OVERLOAD"))
+        record.append(is_component_x(item, "DRUID_BROKER"))
+        record.append(is_component_x(item, "DRUID_MIDDLEMANAGER"))
+        record.append(is_component_x(item, "DRUID_HISTORICAL"))
+        record.append(is_component_x(item, "DRUID_COORDINATOR"))
 
         try:
             disks = {}
@@ -356,14 +328,18 @@ def gen_hosttable(items):
     return records, compute_count, other_count
 
 
-def buildHostMatrix():
+def host_matrix_from_layout(layout, control, componentDict):
     # layout = json.loads(open(layoutFile).read())
-    items = glayout['items']
+    items = layout['items']
+
+    hostMatrix = {}
+
+    services = {}
 
     for item in items:
         # Build total component counts for cluster while examining each item.
-        aggregateComponents(item)
-        addToComponentDictionary(item)
+        # services = aggregateComponents(item)
+        # add_to_component_dictionary(item, componentDict)
 
         hostItem = item["Hosts"]
 
@@ -378,19 +354,19 @@ def buildHostMatrix():
 
         components = {}
         hostGroup = 0
-        for componentGroup in CONTROL:
+        for componentGroup in control:
             components[componentGroup] = {}
-            for cKey in CONTROL[componentGroup]:
+            for cKey in control[componentGroup]:
                 # print cKey
                 # print CONTROL[componentGroup][cKey]
-                found, location = is_component(item, cKey)
+                found, location = is_component(item, cKey, componentDict)
                 if location > 0:
                     hostGroup = hostGroup | location
                 if found:
-                    cValue = CONTROL[componentGroup][cKey]
+                    cValue = control[componentGroup][cKey]
                     components[componentGroup].update({cKey: {'abbr': cValue['abbr']}})
         host['components'] = components
-        host['HostGroupMask'] = getHostGroup(item)
+        host['HostGroupMask'] = get_host_group_mask(item, componentDict)
 
         disks = {}
         # Loop through the disks
@@ -413,151 +389,34 @@ def buildHostMatrix():
         except:
             host_detail = " No host detail information supplied"
 
-        HOSTS[hostItem['host_name']] = host
+        hostMatrix[hostItem['host_name']] = host
+    return hostMatrix
 
 
-def calcHostGroupBitMasks(hostgroups):
-    for hostgroup in hostgroups:
-        hgbitmask = 0
-        for component in hostgroup['components']:
-            try:
-                hgbitmask = hgbitmask | componentDict[component['name']]
-            except:
-                check = 'Component in Host that is not in the Layouts: ' + component['name']
-        hostgroup['HostGroupMask'] = hgbitmask
+# def calcHostGroupBitMasks(hostgroups):
+#     for hostgroup in hostgroups:
+#         hgbitmask = 0
+#         for component in hostgroup['components']:
+#             try:
+#                 hgbitmask = hgbitmask | componentDict[component['name']]
+#             except:
+#                 check = 'Component in Host that is not in the Layouts: ' + component['name']
+#         hostgroup['HostGroupMask'] = hgbitmask
 
 
-def mergeConfigsWithHostMatrix():
-    global stack
-
-    # blueprint = json.loads(open(blueprintFile).read())
-    configurations = blueprint['configurations']
-    stack = blueprint['Blueprints']['stack_name'] + ' ' + blueprint['Blueprints']['stack_version']
-    hostgroups = blueprint['host_groups']
-    calcHostGroupBitMasks(hostgroups)
-
-    # Loop through Hosts
-    for hostKey in HOSTS:
-        # Retrieve Host
-        host = HOSTS[hostKey]
-        # print host
-        for hostgroup in hostgroups:
-            if host['HostGroupMask'] == hostgroup['HostGroupMask']:
-                host['host_group'] = str(hostgroup['name'])
-                hosts = []
-                if 'hosts' in hostgroup.keys():
-                    hosts = hostgroup['hosts']
-                    lclHost = {}
-                    lclHost['hostname'] = host['Hostname']
-                    lclHost['rackId'] = host['Rack']
-                    lclHost['ip'] = host['ip']
-                    hosts.append(lclHost)
-                else:
-                    lclHost = {}
-                    lclHost['hostname'] = host['Hostname']
-                    lclHost['rackId'] = host['Rack']
-                    lclHost['ip'] = host['ip']
-                    hosts.append(lclHost)
-                    hostgroup['hosts'] = hosts
-        # Loop Host Components
-        for cGroup in host['components']:
-            # Proceed if component has a setting.
-            if len(host['components'][cGroup]) > 0:
-                # print "Group: " + cGroup
-                # Cycle through the Hosts Group Components
-                for component in host['components'][cGroup]:
-                    # print "Component: " + component
-                    # Get the component config from the CONTROL File
-                    for componentSection in ['config', 'environment']:
-                        # print "Section: " + componentSection
-                        config = CONTROL[cGroup][component][componentSection]
-                        #  Cycle through the configs in the Control File
-                        cfgSection = config['section']
-                        # bpProperties = {}
-                        hostgroup = []
-                        for shg in hostgroups:
-                            if shg['name'] == host['host_group']:
-                                hostgroup = shg
-                        for bpSections in configurations:
-                            if bpSections.keys()[0] == cfgSection:
-                                # print "Config Section: " + cfgSection
-                                bpProperties = bpSections.get(cfgSection)['properties']
-                                #  Lookup Configuration in BP
-                                for localProperty in config['configs']:
-                                    # Get the Target BP Property to Lookup
-                                    targetProperty = config['configs'][localProperty]
-                                    # Find property in BP
-                                    # print 'Local Prop: ' + localProperty + '\tTarget Prop: ' + targetProperty
-                                    try:
-                                        pValue = bpProperties[targetProperty]
-                                        # print 'BP Property Value: ' + pValue
-                                        try:
-                                            pValue = int(pValue)
-                                        except:
-                                            # It could have a trailing char for type
-                                            if localProperty in ['heap', 'off.heap']:
-                                                pValue = int(pValue[:-1])
-                                        if isinstance(pValue, int):
-                                            # Account for some mem settings in Kb
-                                            if localProperty in ['heap', 'off.heap'] and pValue > 1000000:
-                                                host['components'][cGroup][component][localProperty] = pValue / 1024
-                                            else:
-                                                host['components'][cGroup][component][localProperty] = pValue
-                                        else:
-                                            host['components'][cGroup][component][localProperty] = pValue
-                                    except:
-                                        missing = "Missing from Blueprint: " + component + ":" + cfgSection + ":" + targetProperty
-                                    # print pValue
-                                break
-                        #  go through the overrides
-                        hostgroupCfg = hostgroup['configurations']
-                        for bpSections in hostgroupCfg:
-                            if bpSections.keys()[0] == cfgSection:
-                                # print "Config Section: " + cfgSection
-                                bpProperties = bpSections.get(cfgSection)
-                                #  Lookup Configuration in BP
-                                for localProperty in config['configs']:
-                                    # Get the Target BP Property to Lookup
-                                    targetProperty = config['configs'][localProperty]
-                                    # Find property in BP
-                                    # print 'Local Prop: ' + localProperty + '\tTarget Prop: ' + targetProperty
-                                    try:
-                                        pValue = bpProperties[targetProperty]
-                                        # print 'BP Property Value: ' + pValue
-                                        try:
-                                            pValue = int(pValue)
-                                        except:
-                                            # It could have a trailing char for type
-                                            if localProperty in ['heap', 'off.heap']:
-                                                pValue = int(pValue[:-1])
-                                        if isinstance(pValue, int):
-                                            # Account for some mem settings in Kb
-                                            if localProperty in ['heap', 'off.heap'] and pValue > 1000000:
-                                                host['components'][cGroup][component][localProperty] = pValue / 1024
-                                            else:
-                                                host['components'][cGroup][component][localProperty] = pValue
-                                        else:
-                                            host['components'][cGroup][component][localProperty] = pValue
-                                    except:
-                                        override = "No override for: " + component + ":" + cfgSection + ":" + targetProperty
-                                    # print pValue
-                                break
-    return blueprint
-
-
-def rpt_mem_allocations(output):
+def rpt_mem_allocations(hostMatrix, control, output):
     output.write('\n<h2>Host Memory Allocations</h2>\n')
     fields = ['Hostname', 'Gb', 'Allocated', 'Components']
     mem_recs = []
-    for hostKey in HOSTS:
+    for hostKey in hostMatrix:
         mem_rec = {}
-        host = HOSTS[hostKey]
+        host = hostMatrix[hostKey]
         mem_rec['Hostname'] = host['Hostname']
         mem_rec['Gb'] = host['Gb']
         mem_rec_component_heaps = {}
         mem_rec['Components'] = {}
-        for controlKey in CONTROL:
-            for component in CONTROL[controlKey]:
+        for controlKey in control:
+            for component in control[controlKey]:
                 for hostGroupKey in host['components']:
                     if hostGroupKey == controlKey:
                         for hostComponentKey in host['components'][hostGroupKey]:
@@ -591,14 +450,15 @@ def rpt_mem_allocations(output):
     writehtmltable(mem_recs, fields, output)
 
 
-def rpt_services(output):
+def rpt_services(layout, output):
     output.write('\n<h2>Service Counts</h2>\n')
     lcl_services = []
     fields = ['Service', 'Count']
-    for service in SERVICES:
+    services = aggregate_components(layout)
+    for service in services:
         lcl_service = {}
         lcl_service['Service'] = service
-        lcl_service['Count'] = SERVICES[service]
+        lcl_service['Count'] = services[service]
         lcl_services.append(lcl_service)
     writehtmltable(lcl_services, fields, output)
 
@@ -621,21 +481,21 @@ def populate_components(paths, hostComponents, hostRec):
             pass
 
 
-def rpt_hosttable(output):
+def rpt_hosttable(hostMatrix, control, output):
     output.write('\n<h2>Host Table</h2>\n')
     # master = datanode & compute
     fields_base = ['Hostname', 'OS', 'vC', 'Gb', 'Rack']
 
-    paths, bfields = buildFieldPathFromAbbr(['KX', 'NN', 'JN', 'ZKFC', 'DN', 'RM', 'NM',
-                                             'ZK', 'HMS', 'HS2', 'HS2i', 'OZ', 'HM', 'RS',
-                                             'KB', 'NF', 'LV2', 'S2H', 'DR', 'DO', 'DB',
-                                             'DM', 'DH', 'DH'])
+    paths, bfields = build_field_path_from_abbr(control, ['KX', 'NN', 'JN', 'ZKFC', 'DN', 'RM', 'NM',
+                                                      'ZK', 'HMS', 'HS2', 'HS2i', 'OZ', 'HM', 'RS',
+                                                      'KB', 'NF', 'LV2', 'S2H', 'DR', 'DO', 'DB',
+                                                      'DM', 'DH', 'DH'])
 
     fields = fields_base + bfields
 
     hosttable = []
-    for hostKey in HOSTS:
-        host = HOSTS[hostKey]
+    for hostKey in hostMatrix:
+        host = hostMatrix[hostKey]
         hostRec = get_hostbase(host, fields_base)
         populate_components(paths, host['components'], hostRec)
 
@@ -644,11 +504,11 @@ def rpt_hosttable(output):
     writehtmltable(hosttable, fields, output)
 
 
-def rpt_hoststorage(output):
+def rpt_hoststorage(hostMatrix, control, output):
     output.write('\n<h2>Host Storage</h2>\n')
     fields_base = ['Hostname', 'vC', 'Gb', 'Rack']
 
-    paths, bfields = buildFieldPathFromAbbr(['NN', 'JN', 'DN', 'ZK', 'NM', 'KB', 'NF'])
+    paths, bfields = build_field_path_from_abbr(control, ['NN', 'JN', 'DN', 'ZK', 'NM', 'KB', 'NF'])
 
     fields = fields_base + bfields
     fields.append('DataDirs')
@@ -656,8 +516,8 @@ def rpt_hoststorage(output):
     fields.append('Disks')
 
     hosttable = []
-    for hostKey in HOSTS:
-        host = HOSTS[hostKey]
+    for hostKey in hostMatrix:
+        host = hostMatrix[hostKey]
         hostRec = get_hostbase(host, fields_base)
         populate_components(paths, host['components'], hostRec)
         hostRec['DataDirs'] = getDataDirs(host['components'])
@@ -689,12 +549,12 @@ def getLogsDirs(components):
     return logsDirs
 
 
-def rpt_count_type(types, output):
-    global cluster_creation_template
+def rpt_count_type(blueprint, layout, types, output, componentDict):
+    cluster_creation_template = {}
 
     output.write('\n<h2>Count Types</h2>\n')
     # layout = json.loads(open(layoutFile).read())
-    items = glayout['items']
+    items = layout['items']
 
     # master = datanode & compute
     # type = { category: ['DN','NN']}
@@ -714,7 +574,7 @@ def rpt_count_type(types, output):
         for item in items:
             found = 0
             for comp in types[category]:
-                componentFound, hgbitmask = is_component(item, comp)
+                componentFound, hgbitmask = is_component(item, comp, componentDict)
                 if componentFound:
                     found += 1
                     host = item['Hosts']
@@ -773,9 +633,10 @@ def rpt_count_type(types, output):
 
     writehtmltable(hg_table, hg_fields, output)
 
+    return cluster_creation_template
+
 
 def rpt_totals(hosttable, output):
-
     output.write('\n<h2>Totals</h2>\n')
     totalFields = [[0, "Type"], [1, "Count"], [2, "OS"], [3, "CPU-Min"], [4, "CPU-Max"], [5, "Mem-Min"], [6, "Mem-Max"]]
     totalType = []
@@ -824,7 +685,10 @@ def rpt_totals(hosttable, output):
 
     writehtmltable(totalType, totalFields, output)
 
+
 def writeHeader(output):
+    global stack
+
     output.write('<table class="TFtable">')
     output.write('<tr>')
     output.write('<th>Date</th>')
@@ -849,7 +713,7 @@ def main():
     global layout_file
     global bp_file
     global run_date
-    global blueprint
+    global stack
 
     parser = optparse.OptionParser(usage="usage: %prog [options]")
 
@@ -866,18 +730,30 @@ def main():
     stdout_handler.setFormatter(formatter)
     logger.addHandler(stdout_handler)
 
-    loadControl(os.path.dirname(os.path.realpath(__file__)) + "/control.json")
+    control = get_control(os.path.dirname(os.path.realpath(__file__)) + "/hdp_support/control.json")
+
+    hostMatrix = {}
+    layout = {}
+    componentDict = {}
+    # mergedBlueprint = {}
 
     if options.ambari_layout and options.ambari_layout:
         layout_file = options.ambari_layout
-        glayout = json.loads(open(options.ambari_layout).read())
-        buildHostMatrix()
+        layout = json.loads(open(options.ambari_layout).read())
+        componentDict = get_component_dictionary(layout)
+        hostMatrix = host_matrix_from_layout(layout, control, componentDict)
 
     if options.ambari_blueprint:
         bp_file = options.ambari_blueprint
         blueprint = json.loads(open(bp_file).read())
 
-        newblueprint = mergeConfigsWithHostMatrix()
+        # hostgroups = blueprint['host_groups']
+        # calc_host_group_bit_masks(hostgroups, componentDict)
+
+        stack = blueprint['Blueprints']['stack_name'] + ' ' + \
+                blueprint['Blueprints']['stack_version']
+
+        mergedBlueprint = merge_configs_with_host_matrix(blueprint, hostMatrix, componentDict, control)
 
         run_date = str(date.today())
 
@@ -892,15 +768,16 @@ def main():
         except:
             os.mkdir(output_dir)
 
-    # if options.ambari_blueprint:
-    #     newblueprint = mergeConfigsWithHostMatrix(options.ambari_blueprint)
-        new_bp_filename = output_dir + '/' + options.ambari_blueprint[:-5] + '_cm.json'
-        new_bp_output = open(new_bp_filename, 'w')
-        new_bp_output.write(json.dumps(newblueprint, indent=2, sort_keys=False))
-        new_bp_output.close()
+        # if options.ambari_blueprint:
+        #     newblueprint = mergeConfigsWithHostMatrix(options.ambari_blueprint)
+        # new_bp_filename = options.ambari_blueprint[:-14] + '_bp_host_matrix.json'
+        # new_bp_output = open(new_bp_filename, 'w')
+        # new_bp_output.write(json.dumps(mergedBlueprint, indent=2, sort_keys=False))
+        # new_bp_output.close()
 
-        report(options.ambari_layout, output_dir)
+        report(mergedBlueprint, hostMatrix, layout, control, componentDict, output_dir)
     else:
         print ("Missing input")
+
 
 main()
