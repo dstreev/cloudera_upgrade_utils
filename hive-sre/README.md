@@ -1,5 +1,9 @@
 ## Hive SRE Tooling
 
+### Binary
+
+[Releases](https://github.com/dstreev/cloudera_upgrade_utils/releases)
+
 ### Hive JDBC Performance Testing Tool (perf)
 
 JDBC Performance Testing tool.  Will provide connection timing details and rolling windows of performance for long running queries.  Details in the windows will show not only records but also an estimate of the data volume.
@@ -133,10 +137,6 @@ usage: Sre
                          config. (upto 100)
  -o,--output-dir <arg>   Output Directory to save results from Sre.
  ```
-
-#### Binaries
-
-[Releases](https://github.com/dstreev/cloudera_upgrade_utils/releases)
 
 #### Running
 
