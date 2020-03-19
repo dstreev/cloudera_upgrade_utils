@@ -134,6 +134,10 @@ usage: Sre
  -o,--output-dir <arg>   Output Directory to save results from Sre.
  ```
 
+#### Binaries
+
+[Releases](https://github.com/dstreev/cloudera_upgrade_utils/releases)
+
 #### Running
 
 `java -cp ./mariadb-java-client-2.5.3.jar:./hive-sre-<version>-SNAPSHOT-shaded.jar com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
