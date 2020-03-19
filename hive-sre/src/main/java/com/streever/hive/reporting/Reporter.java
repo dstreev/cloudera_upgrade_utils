@@ -9,7 +9,7 @@ import static com.streever.hive.reporting.ReportCounter.*;
 
 public class Reporter implements Runnable {
 
-//    public static final String clearConsole = "\33[H\33[2J";
+    //    public static final String clearConsole = "\33[H\33[2J";
 //    public static final String resetToPreviousLine = "\33[1A\33[2K";
 //    public static final String ANSI_RESET = "\u001B[0m";
 //    public static final String ANSI_BLACK = "\u001B[30m";
@@ -53,7 +53,7 @@ public class Reporter implements Runnable {
         long total = counter.getTotalCount();
         long processed = counter.getProcessed();
         double percentProcessed = (double) processed / (double) total;
-        int percentProcessWidth = (int) (percentProcessed * (WIDTH-(prefix.length())));
+        int percentProcessWidth = (int) (percentProcessed * (WIDTH - (prefix.length())));
 
         displayLines.add(prefix + ReportingConf.ANSI_YELLOW + counter.getName() + " : " + counter.getStatusStr() + ReportingConf.ANSI_RESET);
         String processedStr = StringUtils.rightPad("|", percentProcessWidth, "=");
@@ -98,9 +98,10 @@ public class Reporter implements Runnable {
     }
 
     private void resetLines() {
-        for (int i = 0; i < linePos; i++) {
-            System.out.print(ReportingConf.RESET_TO_PREVIOUS_LINE);
-        }
+//        for (int i = 0; i < linePos; i++) {
+//            System.out.print(ReportingConf.RESET_TO_PREVIOUS_LINE);
+//        }
+        System.out.print(ReportingConf.CLEAR_CONSOLE);
         linePos = 0;
     }
 
@@ -114,17 +115,16 @@ public class Reporter implements Runnable {
         if (counterGroups.size() == 0)
             return true;
         resetLines();
+        String version = ReportingConf.substituteVariables("v.${Implementation-Version}");
         if (tictoc) {
-            pushLine(" ");
+            pushLine(version);
         } else {
-            pushLine("*");
+            pushLine(version + " *");
         }
         for (String groupName : this.counterGroups.keySet()) {
             List<ReportCounter> counters = counterGroups.get(groupName);
 
             List<String> currentProcessing = new ArrayList<String>();
-            String version = ReportingConf.substituteVariables("v.${Implementation-Version}");
-            pushLine(version);
             pushLine(StringUtils.rightPad("=", WIDTH, "="));
             pushLine(StringUtils.center(groupName, WIDTH));
             pushLine(StringUtils.rightPad("=", WIDTH, "="));
@@ -134,30 +134,28 @@ public class Reporter implements Runnable {
             totals.put(SUCCESS, new AtomicLong(0));
             Map<Integer, AtomicLong> progress = new TreeMap<Integer, AtomicLong>();
             for (ReportCounter ctr : counters) {
-                if (progress.containsKey(ctr.getStatus())) {
-                    progress.get(ctr.getStatus()).addAndGet(1);
-                } else {
-                    progress.put(ctr.getStatus(), new AtomicLong(1));
-                }
                 switch (ctr.getStatus()) {
-//                case CONSTRUCTED:
-//                    break;
-//                case WAITING:
-//                    break;
-//                case STARTED:
-//                    break;
-                    case PROCESSING:
-                        Wrap cd = getCounterDisplay(INDENT, ctr);
-                        currentProcessing.addAll(cd.details);
+                    case ReportCounter.CONSTRUCTED:
+                    case ReportCounter.WAITING:
+                    case ReportCounter.STARTED:
+                    case ReportCounter.PROCESSING:
+                        if (progress.containsKey(ctr.getStatus())) {
+                            progress.get(ctr.getStatus()).addAndGet(1);
+                        } else {
+                            progress.put(ctr.getStatus(), new AtomicLong(1));
+                        }
+                        if (ctr.getStatus() == PROCESSING) {
+                                Wrap cd = getCounterDisplay(INDENT, ctr);
+                                currentProcessing.addAll(cd.details);
+                        }
+                        for (ReportCounter child : ctr.getChildren()) {
+                            totals.get(ERROR).addAndGet(child.getError());
+                            totals.get(SUCCESS).addAndGet(child.getSuccess());
+                        }
                         break;
-//                case ERROR:
-//                    break;
-//                case COMPLETED:
-//                    break;
-                }
-                for (ReportCounter child : ctr.getChildren()) {
-                    totals.get(ERROR).addAndGet(child.getError());
-                    totals.get(SUCCESS).addAndGet(child.getSuccess());
+                    case ReportCounter.ERROR:
+                    case ReportCounter.COMPLETED:
+                        break;
                 }
             }
             for (String line : currentProcessing) {
@@ -214,5 +212,12 @@ public class Reporter implements Runnable {
             }
         }
         refresh();
+    }
+
+    @Override
+    public String toString() {
+        return "Reporter{" +
+                "name='" + name + '\'' +
+                '}';
     }
 }

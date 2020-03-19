@@ -116,4 +116,8 @@ public class HiveStructureCheck implements SreSubApp {
 
     }
 
+    @Override
+    public String toString() {
+        return "HiveStructureCheck{}";
+    }
 }

@@ -195,4 +195,8 @@ public class MetastoreQuery extends SreProcessBase implements Counter, Runnable 
         counter.setError(error);
     }
 
+    @Override
+    public String toString() {
+        return "MetastoreQuery{}";
+    }
 }

@@ -151,7 +151,7 @@ public class ProcessContainer {
             this.connectionPools = new ConnectionPools(getConfig());
             this.connectionPools.init();
 
-            getProcessThreads().add(getThreadPool().schedule(getReporter(), 1, MILLISECONDS));
+            getProcessThreads().add(getThreadPool().schedule(getReporter(), 100, MILLISECONDS));
 
             for (SreProcessBase process: getProcesses()) {
                 if (process.isActive()) {
@@ -159,8 +159,7 @@ public class ProcessContainer {
                     process.init(this, job_run_dir);
                     if (process instanceof Runnable && process instanceof Counter) {
                         getReporter().addCounter(process.getName(), ((Counter)process).getCounter());
-                        getProcessThreads().add(getThreadPool().schedule((Runnable)process, 1, MILLISECONDS));
-
+                        getProcessThreads().add(getThreadPool().schedule((Runnable)process, 100, MILLISECONDS));
                     }
                 }
             }
@@ -171,4 +170,8 @@ public class ProcessContainer {
         }
     }
 
+    @Override
+    public String toString() {
+        return "ProcessContainer{}";
+    }
 }

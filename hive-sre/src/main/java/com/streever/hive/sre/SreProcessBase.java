@@ -22,7 +22,7 @@ import java.net.URL;
         @JsonSubTypes.Type(value = DbSet.class, name = "dbSet"),
         @JsonSubTypes.Type(value = MetastoreQuery.class, name = "metastore.query")})
 public abstract class SreProcessBase {
-    private String name;
+    private String name = "not set";
     private Boolean active = Boolean.TRUE;
 
     private ProcessContainer parent;
@@ -31,7 +31,7 @@ public abstract class SreProcessBase {
     private QueryDefinitions queryDefinitions = null;
     private String queryDefinitionReference = null;
 
-    private String[] dbsOverride = null;
+    private String[] dbsOverride = {};
     private String errorFilename = null;
     private String successFilename = null;
 

@@ -123,4 +123,8 @@ public class UpgradeToHive3 implements SreSubApp{
 
     }
 
+    @Override
+    public String toString() {
+        return "UpgradeToHive3{}";
+    }
 }

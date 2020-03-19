@@ -18,7 +18,7 @@ public class JDBCRecordIterator implements Runnable {
     private String username;
     private String password;
     private String query;
-    private Integer batchSize = 10000;
+    private Integer batchSize = 5000;
     private Integer delayWarning = 1000;
     private Boolean lite = Boolean.FALSE;
     private StringBuilder connectionDetails = new StringBuilder();

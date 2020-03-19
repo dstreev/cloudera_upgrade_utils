@@ -1,6 +1,5 @@
 package com.streever.hive.sre;
 
-import com.streever.hive.config.ConnectionPool;
 import com.streever.hive.config.Metastore;
 import com.streever.hive.config.SreProcessesConfig;
 import org.apache.commons.dbcp2.*;

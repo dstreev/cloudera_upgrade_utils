@@ -38,10 +38,10 @@ processes:
         processOnSuccess: false
   - type: "dbSet"
     active: true
-    name: "Hive 3 Upgrade Checks - Managed Table Migrations"
+    name: "Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations"
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     errorFilename: "managed_upgrade_2_acid.err"
-    successFilename: "managed_upgrade_2_acid.txt"
+    successFilename: "managed_upgrade_2_acid.sql"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"tbl_location"]
     pathsListingQuery: "managed_2_acid"
@@ -59,12 +59,12 @@ processes:
           ownershipCheck:
             RECORDS:
               test: "if (\"%5$s\".equals(\"%6$s\")) true; else false;"
-              pass: "\"Table is OWNED by '%6$s' and not currently ACID.\\n
-                    This table will be migrated unless changed.\\n
+              pass: "\"-- Table is OWNED by '%6$s' and not currently ACID.\\n
+                    -- This table will be migrated unless changed.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
-              fail: "\"Table is NOT owned by '%6$s' and NOT currently ACID.\\n
-                    This table 'could' be migrated to an ACID table unless changed.\\n
-                    Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
+              fail: "\"-- Table is NOT owned by '%6$s' and NOT currently ACID.\\n
+                    -- This table 'could' be migrated to an ACID table unless changed.\\n
+                    -- Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
               params: ["hive"]
   - type: "dbSet"
@@ -72,7 +72,7 @@ processes:
     name: "Hive 3 Upgrade Checks - Compaction Check"
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     errorFilename: "managed_compactions.err"
-    successFilename: "managed_compactions.txt"
+    successFilename: "managed_compactions.sql"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location"]
     pathsListingQuery: "managed_tbl_locations"
@@ -89,12 +89,12 @@ processes:
           partitionCheck:
             PATH:
               test: "if (\"%4$s\".equals(\"%6$s\")) true; else false;"
-              pass: "\"Table is OWNED by '%6$s' and not currently ACID.\\n
-                    This table will be migrated unless changed.\\n
+              pass: "\"-- Table is OWNED by '%6$s' and not currently ACID.\\n
+                    -- This table will be migrated unless changed.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
-              fail: "\"Table is NOT owned by '%6$s' and NOT currently ACID.\\n
-                    This table 'could' be migrated to an ACID table unless changed.\\n
-                    Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
+              fail: "\"-- Table is NOT owned by '%6$s' and NOT currently ACID.\\n
+                    -- This table 'could' be migrated to an ACID table unless changed.\\n
+                    -- Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
               params: ["hive"]
 

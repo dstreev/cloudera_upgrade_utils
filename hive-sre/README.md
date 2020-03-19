@@ -140,15 +140,18 @@ usage: Sre
 
 #### Check and Validations Performed
 
+Actions are NOT taken by this process.  The output of each section will contain 'actions' for you to take when a scenario is discovered.  It is up to you to carry out those actions after reviewing them.
+
 1. Hive 3 Upgrade Checks - Locations Scan
     - Missing Directories
     > Missing Directories cause the upgrade conversion process to fail.  To prevent that failure, there are two choices for a 'missing directory'.  Either create it of drop the table/partition.
 2. Hive 3 Upgrade Checks - Bad ORC Filenames
     - Bad Filename Format
-    > Tables that would be convert from a Managed Non-Acid table to an ACID transactional table require the files to match a certain pattern. This process will scan the potential directories of these tables for bad filename patterns.
+    > Tables that would be convert from a Managed Non-Acid table to an ACID transactional table require the files to match a certain pattern. This process will scan the potential directories of these tables for bad filename patterns.  When located, it will indicate which tables/partitions have been file naming conventions that would prevent a successful conversion to ACID.  The best and easiest way to correct these files names is to use HiveSQL to rewrite the contents of the table/partition with a simple 'INSERT OVERWRITE TABLE xxx SELECT * FROM xxx'.  This type of statement will replace the current bad filenames with valid file names by rewriting the contents in HiveSQL.
 3. Hive 3 Upgrade Checks - Managed Table Migrations
     - Ownership Check
-    > 
+    - Conversion to ACID tables
+    > This process will list tables that will and 'could' be migrated to "Managed ACID" tables during the upgrade process.  If these tables are used by Spark OR data is managed by a separate process that interacts with the FileSystem, DO NOT LET THESE conversion happen.  The output of this process will supply Hive DDL commands to convert these tables to "EXTERNAL / PURGE" tables in Hive 3, which is the same as the 'classic' Hive 1/2 Managed Non-Acid table.                                                                      
 4. Hive 3 Upgrade Checks - Compaction Check
     - Compaction Check
     > Review ACID tables for 'delta' directories.  Where 'delta' directories are found, we'll 

@@ -1,19 +1,11 @@
 package com.streever.hive.sre;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.streever.hive.config.QueryDefinitions;
-import com.streever.hive.config.SreProcessesConfig;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
-import org.apache.commons.io.IOUtils;
 
 import java.io.FileNotFoundException;
-import java.io.PrintStream;
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -132,4 +124,10 @@ public class DbSet extends SreProcessBase {
 
     }
 
+    @Override
+    public String toString() {
+        return "DbSet{" +
+                "dbPaths=" + dbPaths +
+                '}';
+    }
 }

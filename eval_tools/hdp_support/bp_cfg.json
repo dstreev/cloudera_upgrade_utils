@@ -26,6 +26,13 @@
       }
     },
     {
+      "capacity-scheduler": {
+        "environment_dependent": [
+        ],
+        "skip": []
+      }
+    },
+    {
       "core-site": {
         "environment_dependent": [
           "hadoop.security.key.provider.path",

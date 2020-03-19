@@ -144,16 +144,30 @@ def write(key, added, removed, modified, env_dep, same, output):
             width=section_width,
         ))
         # output.write(part_sep)
-        output.write("| Property |\n|:---|\n")
+        output.write("| Property | Value |\n|:---|:---|\n")
 
-        for item in sorted(same):
-            output.write("| %s |\n" % (item,))
+        # Show Key and Value
+        for ekey in sorted(same):
+            if (len(same[ekey]) > 0):
+                output.write('| ' + ekey + ' | ' + fix(same[ekey]) + ' |\n')
+            else:
+                output.write("| %s | |\n" % (ekey, ))
+
+        # for item in sorted(same):
+        #     output.write("| %s | %s |\n" % (item, fix(env_dep[ekey][0])))
 
     output.write("\n")
 
 
 def compare(referencebp, checkbp, output):
+
     output.write("# Ambari Configuration Diff Tool\n")
+    output.write("## Configurations\n")
+    output.write("\n")
+    output.write("Reference Cluster (-r): " + referencebp + "\n")
+    output.write("Check Cluster (-c)    : " + checkbp + "\n")
+    output.write("\n")
+    output.write("### Summary\n")
     output.write("> This is a comparison of the 'reference' blueprint and the 'check' blueprint.\n")
     output.write(" The output will include 5 parts for each section examined:\n")
     output.write(" - ADDITIONAL : Keys present in the 'check' blueprint and not in the 'reference' blueprint.\n")

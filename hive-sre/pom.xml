@@ -16,7 +16,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <hadoop.cli.version>2.2.0-SNAPSHOT</hadoop.cli.version>
+        <hadoop.cli.version>2.2.0.1-SNAPSHOT</hadoop.cli.version>
         <jackson.json.version>2.9.5</jackson.json.version>
         <jackson.yaml.version>2.9.5</jackson.yaml.version>
         <commons-cli.version>1.2</commons-cli.version>

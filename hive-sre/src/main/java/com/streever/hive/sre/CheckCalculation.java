@@ -53,4 +53,9 @@ public class CheckCalculation implements Cloneable {
         rtn.setPass(this.pass);
         return super.clone();
     }
+
+    @Override
+    public String toString() {
+        return "CheckCalculation{}";
+    }
 }

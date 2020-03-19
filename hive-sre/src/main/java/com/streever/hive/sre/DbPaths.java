@@ -1,15 +1,10 @@
 package com.streever.hive.sre;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.streever.hadoop.HadoopSession;
 import com.streever.hadoop.shell.command.CommandReturn;
-
-import static com.streever.hive.reporting.ReportCounter.*;
-
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
-import org.apache.commons.lang.ObjectUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,6 +13,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
+
+import static com.streever.hive.reporting.ReportCounter.*;
 
 public class DbPaths extends SRERunnable {
 
@@ -69,11 +67,13 @@ public class DbPaths extends SRERunnable {
             }
         }
 
-        this.cliSession = HadoopSession.get("DB Paths for: " + getName());
+        this.cliSession = HadoopSession.get("DB Paths for: " + getName() + UUID.randomUUID());
         String[] api = {"-api"};
         try {
             // TODO: Need to promote failure when keytab doesn't exist.
+//            System.out.println("Start CLI Session");
             this.cliSession.start(api);
+//            System.out.println("CLI Session Started");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -148,4 +148,8 @@ public class DbPaths extends SRERunnable {
         setStatus(COMPLETED);
     }
 
+    @Override
+    public String toString() {
+        return "DbPaths{}";
+    }
 }

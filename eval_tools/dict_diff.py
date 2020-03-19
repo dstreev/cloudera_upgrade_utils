@@ -39,6 +39,7 @@ def dict_compare(base_dict, check_dict, cfg_spec):
     # Check if
     # del modified[key]
 
-    same = set(o for o in intersect_keys if base_dict[o] == check_dict[o])
+    # same = set(o for o in intersect_keys if base_dict[o] == check_dict[o])
+    same = {o: (base_dict[o]) for o in intersect_keys if base_dict[o] == check_dict[o]}
     return added, removed, modified, env_dep, same
 

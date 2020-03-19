@@ -21,7 +21,7 @@ public class ReportCounter {
     private AtomicLong processed = new AtomicLong(0);
     private  AtomicLong success = new AtomicLong(0);
     private  AtomicLong error = new AtomicLong(0);
-    private String name = null;
+    private String name = "unknown";
 
     private List<ReportCounter> children = new ArrayList<ReportCounter>();
 
@@ -136,4 +136,17 @@ public class ReportCounter {
 //        }
 //        return sb.toString();
 //    }
+
+    @Override
+    public String toString() {
+        return "ReportCounter{" +
+                "status=" + status +
+                ", totalCount=" + totalCount +
+                ", processed=" + processed +
+                ", success=" + success +
+                ", error=" + error +
+                ", name='" + name + '\'' +
+                ", children=" + children +
+                '}';
+    }
 }

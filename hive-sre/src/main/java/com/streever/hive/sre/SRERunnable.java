@@ -1,6 +1,5 @@
 package com.streever.hive.sre;
 
-import com.streever.hive.config.QueryDefinitions;
 import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
 

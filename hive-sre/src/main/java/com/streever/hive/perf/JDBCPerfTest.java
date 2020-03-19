@@ -122,6 +122,8 @@ public class JDBCPerfTest implements SreSubApp {
 
         if (cmd.hasOption("n")) {
             getJri().setUsername(cmd.getOptionValue("n"));
+        } else {
+            getJri().setUsername(System.getProperty("user.name"));
         }
 
         if (cmd.hasOption("p")) {
