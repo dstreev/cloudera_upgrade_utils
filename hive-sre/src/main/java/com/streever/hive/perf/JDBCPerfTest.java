@@ -78,6 +78,11 @@ public class JDBCPerfTest implements SreSubApp {
         batchsize.setRequired(false);
         options.addOption(batchsize);
 
+        Option hostCheck = new Option("h", "host-check", true, "Ping a target host");
+        hostCheck.setArgs(1);
+        hostCheck.setRequired(false);
+        options.addOption(hostCheck);
+
         Option delayWarning = new Option("d", "delay-warning", true,
                 "Warn when delay while iterating over records is greater than this.");
         delayWarning.setArgs(1);
@@ -141,6 +146,11 @@ public class JDBCPerfTest implements SreSubApp {
         if (cmd.hasOption("b")) {
             String value = cmd.getOptionValue("b");
             getJri().setBatchSize(Integer.valueOf(value));
+        }
+
+        if (cmd.hasOption("h")) {
+            String value = cmd.getOptionValue("h");
+            getJri().setPingHost(value);
         }
 
         if (cmd.hasOption("d")) {

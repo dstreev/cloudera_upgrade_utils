@@ -51,12 +51,17 @@ def calc_host_bit_masks(layout_hosts, componentDict):
     # working_host_groups = copy.deepcopy(hostgroups)
     for item in layout_hosts:
         hgbitmask = 0
+        host_detail = {}
         for component in item['host_components']:
             try:
                 hgbitmask = hgbitmask | componentDict[component['HostRoles']['component_name']]
             except:
                 check = 'Component in Host that is not in the Layouts: ' + component['name']
-        host_bitmask[item['Hosts']['host_name']] = hgbitmask
+        host_detail['host_name'] = item['Hosts']['host_name']
+        host_detail['bit_mask'] = hgbitmask
+        if 'rack_info' in item['Hosts'].keys():
+            host_detail['rack_info'] = item['Hosts']['rack_info']
+        host_bitmask[item['Hosts']['host_name']] = host_detail
     return host_bitmask
 
 
@@ -79,9 +84,11 @@ def build_creation_template_from_layout(blueprint, layout):
         cct_host_group['name'] = host_group['name']
         cct_hosts = []
         for layout_host in hostbitmask.keys():
-            if hostbitmask[layout_host] == hostgroupsbitmask[host_group['name']]:
+            if hostbitmask[layout_host]['bit_mask'] == hostgroupsbitmask[host_group['name']]:
                 cct_host = {}
-                cct_host['fqdn'] = layout_host
+                cct_host['fqdn'] = hostbitmask[layout_host]['host_name']
+                if 'rack_info' in hostbitmask[layout_host]:
+                    cct_host['rack_info'] = hostbitmask[layout_host]['rack_info']
                 cct_hosts.append(cct_host)
         cct_host_group['hosts'] = cct_hosts
         cct_host_groups.append(cct_host_group)
@@ -107,6 +114,8 @@ def build_ambari_blueprint_v2(blueprint, creationTemplate):
                 for ct_host in ct_hostgroup['hosts']:
                     lclHost = {}
                     lclHost['hostname'] = ct_host['fqdn']
+                    if 'rack_info' in ct_host.keys():
+                        lclHost['rack_info'] = ct_host['rack_info']
                     hosts.append(lclHost)
                 bp_host_group['hosts'] = hosts
         # print("hello")

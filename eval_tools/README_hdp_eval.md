@@ -6,6 +6,13 @@ It will provide a layout of the clusters main components, counts for each compon
 
 The input to this is a 'layout' file and an 'Ambari blueprint' of the cluster.
 
+
+## Artifact Naming Conventions
+
+The tools in this suite have made special considerations for file naming conventions for the 'blueprints' and 'layouts'.  In cases where the 'blueprint' and 'layout' are required, you can omit specifying the 'layout' if the blueprint file ends with '-blueprint.json' and the layout ends with '-layout.json'.  The prefix for each must match.  For example: Blueprint filename: mytest-cluster-prod-blueprint.json would automatically look for a layout file named mytest-cluster-prod-layout.json.  If these don't match, you will need to specify both the blueprint and layout options.
+
+## Getting Artifacts from Ambari
+
 Run these in a browser that has been logged into Ambari.  The results are JSON files.  Save and use as input to this process.
 
 ### Get a Blueprint:

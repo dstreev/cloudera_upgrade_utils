@@ -36,7 +36,7 @@ part_sep = '***\n'
 
 
 def fix(text):
-    return text.replace('|', '\|<br>').replace(',', ',<br>').replace('_', '\_').replace('\n', '<br>').replace('*',
+    return str(text).replace('|', '\|<br>').replace(',', ',<br>').replace('_', '\_').replace('\n', '<br>').replace('*',
                                                                                                           '\*').replace(
         ';', ';<br>')
 
@@ -79,6 +79,7 @@ def write(key, added, removed, modified, env_dep, same, output):
             if len(akey) <= (section_width / 10 * 6):
                 output.write('| ' + akey + ' | ' + fix(added.get(akey)) + ' |\n')
             else:
+                print('*** ' + akey + ' ***')
                 output.write("| %s | %s |\n" % (fix(akey), fix(added.get(akey))))
 
     # output.write(part_sep)

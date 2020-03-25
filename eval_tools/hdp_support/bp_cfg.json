@@ -53,6 +53,12 @@
       }
     },
     {
+      "hbase-env": {
+        "environment_dependent": [],
+        "skip": []
+      }
+    },
+    {
       "hbase-site": {
         "environment_dependent": [
           "hbase.rootdir",

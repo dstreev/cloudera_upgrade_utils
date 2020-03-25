@@ -10,7 +10,7 @@ import sys
 import json
 from common import pprinttable, pprinttable2, pprinthtmltable, writehtmltable
 from datetime import date
-
+from os import path
 from ambari import *
 
 VERSION = "0.1.5"
@@ -737,11 +737,27 @@ def main():
     componentDict = {}
     # mergedBlueprint = {}
 
-    if options.ambari_layout and options.ambari_layout:
+    # if not (options.ambari_layout):
+    #     print ("Need to specify a 'layout'")
+    #     exit(-1)
+
+    if options.ambari_layout:
         layout_file = options.ambari_layout
         layout = json.loads(open(options.ambari_layout).read())
+    else:
+        layout_file = options.ambari_blueprint[:-14] + 'layout.json'
+        if path.exists(layout_file):
+            layout = json.loads(open(layout_file).read())
+        else:
+            print("Can't locate layout file (based on blueprint filename: " + layout_file)
+            exit(-1)
+
+    if layout is not None:
         componentDict = get_component_dictionary(layout)
         hostMatrix = host_matrix_from_layout(layout, control, componentDict)
+    else:
+        print ("Couldn't find layout file: " + layout_file)
+        exit(-1)
 
     if options.ambari_blueprint:
         bp_file = options.ambari_blueprint
@@ -761,7 +777,8 @@ def main():
         if options.output_dir:
             output_dir = options.output_dir
         else:
-            output_dir = './' + run_date + '_' + options.ambari_blueprint[:-5] + '_eval'
+            output_dir = './' + options.ambari_blueprint[:-5] + '_eval'
+            # run_date + '_' +
 
         try:
             os.stat(output_dir)

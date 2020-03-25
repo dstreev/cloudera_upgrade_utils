@@ -2,11 +2,14 @@ package com.streever.hive.perf;
 
 import com.streever.hive.reporting.ReportingConf;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.hadoop.util.StringUtils;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.*;
+import java.util.*;
 import java.util.Date;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -18,6 +21,7 @@ public class JDBCRecordIterator implements Runnable {
     private String username;
     private String password;
     private String query;
+    private String pingHost;
     private Integer batchSize = 5000;
     private Integer delayWarning = 1000;
     private Boolean lite = Boolean.FALSE;
@@ -50,6 +54,14 @@ public class JDBCRecordIterator implements Runnable {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getPingHost() {
+        return pingHost;
+    }
+
+    public void setPingHost(String pingHost) {
+        this.pingHost = pingHost;
     }
 
     public String getPassword() {
@@ -124,12 +136,55 @@ public class JDBCRecordIterator implements Runnable {
         return sb.toString();
     }
 
+    public String ping(String host)
+            throws IOException {
+        String s = null;
+
+        List<String> commands = new ArrayList<String>();
+        commands.add("ping");
+        commands.add("-c");
+        commands.add("5");
+        commands.add(host);
+
+        ProcessBuilder pb = new ProcessBuilder(commands);
+        Process process = pb.start();
+
+        BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(commands.toString()).append("\n");
+        // read the output from the command
+//        System.out.println("Here is the standard output of the command:\n");
+        while ((s = stdInput.readLine()) != null) {
+            sb.append(s).append("\n");
+//            System.out.println(s);
+        }
+
+        // read any errors from the attempted command
+//        System.out.println("Here is the standard error of the command (if any):\n");
+        while ((s = stdError.readLine()) != null) {
+            sb.append(s).append("\n");
+//            System.out.println(s);
+        }
+
+        return sb.toString();
+    }
+
     @Override
     public void run() {
         start = new Date();
         StopWatch stopWatch = new StopWatch();
         Connection conn = null;
-        try  {
+        if (getPingHost() != null) {
+            try {
+                connectionDetails.append(ping(getPingHost())).append("\n");
+            } catch (IOException e) {
+                connectionDetails.append("Host doesn't support ping");
+                e.printStackTrace();
+            }
+        }
+        try {
             long splitTime = 0;
             stopWatch.start();
             stopWatch.split();
@@ -149,8 +204,8 @@ public class JDBCRecordIterator implements Runnable {
             int[] columnTypes = null;
             if (!lite) {
                 columnTypes = new int[rs.getMetaData().getColumnCount()];
-                for (int i=0;i<rs.getMetaData().getColumnCount();i++) {
-                    columnTypes[i] = rs.getMetaData().getColumnType(i+1);
+                for (int i = 0; i < rs.getMetaData().getColumnCount(); i++) {
+                    columnTypes[i] = rs.getMetaData().getColumnType(i + 1);
                 }
             }
             stopWatch.split();
@@ -198,7 +253,7 @@ public class JDBCRecordIterator implements Runnable {
                             case CHAR:
                             case VARCHAR:
                             case LONGVARCHAR:
-                                String check = rs.getString(i+1);
+                                String check = rs.getString(i + 1);
                                 if (check != null)
                                     size.getAndAdd(check.length());
                                 break;

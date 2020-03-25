@@ -8,6 +8,7 @@ import json
 from common import pprinttable, pprinttable2, pprinthtmltable, writehtmltable
 from datetime import date
 from ambari import *
+from os import path
 
 VERSION = "0.1.4"
 
@@ -36,31 +37,50 @@ def main():
     if options.output_dir:
         output_dir = options.output_dir
     else:
-        run_date = str(date.today())
-        output_dir = './' + run_date + '_' + options.ambari_blueprint[:-14] + '_bp_tool'
-
-    if options.ambari_layout:
-        layout_file = options.ambari_layout
-        layout = json.loads(open(layout_file).read())
+        # run_date = str(date.today())
+        output_dir = '.'
 
     if options.ambari_blueprint:
         bp_file = options.ambari_blueprint
         blueprint = json.loads(open(bp_file).read())
+    else:
+        print("Need to specify a Blueprint")
+        exit(-1)
+
+    layout = None
+    if options.ambari_layout:
+        layout_file = options.ambari_layout
+        layout = json.loads(open(layout_file).read())
+    elif not options.ambari_creation_template:
+        # Making assumption on layout file based on BP filename
+        layout_file = options.ambari_blueprint[:-14] + 'layout.json'
+        if path.exists(layout_file):
+            layout = json.loads(open(layout_file).read())
+            # cct = build_creation_template_from_layout(blueprint, layout)
+        # else:
+        #     print("Can't locate layout file (based on blueprint filename: " + layout_file)
+        #     exit(-1)
 
     if options.ambari_creation_template:
         cct_file = options.ambari_creation_template
         cct = json.loads(open(cct_file).read())
-    else:
+    elif layout is None:
+        # Didn't load a layout and didn't specify
         cct_file = options.ambari_blueprint[:-14] + 'cct.json'
-        cct_output = open(cct_file, 'w')
+        if path.exists(cct_file):
+            cct = json.loads(open(cct_file).read())
+
+    if cct is None and layout is not None:
         cct = build_creation_template_from_layout(blueprint, layout)
-        cct_output.write(json.dumps(cct, indent=2, sort_keys=False))
-        cct_output.close()
+
+    if cct is None and layout is None:
+        print ("You must provide either a 'layout' (-l) or a 'CCT' (-c)")
+        exit(-1)
 
     if options.ambari_blueprint_v2:
         bp_v2_file = options.ambari_blueprint_v2
     else:
-        bp_v2_file = output_dir + '/' + options.ambari_blueprint[:-5] + '_v2.json'
+        bp_v2_file = output_dir + '/' + options.ambari_blueprint[:-5] + '-v2.json'
 
     print "bp_v2 output file: " + bp_v2_file
 
