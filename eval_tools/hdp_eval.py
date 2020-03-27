@@ -752,16 +752,17 @@ def main():
             print("Can't locate layout file (based on blueprint filename: " + layout_file)
             exit(-1)
 
-    if layout is not None:
-        componentDict = get_component_dictionary(layout)
-        hostMatrix = host_matrix_from_layout(layout, control, componentDict)
-    else:
-        print ("Couldn't find layout file: " + layout_file)
-        exit(-1)
 
     if options.ambari_blueprint:
         bp_file = options.ambari_blueprint
         blueprint = json.loads(open(bp_file).read())
+
+        if layout is not None:
+            componentDict = get_component_dictionary_from_bp(blueprint)
+            hostMatrix = host_matrix_from_layout(layout, control, componentDict)
+        else:
+            print ("Couldn't find layout file: " + layout_file)
+            exit(-1)
 
         # hostgroups = blueprint['host_groups']
         # calc_host_group_bit_masks(hostgroups, componentDict)

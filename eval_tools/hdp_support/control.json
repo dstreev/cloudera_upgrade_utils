@@ -3,6 +3,7 @@
     "KNOX_GATEWAY": {
       "name": "Knox",
       "abbr": "KX",
+      "translate-to-cm": false,
       "config": {
         "section": "",
         "configs": {
@@ -17,6 +18,7 @@
     "INFRA_SOLR": {
       "name": "SOLR Infrastructure",
       "abbr": "iSOLR",
+      "translate-to-cm": false,
       "config": {
         "section": "infra-solr-xml",
         "configs": {
@@ -36,6 +38,7 @@
     "ATLAS_SERVER": {
       "name": "Atlas",
       "abbr": "AS",
+      "translate-to-cm": false,
       "config": {
         "section": "ranger-atlas-security",
         "configs": {
@@ -55,6 +58,7 @@
     "NAMENODE": {
       "name": "Namenode",
       "abbr": "NN",
+      "translate-to-cm": true,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -82,6 +86,7 @@
     "DATANODE": {
       "name": "Datanode",
       "abbr": "DN",
+      "translate-to-cm": true,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -100,6 +105,7 @@
     "JOURNALNODE": {
       "name": "JournalNode",
       "abbr": "JN",
+      "translate-to-cm": true,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -116,6 +122,7 @@
     "ZKFC": {
       "name": "ZK Failover Controller",
       "abbr": "ZKFC",
+      "translate-to-cm": true,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -130,6 +137,7 @@
     "RESOURCEMANAGER": {
       "name": "Resource Manager",
       "abbr": "RM",
+      "translate-to-cm": true,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -145,6 +153,7 @@
     "NODEMANAGER": {
       "name": "Node Manager",
       "abbr": "NM",
+      "translate-to-cm": true,
       "config": {
         "section": "yarn-site",
         "configs": {
@@ -168,6 +177,7 @@
     "ZOOKEEPER_SERVER": {
       "name": "ZooKeeper Server",
       "abbr": "ZK",
+      "translate-to-cm": true,
       "config": {
         "section": "zoo.cfg",
         "configs": {
@@ -184,6 +194,7 @@
     "HISTORYSERVER": {
       "name": "Job History Server",
       "abbr": "JHS",
+      "translate-to-cm": true,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -200,6 +211,7 @@
     "HIVE_METASTORE": {
       "name": "Hive Metastore",
       "abbr": "HMS",
+      "translate-to-cm": true,
       "config": {
         "section": "hive-site",
         "configs": {
@@ -217,6 +229,7 @@
     "HIVE_SERVER": {
       "name": "Hive Server2",
       "abbr": "HS2",
+      "translate-to-cm": true,
       "config": {
         "section": "hive-site",
         "configs": {
@@ -232,6 +245,7 @@
     "HIVE_SERVER_INTERACTIVE": {
       "name": "Hive Server2 Interactive",
       "abbr": "HS2i",
+      "translate-to-cm": false,
       "config": {
         "section": "hive-interactive-site",
         "configs": {
@@ -249,6 +263,7 @@
     "OOZIE_SERVER": {
       "name": "Oozie",
       "abbr": "OZ",
+      "translate-to-cm": true,
       "config": {
         "section": "oozie-site",
         "configs": {
@@ -266,6 +281,7 @@
     "NIFI_MASTER": {
       "name": "NiFi",
       "abbr": "NF",
+      "translate-to-cm": false,
       "config": {
         "section": "nifi-properties",
         "configs": {
@@ -281,6 +297,7 @@
     "KAFKA_BROKER": {
       "name": "Kafka Broker",
       "abbr": "KB",
+      "translate-to-cm": true,
       "config": {
         "section": "kafka-broker",
         "configs": {
@@ -301,6 +318,7 @@
     "HBASE_MASTER": {
       "name": "HBase Master",
       "abbr": "HM",
+      "translate-to-cm": true,
       "config": {
         "section": "hbase-site",
         "configs": {
@@ -318,6 +336,7 @@
     "HBASE_REGIONSERVER": {
       "name": "Region Server",
       "abbr": "RS",
+      "translate-to-cm": true,
       "config": {
         "section": "hbase-site",
         "configs": {
@@ -341,6 +360,7 @@
     "LIVY2_SERVER": {
       "name": "Livy2 Server",
       "abbr": "L2S",
+      "translate-to-cm": true,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -355,6 +375,7 @@
     "SPARK2_JOBHISTORYSERVER": {
       "name": "Spark2 JobHistory Server",
       "abbr": "S2JHS",
+      "translate-to-cm": true,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -369,6 +390,7 @@
     "SPARK_JOBHISTORYSERVER": {
       "name": "Spark JobHistory Server",
       "abbr": "SJHS",
+      "translate-to-cm": false,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -385,6 +407,7 @@
     "DRUID_ROUTER": {
       "name": "Druid Router",
       "abbr": "DR",
+      "translate-to-cm": false,
       "config": {
         "section": "druid-router",
         "configs": {
@@ -401,6 +424,7 @@
     "DRUID_OVERLOAD": {
       "name": "Druid Overload",
       "abbr": "DO",
+      "translate-to-cm": false,
       "config": {
         "section": "druid-overload",
         "configs": {
@@ -418,6 +442,7 @@
     "DRUID_BROKER": {
       "name": "Druid Broker",
       "abbr": "DB",
+      "translate-to-cm": false,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -435,6 +460,7 @@
     "DRUID_MIDDLEMANAGER": {
       "name": "Druid Middle Manager",
       "abbr": "DM",
+      "translate-to-cm": false,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -451,6 +477,7 @@
     "DRUID_HISTORICAL": {
       "name": "Druid Historical",
       "abbr": "DH",
+      "translate-to-cm": false,
       "config": {
         "section": "hdfs-site",
         "configs": {
@@ -467,6 +494,7 @@
     "DRUID_COORDINATOR": {
       "name": "Druid Coordinator",
       "abbr": "DC",
+      "translate-to-cm": false,
       "config": {
         "section": "hdfs-site",
         "configs": {

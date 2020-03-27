@@ -48,6 +48,7 @@ def main():
         exit(-1)
 
     layout = None
+    cct = None
     if options.ambari_layout:
         layout_file = options.ambari_layout
         layout = json.loads(open(layout_file).read())

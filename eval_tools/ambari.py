@@ -12,25 +12,46 @@ def get_host_group_mask(item, componentDict):
     return location
 
 
-def get_component_dictionary(layout):
+# Mismatches happen here.  Use the bp version
+# def get_component_dictionary(layout):
+#     component_dict = {}
+#     items = layout['items']
+#     for item in items:
+#         components = item["host_components"]
+#         for component in components:
+#             for ckey, cvalue in component.items():
+#                 if ckey == "HostRoles":
+#                     for hkey, hvalue in cvalue.items():
+#                         if hkey == "component_name":
+#                             if hvalue not in component_dict.keys():
+#                                 dl = len(component_dict)
+#                                 if dl == 0:
+#                                     component_dict[hvalue] = 1
+#                                 elif dl == 1:
+#                                     component_dict[hvalue] = 2
+#                                 else:
+#                                     component_dict[hvalue] = 2 ** dl
+#     return component_dict
+
+
+def get_component_dictionary_from_bp(blueprint):
     component_dict = {}
-    items = layout['items']
-    for item in items:
-        components = item["host_components"]
+    host_groups = blueprint['host_groups']
+    for host_group in host_groups:
+        components = host_group["components"]
         for component in components:
             for ckey, cvalue in component.items():
-                if ckey == "HostRoles":
-                    for hkey, hvalue in cvalue.items():
-                        if hkey == "component_name":
-                            if hvalue not in component_dict.keys():
-                                dl = len(component_dict)
-                                if dl == 0:
-                                    component_dict[hvalue] = 1
-                                elif dl == 1:
-                                    component_dict[hvalue] = 2
-                                else:
-                                    component_dict[hvalue] = 2 ** dl
+                if ckey == "name":
+                    if cvalue not in component_dict.keys():
+                        dl = len(component_dict)
+                        if dl == 0:
+                            component_dict[cvalue] = 1
+                        elif dl == 1:
+                            component_dict[cvalue] = 2
+                        else:
+                            component_dict[cvalue] = 2 ** dl
     return component_dict
+
 
 def calc_host_group_bit_masks(hostgroups, componentDict):
     host_groups_bitmask = {}
@@ -70,7 +91,8 @@ def build_creation_template_from_layout(blueprint, layout):
     # Generate Counts for Blueprint Host Groups.
     # Go through the Merged Blueprint and count the hosts in each host_group.
     host_groups = blueprint['host_groups']
-    componentDict = get_component_dictionary(layout)
+    componentDict = get_component_dictionary_from_bp(blueprint)
+    # componentDict = get_component_dictionary(layout)
 
     hostgroupsbitmask = calc_host_group_bit_masks(host_groups, componentDict)
 
@@ -105,7 +127,6 @@ def build_ambari_blueprint_v2(blueprint, creationTemplate):
     ct_hostgroups = creationTemplate['host_groups']
     bp_hostgroups = blueprintV2['host_groups']
     # calcHostGroupBitMasks(hostgroups)
-
     for bp_host_group in bp_hostgroups:
         # Loop thru ct host_groups and collect hosts for each group
         for ct_hostgroup in ct_hostgroups:
@@ -118,9 +139,35 @@ def build_ambari_blueprint_v2(blueprint, creationTemplate):
                         lclHost['rack_info'] = ct_host['rack_info']
                     hosts.append(lclHost)
                 bp_host_group['hosts'] = hosts
-        # print("hello")
-    return blueprintV2
+    return remove_empty_host_groups(blueprintV2)
 
+
+def remove_empty_host_groups(blueprintV2):
+    bp_hostgroups = blueprintV2['host_groups']
+    # Remove empty host-groups
+    empty_idx = []
+    for index, empty_host_group in enumerate(bp_hostgroups):
+        # print (index)
+        try:
+            if 'hosts' in empty_host_group.keys() and len(empty_host_group['hosts']) == 0:
+                print("Empty Host group: " + empty_host_group['name'] + ". Will be removed.")
+                empty_idx.append(index)
+            elif 'hosts' not in empty_host_group.keys():
+                print("Empty Host group: " + empty_host_group['name'] + ". Will be removed.")
+                empty_idx.append(index)
+
+            if 'hosts' in empty_host_group.keys() and len(empty_host_group['hosts']) != int(empty_host_group['cardinality']):
+                print("Mismatch Cardinality for: " + empty_host_group['name'] + ". " + str(len(empty_host_group['hosts'])) + ":"
+                      + str(empty_host_group['cardinality']))
+                empty_host_group['cardinality'] = str(len(empty_host_group['hosts']))
+        except ValueError:
+            print("Mismatch Cardinality for: " + empty_host_group['name'] + ". " + str(len(empty_host_group['hosts'])) + ":"
+                  + str(empty_host_group['cardinality']))
+            empty_host_group['cardinality'] = str(len(empty_host_group['hosts']))
+
+    for index in empty_idx:
+        del bp_hostgroups[index]
+    return blueprintV2
 
 def merge_configs_with_host_matrix(blueprint, hostMatrix, componentDict, control):
     mergedBlueprint = copy.deepcopy(blueprint)
@@ -235,4 +282,4 @@ def merge_configs_with_host_matrix(blueprint, hostMatrix, componentDict, control
                                         override = "No override for: " + component + ":" + cfgSection + ":" + targetProperty
                                     # print pValue
                                 break
-    return mergedBlueprint
+    return remove_empty_host_groups(mergedBlueprint)

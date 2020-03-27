@@ -1,0 +1,70 @@
+{
+  "scale": {
+    "small": {
+      "masters": {
+        "master_1": {
+          "cardinality": 1,
+          "services": [
+            "NAMENODE",
+            "RESOURCEMANAGER",
+            "ZOOKEEPER",
+            "HISTORYSERVER",
+            "HIVE_METASTORE",
+            "HIVE_SERVER",
+            "HBASE_MASTER",
+            "OOZIE_SERVER"
+          ]
+        }
+      },
+      "workers": {
+        "worker_1": {
+          "cardinality": 3,
+          "services": [
+            "DATANODE",
+            "NODEMANAGER",
+            "HBASE_REGIONSERVER"
+          ]
+        }
+      }
+    },
+    "medium-ha": {
+      "ha-services": [
+        "NAMENODE",
+        "RESOURCEMANAGER"
+      ],
+      "masters": {
+        "master_1": {
+          "cardinality": 2,
+          "services": [
+            "NAMENODE",
+            "ZKFC",
+            "RESOURCEMANAGER",
+            "HBASE_MASTER",
+            "ZOOKEEPER"
+          ]
+        },
+        "master_2": {
+          "cardinality": 1,
+          "services": [
+            "ZOOKEEPER",
+            "HISTORYSERVER",
+            "HIVE_METASTORE",
+            "HIVE_SERVER",
+            "HBASE_MASTER",
+            "OOZIE_SERVER"
+          ]
+        }
+      },
+      "workers": {
+        "worker_1": {
+          "cardinality": 3,
+          "services": [
+            "DATANODE",
+            "NODEMANAGER",
+            "HBASE_REGIONSERVER"
+          ]
+        }
+      }
+    }
+  }
+}
