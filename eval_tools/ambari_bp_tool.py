@@ -23,6 +23,9 @@ def main():
                       help="Ambari Cluster Creation Template")
     parser.add_option("-b", "--ambari-blueprint", dest="ambari_blueprint", help="Ambari Blueprint File")
     parser.add_option("-2", "--ambari-blueprint-v2", dest="ambari_blueprint_v2", help="Ambari Blueprint V2 File")
+    parser.add_option("-r", "--v2-reduction", dest="v2_reduction", action="store_true", help="Remove and consolidate HostGroups for CM Conversion", )
+    parser.add_option("-w", "--worker-scale", dest="worker_scale", help="Reduce Cardinality of Worker Host Groups to this Cardinality")
+
     parser.add_option("-o", "--output-dir", dest="output_dir", help="Output Directory")
 
     (options, args) = parser.parse_args()
@@ -46,6 +49,9 @@ def main():
     else:
         print("Need to specify a Blueprint")
         exit(-1)
+
+    # if options.host_group_reduction:
+    #     consolidate_blueprint_host_groups(blueprint)
 
     layout = None
     cct = None
@@ -86,7 +92,10 @@ def main():
     print "bp_v2 output file: " + bp_v2_file
 
     bp_v2_output = open(bp_v2_file, 'w')
-    bp_v2 = build_ambari_blueprint_v2(blueprint, cct)
+    bp_v2 = build_ambari_blueprint_v2(blueprint, cct, options.v2_reduction)
+    if options.worker_scale:
+        reduce_worker_scale(bp_v2, int(options.worker_scale))
+
     bp_v2_output.write(json.dumps(bp_v2, indent=2, sort_keys=False))
     bp_v2_output.close()
 

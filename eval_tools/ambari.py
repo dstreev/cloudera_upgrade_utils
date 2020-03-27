@@ -1,5 +1,16 @@
 import copy
 
+# List of services to translate
+supported_services = ['NAMENODE', 'HBASE_REGIONSERVER', 'KAFKA_BROKER', 'HISTORYSERVER', 'DATANODE',
+                      'ZOOKEEPER_SERVER', 'HIVE_SERVER', 'RESOURCEMANAGER', 'HBASE_MASTER',
+                      'HIVE_METASTORE', 'ZKFC', 'SPARK2_JOBHISTORYSERVER', 'JOURNALNODE',
+                      'OOZIE_SERVER', 'NODEMANAGER']
+
+master_services = ['NAMENODE', 'HBASE_REGIONSERVER', 'HISTORYSERVER',
+                   'ZOOKEEPER_SERVER', 'HIVE_SERVER', 'RESOURCEMANAGER', 'HBASE_MASTER',
+                   'HIVE_METASTORE', 'ZKFC', 'SPARK2_JOBHISTORYSERVER', 'JOURNALNODE',
+                   'OOZIE_SERVER']
+
 def get_host_group_mask(item, componentDict):
     location = 0
     components = item["host_components"]
@@ -77,7 +88,7 @@ def calc_host_bit_masks(layout_hosts, componentDict):
             try:
                 hgbitmask = hgbitmask | componentDict[component['HostRoles']['component_name']]
             except:
-                check = 'Component in Host that is not in the Layouts: ' + component['name']
+                check = 'Component in Host that is not in the Layouts: ' + component['HostRoles']['component_name']
         host_detail['host_name'] = item['Hosts']['host_name']
         host_detail['bit_mask'] = hgbitmask
         if 'rack_info' in item['Hosts'].keys():
@@ -119,8 +130,8 @@ def build_creation_template_from_layout(blueprint, layout):
     return cluster_creation_template
 
 
-def build_ambari_blueprint_v2(blueprint, creationTemplate):
-# def mergeConfigsWithHostMatrix(blueprint, hostMatrix, control):
+def build_ambari_blueprint_v2(blueprint, creationTemplate, consolidate):
+    # def mergeConfigsWithHostMatrix(blueprint, hostMatrix, control):
     blueprintV2 = copy.deepcopy(blueprint)
     # configurations = blueprintV2['configurations']
     # stack = blueprint['Blueprints']['stack_name'] + ' ' + blueprint['Blueprints']['stack_version']
@@ -139,7 +150,90 @@ def build_ambari_blueprint_v2(blueprint, creationTemplate):
                         lclHost['rack_info'] = ct_host['rack_info']
                     hosts.append(lclHost)
                 bp_host_group['hosts'] = hosts
-    return remove_empty_host_groups(blueprintV2)
+    remove_empty_host_groups(blueprintV2)
+    if consolidate:
+        consolidate_blueprint_host_groups(blueprintV2)
+    return blueprintV2
+
+
+def consolidate_blueprint_host_groups(blueprint):
+    host_groups = blueprint['host_groups']
+
+    # Filter out unsupported components
+    for host_group in host_groups:
+        unsupported = []
+        for index, component in enumerate(host_group['components']):
+            if component['name'] not in supported_services:
+                unsupported.append(index)
+        for index in reversed(unsupported):
+            del host_group['components'][index]
+    # remove host_groups that have no components
+    empty_host_groups = []
+    for index, host_group in enumerate(host_groups):
+        if len(host_group['components']) == 0:
+            empty_host_groups.append(index)
+            print('Host group: ' + host_group['name'] + ' has no supported components left.  Will remove it.')
+    for index in reversed(empty_host_groups):
+        del host_groups[index]
+
+    # Consolidate Host Groups that have the same components.
+    componentDict = get_component_dictionary_from_bp(blueprint)
+    hostgroupsbitmask = calc_host_group_bit_masks(host_groups, componentDict)
+    bitmasks = []
+    # Let's swap the keys and values.  In the process, we'll naturally condense to a set of
+    # host groups that are unique by throwing out hostgroups with duplicate bitmasks.
+    res = dict((v, k) for k, v in hostgroupsbitmask.iteritems())
+    final_host_groups = []
+    # Loop though and get final host groups.
+    for key in res.keys():
+        final_host_groups.append(res[key])
+    del_hg_indexes = {}
+    for index, host_group in enumerate(host_groups):
+        if host_group['name'] not in final_host_groups:
+            del_hg_indexes[index] = hostgroupsbitmask[host_group['name']]
+            # Migrate this host group's host to the remaining host group.
+
+    ## Transfer Hosts from the consolidated host groups.
+    for key in del_hg_indexes.keys():
+        from_host_group = host_groups[key]
+        for to_host_group in host_groups:
+            if to_host_group['name'] == res[del_hg_indexes[key]]:
+                for host in from_host_group['hosts']:
+                    to_host_group['hosts'].append(host)
+
+    # Remove duplicate Host Groups
+    for key in reversed(del_hg_indexes.keys()):
+        del host_groups[key]
+
+
+def reduce_worker_scale(blueprint_v2, scale):
+    host_groups = blueprint_v2['host_groups']
+    component_dict = get_component_dictionary_from_bp(blueprint_v2)
+    hostgroupsbitmask = calc_host_group_bit_masks(host_groups, component_dict)
+
+    # Generate Master Services BitMask
+    masterbitmask = 0
+    for service in master_services:
+        try:
+            masterbitmask = masterbitmask | component_dict[service]
+        except KeyError:
+            check = 'Not in lists for this blueprint.  This is ok.'
+
+    for hostgroupname in hostgroupsbitmask.keys():
+        check = hostgroupsbitmask[hostgroupname] & masterbitmask == hostgroupsbitmask[hostgroupname]
+        if not check: # Not a master
+            # Check Cardinality
+            for host_group in host_groups:
+                if host_group['name'] == hostgroupname:
+                    if len(host_group['hosts']) > scale:
+                        # Need to scale back hosts in host group.
+                        for i in range(len(host_group['hosts']) - 1, scale-1, -1):
+                            print("del: " + str(i))
+                            del host_group['hosts'][i]
+                    host_group['cardinality'] = len(host_group['hosts'])
+
+    for host_group in host_groups:
+            print 'hello'
 
 
 def remove_empty_host_groups(blueprintV2):
@@ -156,18 +250,22 @@ def remove_empty_host_groups(blueprintV2):
                 print("Empty Host group: " + empty_host_group['name'] + ". Will be removed.")
                 empty_idx.append(index)
 
-            if 'hosts' in empty_host_group.keys() and len(empty_host_group['hosts']) != int(empty_host_group['cardinality']):
-                print("Mismatch Cardinality for: " + empty_host_group['name'] + ". " + str(len(empty_host_group['hosts'])) + ":"
+            if 'hosts' in empty_host_group.keys() and len(empty_host_group['hosts']) != int(
+                    empty_host_group['cardinality']):
+                print("Mismatch Cardinality for: " + empty_host_group['name'] + ". " + str(
+                    len(empty_host_group['hosts'])) + ":"
                       + str(empty_host_group['cardinality']))
                 empty_host_group['cardinality'] = str(len(empty_host_group['hosts']))
         except ValueError:
-            print("Mismatch Cardinality for: " + empty_host_group['name'] + ". " + str(len(empty_host_group['hosts'])) + ":"
+            print("Mismatch Cardinality for: " + empty_host_group['name'] + ". " + str(
+                len(empty_host_group['hosts'])) + ":"
                   + str(empty_host_group['cardinality']))
             empty_host_group['cardinality'] = str(len(empty_host_group['hosts']))
 
     for index in empty_idx:
         del bp_hostgroups[index]
     return blueprintV2
+
 
 def merge_configs_with_host_matrix(blueprint, hostMatrix, componentDict, control):
     mergedBlueprint = copy.deepcopy(blueprint)
