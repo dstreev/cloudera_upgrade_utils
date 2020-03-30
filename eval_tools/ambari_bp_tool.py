@@ -45,6 +45,42 @@ def main():
         # run_date = str(date.today())
         output_dir = '.'
 
+    # Reduce V2 Blueprint
+    if options.ambari_blueprint_v2 and not options.ambari_blueprint:
+        bp_v2_file = options.ambari_blueprint_v2
+        bp_v2 = json.loads(open(bp_v2_file).read())
+        if not options.v2_reduction and not options.worker_scale:
+            print ("Need to specify -r (reduction) and/or -w and/or -s options")
+            exit(-1)
+        if options.v2_reduction:
+            print("\n-->> Reducing to CM Supported convertible services.")
+            reduce_to_supported_services(bp_v2)
+            print("\n-->> Consolidate Host Groups")
+            consolidate_blueprint_host_groups(bp_v2, True)
+        if options.worker_scale:
+            print("\n-->> Scaling down worker nodes: " + options.worker_scale)
+            reduce_worker_scale(bp_v2, int(options.worker_scale))
+        if options.sub_hosts:
+            sub_hosts_file = options.sub_hosts
+            if not path.exists(sub_hosts_file):
+                sub_hosts_file = os.path.dirname(os.path.realpath(__file__)) + "/hdp_support/sub_hosts_default.json"
+                print ("WARNING: Input 'sub_hosts' file not found.  Using default.")
+            sub_hosts = json.loads(open(sub_hosts_file).read())
+            print("\n-->> Substituting Host fqdn's")
+            substitute_hosts(bp_v2, sub_hosts['hosts'])
+
+        reduced_bp_v2_file = output_dir + '/' + options.ambari_blueprint_v2[:-5] + '-reduced.json'
+
+        print "\n--> Reduced Blueprint V2 output file: " + reduced_bp_v2_file
+
+        bp_v2_output = open(reduced_bp_v2_file, 'w')
+        bp_v2_output.write(json.dumps(bp_v2, indent=2, sort_keys=False))
+        bp_v2_output.close()
+
+        exit(0)
+
+
+
     if options.ambari_blueprint:
         bp_file = options.ambari_blueprint
         blueprint = json.loads(open(bp_file).read())
@@ -84,8 +120,6 @@ def main():
     if cct is None and layout is not None:
         print("\n-->> Using Ambari Layout to build Cluster Creation Template.")
         cct = build_creation_template_from_layout(blueprint, layout)
-    elif options.v2_reduction:
-        print ('todo: v2_reduction')
 
     if cct is None and layout is None:
         print ("You must provide either a 'layout' (-l) or a 'CCT' (-c)")

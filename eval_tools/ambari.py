@@ -105,7 +105,7 @@ def build_creation_template_from_layout(blueprint, layout):
            "  configurations.")
 
     reduce_to_supported_services(blueprint)
-    consolidate_blueprint_host_groups(blueprint)
+    consolidate_blueprint_host_groups(blueprint, False)
 
     cluster_creation_template = {}
     # Generate Counts for Blueprint Host Groups.
@@ -189,7 +189,7 @@ def reduce_to_supported_services(blueprint):
         del host_groups[index]
 
 
-def consolidate_blueprint_host_groups(blueprint):
+def consolidate_blueprint_host_groups(blueprint, transfer_hosts):
     host_groups = blueprint['host_groups']
 
     # Consolidate Host Groups that have the same components.
@@ -203,19 +203,29 @@ def consolidate_blueprint_host_groups(blueprint):
     # Loop though and get final host groups.
     for key in res.keys():
         final_host_groups.append(res[key])
+
     del_hg_indexes = {}
+    move_hg_hosts = {}
     for index, host_group in enumerate(host_groups):
         if host_group['name'] not in final_host_groups:
             del_hg_indexes[index] = hostgroupsbitmask[host_group['name']]
+            move_hg_hosts[host_group['name']] = res[hostgroupsbitmask[host_group['name']]]
             # Migrate this host group's host to the remaining host group.
 
-    ## Transfer Hosts from the consolidated host groups.
-    # for key in del_hg_indexes.keys():
-    #     from_host_group = host_groups[key]
-    #     for to_host_group in host_groups:
-    #         if to_host_group['name'] == res[del_hg_indexes[key]]:
-    #             for host in from_host_group['hosts']:
-    #                 to_host_group['hosts'].append(host)
+    # Transfer Hosts from the consolidated host groups.
+    if transfer_hosts:
+        for m_hg_name in move_hg_hosts:
+            t_hg_name = move_hg_hosts[m_hg_name]
+            target_host_group = None
+            for host_group in host_groups:
+                if host_group['name'] == t_hg_name:
+                    target_host_group = host_group
+            for host_group in host_groups:
+                if host_group['name'] == m_hg_name:
+                    if host_group['hosts'] is not None:
+                        for host in host_group['hosts']:
+                            target_host_group['hosts'].append(host)
+            target_host_group['cardinality'] = len(target_host_group['hosts'])
 
     # Remove duplicate Host Groups
     for key in reversed(del_hg_indexes.keys()):

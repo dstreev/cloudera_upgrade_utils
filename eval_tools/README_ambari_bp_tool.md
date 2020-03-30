@@ -73,4 +73,8 @@ When Ambari Managed groups are used (especially for worker nodes) an accurate ma
 
 - Create a V2 Blueprint from a V1 Blueprint with a Large Cluster Layout.  Goal is to produce a small cluster for testing, based on the larger clusters configuration.  And replace the host names with new host fqdn that match your test environment.
 
-`ambari_bp_tool.ph -b my-big-cluster-blueprint.json -l my-big-cluster-layout.json -2 my-small-test-cluster-blueprint_v2.json -w 3 -s replacement_hosts.json`                 
+`ambari_bp_tool.py -b my-big-cluster-blueprint.json -l my-big-cluster-layout.json -2 my-small-test-cluster-blueprint_v2.json -w 3 -s replacement_hosts.json`                 
+
+- Reduce a v2 Blueprint file to convertible services, reduce the worker node count, and sub new host names.
+
+`ambari_bp_tool.py -2 my-blueprint-v2.json -r -w 3 -s my_new-host.json`
