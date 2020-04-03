@@ -59,7 +59,9 @@ def main():
             consolidate_blueprint_host_groups(bp_v2, True)
         if options.worker_scale:
             print("\n-->> Scaling down worker nodes: " + options.worker_scale)
-            reduce_worker_scale(bp_v2, int(options.worker_scale))
+            removed_hosts = reduce_worker_scale(bp_v2, int(options.worker_scale))
+            # TODO: Cleanup Host references in properties.
+
         if options.sub_hosts:
             sub_hosts_file = options.sub_hosts
             if not path.exists(sub_hosts_file):
@@ -67,7 +69,9 @@ def main():
                 print ("WARNING: Input 'sub_hosts' file not found.  Using default.")
             sub_hosts = json.loads(open(sub_hosts_file).read())
             print("\n-->> Substituting Host fqdn's")
-            substitute_hosts(bp_v2, sub_hosts['hosts'])
+            replaced_hosts = substitute_hosts(bp_v2, sub_hosts['hosts'])
+            # Replace host references in configuration properties.
+            repair_host_references(bp_v2, replaced_hosts)
 
         reduced_bp_v2_file = output_dir + '/' + options.ambari_blueprint_v2[:-5] + '-reduced.json'
 
@@ -128,7 +132,7 @@ def main():
     if options.ambari_blueprint_v2:
         bp_v2_file = options.ambari_blueprint_v2
     else:
-        bp_v2_file = output_dir + '/' + options.ambari_blueprint[:-5] + '-v2.json'
+        bp_v2_file = output_dir + '/' + options.ambari_blueprint[:-5] + '-v2-generated.json'
 
     print "\n--> Blueprint V2 output file: " + bp_v2_file
 
@@ -138,7 +142,8 @@ def main():
 
     if options.worker_scale:
         print("\n-->> Scaling down worker nodes: " + options.worker_scale)
-        reduce_worker_scale(bp_v2, int(options.worker_scale))
+        removed_hosts = reduce_worker_scale(bp_v2, int(options.worker_scale))
+        # TODO: Cleanup Host references in properties.
 
     if options.sub_hosts:
         sub_hosts_file = options.sub_hosts
@@ -147,7 +152,10 @@ def main():
             print ("WARNING: Input 'sub_hosts' file not found.  Using default.")
         sub_hosts = json.loads(open(sub_hosts_file).read())
         print("\n-->> Substituting Host fqdn's")
-        substitute_hosts(bp_v2, sub_hosts['hosts'])
+        replaced_hosts = substitute_hosts(bp_v2, sub_hosts['hosts'])
+        # Replace host references in configuration properties.
+        repair_host_references(bp_v2, replaced_hosts)
+
 
     bp_v2_output.write(json.dumps(bp_v2, indent=2, sort_keys=False))
     bp_v2_output.close()

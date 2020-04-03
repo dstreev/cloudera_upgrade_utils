@@ -1,10 +1,11 @@
 import copy
+import re
 
 # List of services to translate
 supported_services = ['NAMENODE', 'HBASE_REGIONSERVER', 'KAFKA_BROKER', 'HISTORYSERVER', 'DATANODE',
                       'ZOOKEEPER_SERVER', 'HIVE_SERVER', 'RESOURCEMANAGER', 'HBASE_MASTER',
                       'HIVE_METASTORE', 'ZKFC', 'SPARK2_JOBHISTORYSERVER', 'JOURNALNODE',
-                      'OOZIE_SERVER', 'NODEMANAGER']
+                      'OOZIE_SERVER', 'NODEMANAGER', 'TEZ_CLIENT', 'SPARK2_CLIENT']
 
 master_services = ['NAMENODE', 'HBASE_REGIONSERVER', 'HISTORYSERVER',
                    'ZOOKEEPER_SERVER', 'HIVE_SERVER', 'RESOURCEMANAGER', 'HBASE_MASTER',
@@ -227,9 +228,64 @@ def consolidate_blueprint_host_groups(blueprint, transfer_hosts):
                             target_host_group['hosts'].append(host)
             target_host_group['cardinality'] = len(target_host_group['hosts'])
 
+    # Need to iterate over move_hg_groups and reset properties with a reference
+    # to a host_group that will be removed.
+    configs = blueprint['configurations']
+    for move_key in move_hg_hosts.keys():
+        re_move_key = move_key.replace('_','\_')
+        # re.sub(re_move_key, '\\_', '\\_')
+        print "Move host_group: " + move_key + " to " + move_hg_hosts[move_key]
+        print " ---> Reconciling placeholders in configuration properties..."
+        for config in configs:
+            for config_key in config:
+                # print 'Config Key: ' + config_key
+                for property in config[config_key]['properties']:
+                    # print 'Config Property: ' + property
+                    check_value = config[config_key]['properties'][property]
+                    status, new_value = compare_exists_replace(check_value, '%HOSTGROUP::'+move_hg_hosts[move_key]+'%', '%HOSTGROUP::'+move_key+'%')
+                    if status:
+                        config[config_key]['properties'][property] = new_value
+
     # Remove duplicate Host Groups
     for key in reversed(del_hg_indexes.keys()):
         del host_groups[key]
+
+
+def repair_host_references(blueprint_v2, replaced_hosts):
+    configs = blueprint_v2['configurations']
+    for replaced_host in replaced_hosts.keys():
+        re_move_key = replaced_host.replace('_','\_')
+        # re.sub(re_move_key, '\\_', '\\_')
+        print "Replacing Host: " + replaced_host + " with " + replaced_hosts[replaced_host]
+        print " ---> Reconciling placeholders in configuration properties..."
+        for config in configs:
+            for config_key in config:
+                # print 'Config Key: ' + config_key
+                for property in config[config_key]['properties']:
+                    # print 'Config Property: ' + property
+                    check_value = config[config_key]['properties'][property]
+                    status, new_value = compare_exists_replace(check_value, replaced_hosts[replaced_host], replaced_host)
+                    if status:
+                        config[config_key]['properties'][property] = new_value
+
+
+def compare_exists_replace(value, compare, replace):
+    if compare in value:
+        # Look for 'replace' in value and if it exists, remove it.
+        if replace in value:
+            value = value.replace(replace, '')
+            # Remove empty item.
+            value = value.replace(',,', ',')
+            return True, value
+        else:
+            return False, None
+    else:
+        if replace in value:
+            value = value.replace(replace, compare)
+            return True, value
+        else:
+            return False, None
+
 
 
 def reduce_worker_scale(blueprint_v2, scale):
@@ -245,7 +301,7 @@ def reduce_worker_scale(blueprint_v2, scale):
             masterbitmask = masterbitmask | component_dict[service]
         except KeyError:
             check = 'Not in lists for this blueprint.  This is ok.'
-
+    removed_hosts = []
     for hostgroupname in hostgroupsbitmask.keys():
         check = hostgroupsbitmask[hostgroupname] & masterbitmask == hostgroupsbitmask[hostgroupname]
         if not check: # Not a master
@@ -256,23 +312,35 @@ def reduce_worker_scale(blueprint_v2, scale):
                         # Need to scale back hosts in host group.
                         for i in range(len(host_group['hosts']) - 1, scale-1, -1):
                             # print("del: " + str(i))
+                            removed_hosts.append(host_group['hosts'][i]['hostname'])
                             del host_group['hosts'][i]
                     host_group['cardinality'] = len(host_group['hosts'])
+    return removed_hosts
 
 
 def substitute_hosts(blueprint_v2, hosts):
     index = 0
+    replaced_hosts = {}
     host_groups = blueprint_v2['host_groups']
     for host_group in host_groups:
         for bp_host in host_group['hosts']:
             sub_host = hosts[index]
+            replaced_hosts[bp_host['hostname']] = sub_host['host']
             bp_host['hostname'] = sub_host['host']
             if sub_host['rack_info'] is not None:
                 bp_host['rack_info'] = sub_host['rack_info']
             index += 1
             if index >= len(hosts):
-                print ('No enough hosts in list to replace blueprint hosts.')
-                return
+                print ('')
+                print ('')
+                print ('!!!!            ******************************** ')
+                print ('WARNING: NOT enough hosts in list to replace blueprint hosts.')
+                print ('    Replaced hosts until we exhausted list.  Need to add more host to sub list and try again!!!')
+                print ('!!!!            ******************************** ')
+                print ('')
+                print ('')
+                return replaced_hosts
+    return replaced_hosts
 
 
 def remove_empty_host_groups(blueprintV2):

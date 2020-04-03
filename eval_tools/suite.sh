@@ -21,8 +21,8 @@ for BP_FILE in `ls *${EXT_BP}.json`; do
   # Parse the '-blueprint.json' from the filename
   BP=${BP_FILE:0:${#BP_FILE}-5}
   # Build the Ambari v2 Blueprint filename.
-  BP_V2="${BP}-v2.json"
-  CM_FILE="${BP:0:${#BP}-9}cm.json"
+  BP_V2="${BP}-v2-generated.json"
+  CM_FILE="${BP:0:${#BP}-9}cm_template.json"
 
   echo "Converting Ambari Blueprint v2 to CM Environment Template"
   am2cm.sh --blueprint-file "${BP_V2}" --deployment-template-file "${CM_FILE}"
