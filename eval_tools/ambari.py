@@ -122,6 +122,12 @@ def build_creation_template_from_layout(blueprint, layout):
 
     cluster_creation_template['blueprint'] = 'need-to-set-me'
 
+    # Stubout Credentials
+    credential = {'alias': 'kdc.admin.credentials', 'key': 'NEED_TO_SET', 'principal': 'NEED_TO_SET',
+                  'type': 'TEMPORARY'}
+    credentials = [credential]
+    cluster_creation_template['credential'] = credentials
+
     cct_host_groups = []
     for host_group in host_groups:
         cct_host_group = {}
@@ -138,6 +144,12 @@ def build_creation_template_from_layout(blueprint, layout):
         cct_host_groups.append(cct_host_group)
 
     cluster_creation_template['host_groups'] = cct_host_groups
+    # Stub out more cct items.
+    cluster_creation_template['provision_action'] = 'INSTALL_ONLY'
+    cluster_creation_template['repository_version'] = 'NOT_TO_SET'
+    kerb = {'type': 'KERBEROS'}
+    cluster_creation_template['security'] = kerb
+
     return cluster_creation_template
 
 
@@ -288,6 +300,43 @@ def compare_exists_replace(value, compare, replace):
         else:
             return False, None
 
+
+def cct_from_blueprint_v2(blueprint_v2):
+    cct = {}
+    # Generate Counts for Blueprint Host Groups.
+    # Go through the Merged Blueprint and count the hosts in each host_group.
+    host_groups = blueprint_v2['host_groups']
+
+    cct['blueprint'] = 'need-to-set-me'
+
+    # Stubout Credentials
+    credential = {'alias': 'kdc.admin.credentials', 'key': 'NEED_TO_SET', 'principal': 'NEED_TO_SET',
+                  'type': 'TEMPORARY'}
+    credentials = [credential]
+    cct['credential'] = credentials
+
+    cct_host_groups = []
+    for host_group in host_groups:
+        cct_host_group = {'name': host_group['name']}
+        cct_hosts = []
+        for host in host_group['hosts']:
+            cct_host = {}
+            cct_host['fqdn'] = host['hostname']
+            if host['rack_info'] is not None:
+                cct_host['rack_info'] = host['rack_info']
+            cct_hosts.append(cct_host)
+        cct_host_group['hosts'] = cct_hosts
+        cct_host_groups.append(cct_host_group)
+
+    cct['host_groups'] = cct_host_groups
+
+    # Stub out more cct items.
+    cct['provision_action'] = 'INSTALL_ONLY'
+    cct['repository_version'] = 'NOT_TO_SET'
+    kerb = {'type': 'KERBEROS'}
+    cct['security'] = kerb
+
+    return cct
 
 
 def reduce_worker_scale(blueprint_v2, scale):

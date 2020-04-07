@@ -59,6 +59,98 @@
     {
       "host": "os18.streever.local",
       "rack_info": "/default"
+    },
+    {
+      "host": "os19.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os20.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os21.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os22.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os23.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os24.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os25.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os26.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os27.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os28.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os29.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os30.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os31.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os32.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os33.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os34.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os35.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os36.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os37.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os38.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os39.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os40.streever.local",
+      "rack_info": "/default"
+    },
+    {
+      "host": "os41.streever.local",
+      "rack_info": "/default"
     }
   ]
 }

@@ -97,6 +97,8 @@ def main():
 
     layout = None
     cct = None
+    write_cct = False
+
     if options.ambari_layout:
         layout_file = options.ambari_layout
         layout = json.loads(open(layout_file).read())
@@ -124,6 +126,7 @@ def main():
     if cct is None and layout is not None:
         print("\n-->> Using Ambari Layout to build Cluster Creation Template.")
         cct = build_creation_template_from_layout(blueprint, layout)
+        write_cct = True
 
     if cct is None and layout is None:
         print ("You must provide either a 'layout' (-l) or a 'CCT' (-c)")
@@ -156,6 +159,13 @@ def main():
         # Replace host references in configuration properties.
         repair_host_references(bp_v2, replaced_hosts)
 
+    if write_cct:
+        cct = cct_from_blueprint_v2(bp_v2)
+        cct_file = options.ambari_blueprint[:-14] + 'cct-generated.json'
+        cct_output = open(cct_file, 'w')
+        cct_output.write(json.dumps(cct, indent=2, sort_keys=False))
+        cct_output.close()
+        print "\n--> Generated CCT output file: " + cct_file
 
     bp_v2_output.write(json.dumps(bp_v2, indent=2, sort_keys=False))
     bp_v2_output.close()
