@@ -1,4 +1,5 @@
 import copy
+import collections
 import re
 
 # List of services to translate
@@ -247,7 +248,8 @@ def consolidate_blueprint_host_groups(blueprint, transfer_hosts):
                         config[config_key]['properties'][property] = new_value
 
     # Remove duplicate Host Groups
-    for key in reversed(del_hg_indexes.keys()):
+    del_hg_indexes_sorted = collections.OrderedDict(sorted(del_hg_indexes.items()))
+    for key in reversed(del_hg_indexes_sorted.keys()):
         del host_groups[key]
 
 
