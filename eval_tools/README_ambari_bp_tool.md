@@ -50,7 +50,7 @@ The tool will create an 'Ambari v2 Blueprint' regardless.  Use the `-2` option t
 
 To build clusters with Blueprint V2 with a lower number of hosts, use the `-s <number>` to control how many hosts to reduce them down to.
 
-The `-s <host_json_file>` option allows you to replace the host in the output Blueprint V2 file with those in the host file.  See [host file](./hdp_support/sub_host_default.json) for the format.
+The `-s <host_json_file>` option allows you to replace the host in the output Blueprint V2 file with those in the host file.  See [host file](./hdp_support/sub_hosts_default.json) for the format.
 
 ## Noteworthy Observations
 

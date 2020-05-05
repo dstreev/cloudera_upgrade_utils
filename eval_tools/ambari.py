@@ -473,8 +473,11 @@ def merge_configs_with_host_matrix(blueprint, hostMatrix, componentDict, control
                         # bpProperties = {}
                         hostgroup = []
                         for shg in hostgroups:
-                            if shg['name'] == host['host_group']:
-                                hostgroup = shg
+                            if 'host_group' in host.keys():
+                                if shg['name'] == host['host_group']:
+                                    hostgroup = shg
+                            else:
+                                print "no host_group identified"
                         for bpSections in configurations:
                             if bpSections.keys()[0] == cfgSection:
                                 # print "Config Section: " + cfgSection
@@ -507,36 +510,37 @@ def merge_configs_with_host_matrix(blueprint, hostMatrix, componentDict, control
                                     # print pValue
                                 break
                         #  go through the overrides
-                        hostgroupCfg = hostgroup['configurations']
-                        for bpSections in hostgroupCfg:
-                            if bpSections.keys()[0] == cfgSection:
-                                # print "Config Section: " + cfgSection
-                                bpProperties = bpSections.get(cfgSection)
-                                #  Lookup Configuration in BP
-                                for localProperty in config['configs']:
-                                    # Get the Target BP Property to Lookup
-                                    targetProperty = config['configs'][localProperty]
-                                    # Find property in BP
-                                    # print 'Local Prop: ' + localProperty + '\tTarget Prop: ' + targetProperty
-                                    try:
-                                        pValue = bpProperties[targetProperty]
-                                        # print 'BP Property Value: ' + pValue
+                        if len(hostgroup) > 0:
+                            hostgroupCfg = hostgroup['configurations']
+                            for bpSections in hostgroupCfg:
+                                if bpSections.keys()[0] == cfgSection:
+                                    # print "Config Section: " + cfgSection
+                                    bpProperties = bpSections.get(cfgSection)
+                                    #  Lookup Configuration in BP
+                                    for localProperty in config['configs']:
+                                        # Get the Target BP Property to Lookup
+                                        targetProperty = config['configs'][localProperty]
+                                        # Find property in BP
+                                        # print 'Local Prop: ' + localProperty + '\tTarget Prop: ' + targetProperty
                                         try:
-                                            pValue = int(pValue)
-                                        except:
-                                            # It could have a trailing char for type
-                                            if localProperty in ['heap', 'off.heap']:
-                                                pValue = int(pValue[:-1])
-                                        if isinstance(pValue, int):
-                                            # Account for some mem settings in Kb
-                                            if localProperty in ['heap', 'off.heap'] and pValue > 1000000:
-                                                host['components'][cGroup][component][localProperty] = pValue / 1024
+                                            pValue = bpProperties[targetProperty]
+                                            # print 'BP Property Value: ' + pValue
+                                            try:
+                                                pValue = int(pValue)
+                                            except:
+                                                # It could have a trailing char for type
+                                                if localProperty in ['heap', 'off.heap']:
+                                                    pValue = int(pValue[:-1])
+                                            if isinstance(pValue, int):
+                                                # Account for some mem settings in Kb
+                                                if localProperty in ['heap', 'off.heap'] and pValue > 1000000:
+                                                    host['components'][cGroup][component][localProperty] = pValue / 1024
+                                                else:
+                                                    host['components'][cGroup][component][localProperty] = pValue
                                             else:
                                                 host['components'][cGroup][component][localProperty] = pValue
-                                        else:
-                                            host['components'][cGroup][component][localProperty] = pValue
-                                    except:
-                                        override = "No override for: " + component + ":" + cfgSection + ":" + targetProperty
-                                    # print pValue
-                                break
+                                        except:
+                                            override = "No override for: " + component + ":" + cfgSection + ":" + targetProperty
+                                        # print pValue
+                                    break
     return remove_empty_host_groups(mergedBlueprint)

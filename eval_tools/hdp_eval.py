@@ -175,9 +175,10 @@ def report(blueprint, hostMatrix, layout, control, componentDict, output_dir):
     count_types = {}
     count_types['Storage'] = ['DATANODE']
     count_types['Compute'] = ['NODEMANAGER']
-    count_types['Master'] = ['NAMENODE', 'RESOURCEMANAGER', 'OOZIE_SERVER', 'HIVE_SERVER', 'HIVE_SERVER_INTERACTIVE',
+    count_types['Master'] = ['NAMENODE', 'RESOURCEMANAGER', 'OOZIE_SERVER', 'HIVE_SERVER',
                              'HIVE_METASTORE']
     count_types['Kafka'] = ['KAFKA_BROKER']
+    count_types['LLAP'] = ['HIVE_SERVER_INTERACTIVE']
 
     count_types_filename = output_dir + '/count_types.html'
     count_types_output = open(count_types_filename, 'w')
@@ -597,6 +598,22 @@ def rpt_count_type(blueprint, layout, types, output, componentDict):
 
     writehtmltable(table, fields, output)
 
+    daemon_count = 0
+    for cat in table:
+        if cat['Category'] == 'LLAP' and cat['Count'] > 0:
+            for config in blueprint['configurations']:
+                if 'hive-interactive-env' in config.keys():
+                    daemon_count = int(config['hive-interactive-env']['properties']['num_llap_nodes_for_llap_daemons'])
+                    if config['hive-interactive-env']['properties']['num_llap_nodes'] > daemon_count:
+                        daemon_count = int(config['hive-interactive-env']['properties']['num_llap_nodes'])
+                    break
+
+    if daemon_count > 0:
+        output.write('\n<h2>LLAP Daemon Count: ' + str(daemon_count) + '</h2>\n')
+
+    output.write('\n<h2>Unique Host Count: ' + str(len(layout['items'])) + '</h2>\n')
+
+
     # Generate Counts for Blueprint Host Groups.
     # Go through the Merged Blueprint and count the hosts in each host_group.
     hg_table = []
@@ -756,6 +773,8 @@ def main():
     if options.ambari_blueprint:
         bp_file = options.ambari_blueprint
         blueprint = json.loads(open(bp_file).read())
+
+        consolidate_blueprint_host_groups(blueprint, False)
 
         if layout is not None:
             componentDict = get_component_dictionary_from_bp(blueprint)
