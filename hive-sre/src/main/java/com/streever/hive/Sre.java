@@ -25,7 +25,9 @@ public class Sre {
             sre.init(args);
             System.exit(0);
         } catch (Throwable t) {
+            System.err.println(t.getMessage());
             t.printStackTrace();
+            System.exit(0);
         }
     }
 

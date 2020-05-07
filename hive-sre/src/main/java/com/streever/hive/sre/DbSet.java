@@ -98,6 +98,7 @@ public class DbSet extends SreProcessBase {
                 check.close();
                 // build array of tables.
                 dbs = rarray.getColumn("name");
+                System.out.println("Found " + dbs.length + " databases to process.");
             } catch (SQLException e) {
                 throw new RuntimeException("Issue getting 'databases' to process.", e);
             }

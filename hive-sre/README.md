@@ -2,7 +2,17 @@
 
 ### Binary
 
+USE THE PRE-BUILT BINARY!!!  You won't have the necessary dependencies to build this from scratch without downloading and building the 'Hadoop Cli'.
+
 [Releases](https://github.com/dstreev/cloudera_upgrade_utils/releases)
+
+### Environment Settings
+
+To ease the launch of the application below, configure these core environment variables.
+
+```
+export SRE_CP=hive-sre-shaded.jar:<hive-standalone-jdbc-driver.jar>:<metastore_rdbms_driver.jar>
+```
 
 ### Hive JDBC Performance Testing Tool (perf)
 
@@ -39,28 +49,29 @@ Running for: 80966ms		Started: 2020-03-06 13:57:40.492		Record Count: 10020000		
 ```
 
 #### Environment and Connection via Knox
-*Example*
+*Example*  Note: The additional `cp` setting with `hadoop classpath` is required when connecting to a Kerberized endpoint.
 ```
 URL="jdbc:hive2://os06.streever.local:8443/;ssl=true;sslTrustStore=/home/dstreev/certs/bm90-gateway.jks;trustStorePassword=hortonworks;transportMode=http;httpPath=gateway/default/hive"
 QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
-SRE_CP=./hive-sre-<version>-SNAPSHOT-shaded.jar:<hive-standalone-jdbc-driver.jar>
 BATCH_SIZE=10000
 PW=<set_me>
 
-java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p <password> 
+java -cp $SRE_CP:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p <password> 
 ```
 
 #### Environment and Connection via Kerberos from Edge
-*Example*
+*Example* Note: The additional `cp` setting with `hadoop classpath` is required when connecting to a Kerberized endpoint.
 ```
 URL="jdbc:hive2://os05.streever.local:10601/default;httpPath=cliservice;principal=hive/_HOST@STREEVER.LOCAL;transportMode=http"
 QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
 # Note that `hadoop classpath` statement to bring in all necessary libs.
-SRE_CP=./hive-sre-shaded.jar:<hive-standalone-jdbc-driver.jar>:`hadoop classpath`
 BATCH_SIZE=10000
 
-java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
+java -cp $SRE_CP:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
 ```
+
+#### Environment and Connection via Kerberos from a Client Host (Non-Edge)
+Even with a valid Kerberos ticket, this type of host will not have all the `hadoop` libs we get from `hadoop classpath` to work.  I have not yet been able to find the right mix of classes to add to the 'uber' jar to get this working.
 
 ### SRE Application (sre)
 
@@ -119,15 +130,19 @@ queries:
 
 #### Running
 
-```
-export SRE_CP=./mariadb-java-client-2.5.3.jar:./hive-sre-shaded.jar:`hadoop classpath`
+I have included all the classes in the binary distro to work, without requiring `hadoop classpath`.  So don't include that in the classpath for this application.
 
+```
 java -cp $SRE_CP com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
 ```
 
 ### Hive Upgrade Check (u3)`
 
 Review Hive Metastore Databases and Tables for upgrade or simply to evaluate potential issues.  Using [HDP Upgrade Utils](https://github.com/dstreev/hdp3_upgrade_utils) as the baseline for this effort.  The intent is to make that process much more prescriptive and consumable by Cloudera customers.  The application is 'Hive' based, so it should work against both 'HDP', 'CDH', and 'CDP' clusters.
+
+#### Testing
+
+I have tested this against MariaDB 10.2, Postgres, and Oracle.  I have seen reports of SQL issues against MySql 5.6, so this process will certainly have issues there.  If you run this in other DB configs, I would like to hear from you about it.
 
 #### Application Help
 
@@ -141,17 +156,21 @@ usage: Sre
  -o,--output-dir <arg>   Output Directory to save results from Sre.
  ```
 
+#### #### The Configuration File
+
+Same as above, defined in the 'sre' sub program.
+
 #### Running
 
-```
-export SRE_CP=./mariadb-java-client-2.5.3.jar:./hive-sre-shaded.jar:`hadoop classpath`
+I have included all the classes in the binary distro to work, without requiring `hadoop classpath`.  So don't include that in the classpath for this application.
 
+```
 java -cp $SRE_CP com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out
 ```
 
 #### Check and Validations Performed
 
-Actions are NOT taken by this process.  The output of each section will contain 'actions' for you to take when a scenario is discovered.  It is up to you to carry out those actions after reviewing them.
+NO action is taken by this process.  The output of each section will contain 'actions' for you to take when a scenario is discovered.  It is up to you to carry out those actions after reviewing them.
 
 1. Hive 3 Upgrade Checks - Locations Scan
     - Missing Directories

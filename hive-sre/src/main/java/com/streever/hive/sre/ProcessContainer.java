@@ -10,6 +10,7 @@ import com.streever.hive.reporting.Reporter;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -165,7 +166,7 @@ public class ProcessContainer {
             }
 
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException("Issue getting configs", e);
         }
     }

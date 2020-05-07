@@ -7,6 +7,7 @@ import com.streever.hive.sre.ProcessContainer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 
@@ -83,7 +84,7 @@ public class UpgradeToHive3 implements SreSubApp{
             // Initialize with config and output directory.
             getProcessContainer().init(cmd.getOptionValue("cfg"), cmd.getOptionValue("o"), getDbsOverride());
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException("Missing resource file: " + stackResource, e);
         }
 
