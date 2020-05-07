@@ -56,7 +56,7 @@ java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_
 URL="jdbc:hive2://os05.streever.local:10601/default;httpPath=cliservice;principal=hive/_HOST@STREEVER.LOCAL;transportMode=http"
 QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
 # Note that `hadoop classpath` statement to bring in all necessary libs.
-SRE_CP=./hive-sre-<version>-SNAPSHOT-shaded.jar:<hive-standalone-jdbc-driver.jar>:`hadoop classpath`
+SRE_CP=./hive-sre-shaded.jar:<hive-standalone-jdbc-driver.jar>:`hadoop classpath`
 BATCH_SIZE=10000
 
 java -cp $SRE_CP com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
@@ -119,8 +119,11 @@ queries:
 
 #### Running
 
-`java -cp ./mariadb-java-client-2.5.3.jar:./hive-sre-<version>-SNAPSHOT-shaded.jar com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
+```
+export SRE_CP=./mariadb-java-client-2.5.3.jar:./hive-sre-shaded.jar:`hadoop classpath`
 
+java -cp $SRE_CP com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
+```
 
 ### Hive Upgrade Check (u3)`
 
@@ -140,7 +143,11 @@ usage: Sre
 
 #### Running
 
-`java -cp ./mariadb-java-client-2.5.3.jar:./hive-sre-<version>-SNAPSHOT-shaded.jar com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
+```
+export SRE_CP=./mariadb-java-client-2.5.3.jar:./hive-sre-shaded.jar:`hadoop classpath`
+
+java -cp $SRE_CP com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out
+```
 
 #### Check and Validations Performed
 
