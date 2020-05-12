@@ -4,7 +4,7 @@ processes:
     name: "Hive 3 Upgrade Checks - Locations Scan"
     errorFilename: h3_upgrade_loc_scan.err
     successFilename: h3_upgrade_loc_scan.txt
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
     pathsListingQuery: "tbl_part_locations"
@@ -20,7 +20,7 @@ processes:
   - type: "dbSet"
     active: true
     name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     errorFilename: "h3_upgrade_filename_scan.err"
     successFilename: "h3_upgrade_filename_scan.txt"
     dbListingQuery: "db_tbl_count"
@@ -39,7 +39,7 @@ processes:
   - type: "dbSet"
     active: true
     name: "Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations"
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     errorFilename: "managed_upgrade_2_acid.err"
     successFilename: "managed_upgrade_2_acid.sql"
     dbListingQuery: "db_tbl_count"
@@ -70,7 +70,7 @@ processes:
   - type: "dbSet"
     active: true
     name: "Hive 3 Upgrade Checks - Compaction Check"
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     errorFilename: "managed_compactions.err"
     successFilename: "managed_compactions.sql"
     dbListingQuery: "db_tbl_count"
@@ -101,7 +101,7 @@ processes:
   - type: "metastore.query"
     active: true
     name: "Questionable Serde's Check"
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     errorFilename: "hive_questionable_serde.err"
     successFilename: "hive_questionable_serde.txt"
     metastoreQuery: "questionable_serdes"
@@ -114,7 +114,7 @@ processes:
   - type: "metastore.query"
     active: true
     name: "Managed Table Shadows"
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     errorFilename: "managed_tbl_shadows.err"
     successFilename: "managed_tbl_shadows.txt"
     metastoreQuery: "managed_tbl_shadows"

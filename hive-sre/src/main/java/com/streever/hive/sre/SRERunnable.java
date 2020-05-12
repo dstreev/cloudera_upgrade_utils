@@ -112,6 +112,6 @@ public abstract class SRERunnable implements Counter, Runnable {
         counter.setError(error);
     }
 
-    public abstract void init();
+    public abstract Boolean init();
 
 }

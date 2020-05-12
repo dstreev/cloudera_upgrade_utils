@@ -110,9 +110,16 @@ public class DbSet extends SreProcessBase {
             DbPaths paths = new DbPaths(database, this);
             paths.error = this.error;
             paths.success = this.success;
-            paths.init();
-            paths.setStatus(CONSTRUCTED);
-            sres.add(paths);
+            if (paths.init()) {
+                paths.setStatus(CONSTRUCTED);
+                sres.add(paths);
+            } else {
+                throw new RuntimeException("Issue establishing a connection to HDFS.  " +
+                        "Check credentials(kerberos), configs(/etc/hadoop/conf), " +
+                        "and/or availability of the HDFS service. " +
+                        "Can you run an 'hdfs' cli command successfully?");
+//                return; // Go no further with processing.
+            }
         }
 
         for (SRERunnable sre : sres) {

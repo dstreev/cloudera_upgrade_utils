@@ -50,7 +50,8 @@ public class DbPaths extends SRERunnable {
     }
 
     @Override
-    public void init() {
+    public Boolean init() {
+        Boolean rtn = Boolean.FALSE;
         for (CommandReturnCheck check : parent.getChecks()) {
             try {
                 CommandReturnCheck newCheck = (CommandReturnCheck) check.clone();
@@ -72,12 +73,13 @@ public class DbPaths extends SRERunnable {
         try {
             // TODO: Need to promote failure when keytab doesn't exist.
 //            System.out.println("Start CLI Session");
-            this.cliSession.start(api);
+            rtn = this.cliSession.start(api);
 //            System.out.println("CLI Session Started");
         } catch (Exception e) {
+            System.err.println("Issue starting CLI Session:" + e.getMessage());
             e.printStackTrace();
         }
-
+        return rtn;
     }
 
     @Override
