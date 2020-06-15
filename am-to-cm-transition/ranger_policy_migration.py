@@ -160,7 +160,7 @@ def upsert(service_info):
             upsert_policy = dict(policy)
             upsert_policy['service'] = service_info['to']['name']
             r = requests.post(policy_url, auth=HTTPBasicAuth(username, password),
-                              json=upsert_policy)
+                              json=upsert_policy, verify=False)
             if r.status_code == 200:
                 action['status'] = '200-success'
                 action['message'] = json.loads(r.text)
@@ -194,14 +194,14 @@ def move(service_info):
             move_policy = dict(policy)
             move_policy['service'] = service_info['to']['name']
             r = requests.post(policy_url, auth=HTTPBasicAuth(username, password),
-                              json=move_policy)
+                              json=move_policy, verify=False)
             if r.status_code == 200:
                 action['status'] = '200-success'
                 action['message'] = json.loads(r.text)
                 logit('Policy [' + move_policy['name'] + '] has been ADDED to [' + service_info['to']['name'] + ']', True)
                 # Remove Policy from original service
                 rd = requests.delete(policy_url + '/' + str(policy['id']), auth=HTTPBasicAuth(username, password),
-                                     json=policy)
+                                     json=policy, verify=False)
                 if rd.status_code == 204:
                     logit('Policy  [' + str(policy['id']) + ':' + policy['name'] + '] has been REMOVED from [' +
                           service_info['from']['name'] + ']', True)
@@ -236,14 +236,14 @@ def logit(my_log_entry, with_print=True):
 
 def get_service_policies(service_id):
     url = host_url + '/' + SERVICE_ENDPOINT + '/plugins/policies/service/' + str(service_id)
-    r = requests.get(url, auth=HTTPBasicAuth(username, password))
+    r = requests.get(url, auth=HTTPBasicAuth(username, password), verify=False)
     policy_response = json.loads(r.text)
     return policy_response['policies']
 
 
 def validate_services(service_from, service_to):
     url = host_url + '/' + SERVICE_ENDPOINT + '/' + REST_SERVICE
-    r = requests.get(url, auth=HTTPBasicAuth(username, password))
+    r = requests.get(url, auth=HTTPBasicAuth(username, password), verify=False)
     serviceList = json.loads(r.text)
 
     services = {}
@@ -278,7 +278,7 @@ def migrate(service_info):
             migrated_policy = dict(policy)
             migrated_policy['service'] = service_info['to']['name']
             r = requests.put(policy_url, auth=HTTPBasicAuth(username, password),
-                             json=migrated_policy)
+                             json=migrated_policy, verify=False)
             if r.status_code == 200:
                 action['status'] = '200-success'
                 action['message'] = json.loads(r.text)
