@@ -88,7 +88,7 @@ Launching: sre
 usage: Sre
  -cfg,--config <arg>     Config with details for the Sre Job.  Must match
                          the either sre or u3 selection.
- -db,--database <arg>    Comma separated list of Databases.  Will override
+ -db,--database <arg>    Comma separated list of 'Hive' Databases.  Will override
                          config. (upto 100)
  -o,--output-dir <arg>   Output Directory to save results from Sre.
 ```
@@ -104,7 +104,7 @@ Sre needs to be run by a user with READ access to all the potential HDFS locatio
 ```
 # Required to connect to Metastore RDBMS.  RDBMS driver needs to be included in the classpath
 metastore_direct:
-  uri: "FULL_DB_URL"
+  uri: "FULL_RDMBS_URL_FOR_METASTORE_INCLUDING_THE_DB_NAME"
   connectionProperties:
     user: "DB_USER"
     password: "DB_PASSWORD"
