@@ -1,4 +1,21 @@
 query_definitions:
+  db_tbl_part_count:
+    statement: "SELECT
+                    name,
+                    COUNT(DISTINCT T.tbl_name) tbl_count,
+                    COUNT(P.part_name) part_count
+                FROM
+                    DBS D
+                INNER JOIN
+                    TBLS T
+                ON
+                    D.db_id = T.db_id
+                    LEFT OUTER JOIN
+                                    PARTITIONS P
+                                ON
+                                    T.TBL_ID = P.TBL_ID
+                GROUP BY
+                    name"
   tbl_part_locations:
     statement: "SELECT DISTINCT
                     D.NAME      ,

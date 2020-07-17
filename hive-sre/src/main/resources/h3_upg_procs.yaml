@@ -139,3 +139,16 @@ processes:
     listingColumns: ["db_name" ,"tbl_name", "tbl_location"]
     resultMessageHeader: "***********************************************************"
     resultMessageDetailTemplate: "Table %1$s.%2$s at location %3$s is sharing location with another managed table."
+  - type: "metastore.query"
+    id: 7
+    active: true
+    name: "Database / Table / Partition Count"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
+    errorDescription: "Issues"
+    successDescription: "Database / Table / Partition Counts"
+    errorFilename: "db_counts_issue.txt"
+    successFilename: "db_counts.txt"
+    metastoreQuery: "db_tbl_part_count"
+    listingColumns: ["name" ,"tbl_count", "part_count"]
+    resultMessageHeader: "***********************************************************"
+    resultMessageDetailTemplate: "%1$s\t%2$s\t%3$s"

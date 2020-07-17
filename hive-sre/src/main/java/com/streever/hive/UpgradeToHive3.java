@@ -96,7 +96,6 @@ public class UpgradeToHive3 implements SreSubApp{
                         proc.setActive(true);
                     }
                 }
-
             }
             setProcessContainer(procContainer);
             // Initialize with config and output directory.

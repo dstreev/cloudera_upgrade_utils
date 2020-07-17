@@ -1,8 +1,11 @@
 processes:
   - type: "dbSet"
-    name: "Hive 3 Performance Checks - Locations Scan"
-    errorFilename: h3_perf_scan.err
-    successFilename: h3_perf_scan.txt
+    id: 1
+    name: "Hive Small Files Check"
+    errorDescription: "Processing Issues"
+    successDescription: "Small Files Report"
+    errorFilename: small_files_proc_err.txt
+    successFilename: small_files.txt
     queryDefinitionReference: "/hive_upgrade_queries.yaml"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
@@ -22,11 +25,14 @@ processes:
               fail: "\"SMALLFILES: %1$s\t%2$s\t[:%4$s]\t%5$s\t%6$s\t%7$s\t%8$s\t\" + java.math.BigDecimal.valueOf((%8$s / %7$s)).divide(new java.math.BigDecimal(1024*1024), 3) + \"Mb\""
               params: ["67108864"]
   - type: "metastore.query"
+    id: 2
     active: true
-    name: "Table Partition Count"
+    name: "Hive Excessive Partitions Report"
     queryDefinitionReference: "/hive_perf_queries.yaml"
-    errorFilename: "tbl_partition_count.err"
-    successFilename: "tbl_partition_count.txt"
+    errorDescription: "Processing Issues"
+    successDescription: "Excessive Partitions Report"
+    errorFilename: "excessive_partitions_proc_err.txt"
+    successFilename: "excessive_partitions.txt"
     metastoreQuery: "tbl_partition_count"
     listingColumns: ["db_name" ,"tbl_name", "tbl_type", "num_of_partitions"]
     resultMessageHeader: "***********************************************************"

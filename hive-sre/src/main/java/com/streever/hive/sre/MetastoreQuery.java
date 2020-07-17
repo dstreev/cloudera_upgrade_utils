@@ -108,7 +108,7 @@ public class MetastoreQuery extends SreProcessBase implements Counter, Runnable 
 
     @Override
     public void setName(String name) {
-        super.setName(name);
+        super.setName(getId() + ":" + name);
         this.getCounter().setName(name);
     }
 

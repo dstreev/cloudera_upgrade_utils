@@ -1,18 +1,16 @@
 ## Hive SRE Tooling
 
+This application has 3 sub-programs:
+
+- `perf` is used to check the throughput of a JDBC connection.
+- `sre` is used to find potential 'Hive' performance issues caused by small files and excessive partitions.
+- `u3` is used to review 'Hive 1/2' environments for Hive3 upgrade planning.
+
 ### Binary
 
 USE THE PRE-BUILT BINARY!!!  You won't have the necessary dependencies to build this from scratch without downloading and building the 'Hadoop Cli'.
 
 [Releases](https://github.com/dstreev/cloudera_upgrade_utils/releases)
-
-### Environment Settings
-
-To ease the launch of the application below, configure these core environment variables.
-
-```
-export SRE_CP=hive-sre-shaded.jar:<hive-standalone-jdbc-driver.jar>:<metastore_rdbms_driver.jar>
-```
 
 ### Hive JDBC Performance Testing Tool (perf)
 
@@ -48,7 +46,14 @@ Window Length(ms) | Record Average | Records per/sec | Data Size per/sec
 Running for: 80966ms		Started: 2020-03-06 13:57:40.492		Record Count: 10020000		Data Size: 1171392406
 ```
 
-#### Environment and Connection via Knox
+To ease the launch of the application below, configure these core environment variables.
+
+```
+export SRE_PERF=hive-sre-shaded.jar:<hive-standalone-jdbc-driver.jar>
+```
+
+**Environment and Connection via Knox**
+
 *Example*  Note: The additional `cp` setting with `hadoop classpath` is required when connecting to a Kerberized endpoint.
 ```
 URL="jdbc:hive2://os06.streever.local:8443/;ssl=true;sslTrustStore=/home/dstreev/certs/bm90-gateway.jks;trustStorePassword=hortonworks;transportMode=http;httpPath=gateway/default/hive"
@@ -56,10 +61,11 @@ QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
 BATCH_SIZE=10000
 PW=<set_me>
 
-java -cp $SRE_CP:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p <password> 
+java -cp $SRE_PERF:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p <password> 
 ```
 
-#### Environment and Connection via Kerberos from Edge
+**Environment and Connection via Kerberos from Edge**
+
 *Example* Note: The additional `cp` setting with `hadoop classpath` is required when connecting to a Kerberized endpoint.
 ```
 URL="jdbc:hive2://os05.streever.local:10601/default;httpPath=cliservice;principal=hive/_HOST@STREEVER.LOCAL;transportMode=http"
@@ -67,10 +73,11 @@ QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
 # Note that `hadoop classpath` statement to bring in all necessary libs.
 BATCH_SIZE=10000
 
-java -cp $SRE_CP:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
+java -cp $SRE_PERF:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
 ```
 
-#### Environment and Connection via Kerberos from a Client Host (Non-Edge)
+**Environment and Connection via Kerberos from a Client Host (Non-Edge)**
+
 Even with a valid Kerberos ticket, this type of host will not have all the `hadoop` libs we get from `hadoop classpath` to work.  I have not yet been able to find the right mix of classes to add to the 'uber' jar to get this working.
 
 ### SRE Application (sre)
@@ -88,14 +95,23 @@ Launching: sre
 usage: Sre
  -cfg,--config <arg>     Config with details for the Sre Job.  Must match
                          the either sre or u3 selection.
- -db,--database <arg>    Comma separated list of 'Hive' Databases.  Will override
+ -db,--database <arg>    Comma separated list of Databases.  Will override
                          config. (upto 100)
+ -i,--include <arg>      Comma separated list of process id's to run.
+                         When not specified, ALL processes are run.
  -o,--output-dir <arg>   Output Directory to save results from Sre.
 ```
 
 The `-db` parameter is optional.  When specified, it will limit the search to the databases listed as a parameter.  IE: `-db my_db,test_db`
 
 The `-o` parameter is *required*.
+
+To limit which process runs, use the `-i` (include) option at the command line with a comma separated list of ids (below) of desired processes.
+
+| id | process |
+|:---|:---|
+| 1 | Small Files Check |
+| 2 | Excessive Partitions Review |
 
 Sre needs to be run by a user with READ access to all the potential HDFS locations presented by the database/table/partition defined locations.
  
@@ -124,13 +140,17 @@ queries:
 
 #### Running
 
-I have included all the classes in the binary distro to work, without requiring `hadoop classpath`.  So don't include that in the classpath for this application.
+To ease the launch of the application below, configure these core environment variables.
 
 ```
-java -cp $SRE_CP com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
+export SRE_HIVE=hive-sre-shaded.jar:<rdbms-metastore-driver.jar>
 ```
 
-### Hive Upgrade Check (u3)`
+```
+java -cp $SRE_HIVE com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
+```
+
+### Hive Upgrade Check (u3)
 
 Review Hive Metastore Databases and Tables for upgrade or simply to evaluate potential issues.  Using [HDP Upgrade Utils](https://github.com/dstreev/hdp3_upgrade_utils) as the baseline for this effort.  The intent is to make that process much more prescriptive and consumable by Cloudera customers.  The application is 'Hive' based, so it should work against both 'HDP', 'CDH', and 'CDP' clusters.
 
@@ -163,6 +183,7 @@ To limit which process runs, use the `-i` (include) option at the command line w
 | 4 | Compaction Check |
 | 5 | Questionable Serde's Check |
 | 6 | Managed Table Shadows |
+| 7 | List Databases with Table/Partition Counts |
 
 
 #### #### The Configuration File
@@ -171,24 +192,29 @@ Same as above, defined in the 'sre' sub program.
 
 #### Running
 
-I have included all the classes in the binary distro to work, without requiring `hadoop classpath`.  So don't include that in the classpath for this application.
+Run the process first with the `-i 7` option to get a list of databases with table and partition counts.  With this information, you can develop a strategy to run the tool in parts using the `-db` option.  Multi-tasking can be controlled in the configuration files `parallelism` setting.
+
+To ease the launch of the application below, configure these core environment variables.
+
+```
+export SRE_HIVE=hive-sre-shaded.jar:<rdbms-metastore-driver.jar>
+```
 
 ##### Examples
 *All Hive Databases* - Will run ALL processes.
 ```
-java -cp $SRE_CP com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out
+java -cp $SRE_HIVE com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out
 ```
 
 *Targeted Hive Database* - Will run ALL processes on the 'priv_dstreev' hive database.
 ```
-java -cp $SRE_CP com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out
+java -cp $SRE_HIVE com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out
 ```
 
 *Run ONLY compaction check on All Hive Database* - Using the `-i` option to run only the 'compaction check' sub routine.
 ```
-java -cp $SRE_CP com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out -i 4
+java -cp $SRE_HIVE com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out -i 4
 ```
-
 
 #### Check and Validations Performed
 
@@ -220,8 +246,25 @@ NO action is taken by this process.  The output of each section will contain 'ac
         - Ensure the SERDE is available during the upgrade so table can be evaluated.
 6. Managed Table Shadows
     > In Hive 3, Managed tables are 'ACID' tables.  Sharing a location between two 'ACID' tables will cause compaction issues and data issues.  These need to be resolved before the upgrade.
-    
-                            
+7. Database / Table and Partition Counts
+    > Use this to understand the scope of what is in the metastore.
+                                            
+### UI Details for `sre` and `u3`
+
+Only active processes will show up in the UI.  The UI will refresh every second and display the current details below.
+
+There are several 'processes' that are defined in `u3`.  Each process will run 1 or more 'sub-processes'.  The counters lists in the UI are specific to the 'process' and 'sub-processes' in that section.
+
+The number of concurrent processes is controlled by the `parallelism` variable in the configuration yaml defined above.
+
+1. Process Header - [process id: process name]
+2. Sub Process - [table name: process state]
+3. Sub Process Progress - [processed count / issues count / total in process count]
+4. Process Footer Details.  Count of sub processes in various states. [Constructed:Waiting:Started:Processing:Error:Complete].  In the example below there are 5 sub-processes waiting for a slot to run, 3 sub-processes running, and 11 sub-processes that have completed.
+5. Process Counts - [issues: processed so far]. The example below shows 6 issues in the 'Location Scan' and 9186 'completed checks' thus far.
+
+![UI Details](images/hive-ui-details.png)
+                         
 
 
 
