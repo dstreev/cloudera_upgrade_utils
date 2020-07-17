@@ -31,6 +31,7 @@ public class ProcessContainer {
     private List<ScheduledFuture> processThreads;
     private ConnectionPools connectionPools;
     private String outputDirectory;
+    private List<Integer> includes = new ArrayList<Integer>();
 
     private List<SreProcessBase> processes = new ArrayList<SreProcessBase>();
     private int parallelism = 3;
@@ -49,6 +50,10 @@ public class ProcessContainer {
 
     public void setReporter(Reporter reporter) {
         this.reporter = reporter;
+    }
+
+    public void addInclude(Integer include) {
+        includes.add(include);
     }
 
     public ScheduledExecutorService getThreadPool() {
@@ -115,11 +120,13 @@ public class ProcessContainer {
         }
         getThreadPool().shutdown();
         for (SreProcessBase process: getProcesses()) {
-            System.out.println(process.getName());
-            System.out.println("  success -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
-                    process.getErrorFilename());
-            System.out.println("  failure -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
-                    process.getSuccessFilename());
+            if (process.isActive()) {
+                System.out.println(process.getId() + ":" + process.getName());
+                System.out.println(process.getErrorDescription() + " -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
+                        process.getErrorFilename());
+                System.out.println(process.getSuccessDescription() + " -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
+                        process.getSuccessFilename());
+            }
         }
     }
 

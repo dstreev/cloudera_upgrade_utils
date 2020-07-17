@@ -125,7 +125,7 @@ public class DbSet extends SreProcessBase {
         for (SRERunnable sre : sres) {
             sre.setStatus(WAITING);
             // Add Counter to Main Reporter
-            getParent().getReporter().addCounter(getName(), sre.getCounter());
+            getParent().getReporter().addCounter(getId() + ":" + getName(), sre.getCounter());
             // Add Runnable to Main ThreadPool
             getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
         }

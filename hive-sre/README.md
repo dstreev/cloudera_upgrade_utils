@@ -111,12 +111,6 @@ metastore_direct:
   connectionPool:
     min: 3
     max: 5
-# Optional at this time
-hs2:
-  uri: "<OPTIONAL>"
-  connectionPool:
-    min: 3
-    max: 5
 # Control the number of threads to run scans with.  Should not exceed host core count.
 # Increase parallelism will increase HDFS namenode pressure.  Advise monitoring namenode
 # RPC latency while running this process.
@@ -151,10 +145,25 @@ Launching: u3
 usage: Sre
  -cfg,--config <arg>     Config with details for the Sre Job.  Must match
                          the either sre or u3 selection.
- -db,--database <arg>    Comma separated list of Databases.  Will override
-                         config. (upto 100)
+ -db,--database <arg>    Comma separated list of 'Hive' Databases.  Will
+                         override config. (upto 100)
+ -i,--include <arg>      Comma separated list of process id's to run.
+                         When not specified, ALL processes are run.
  -o,--output-dir <arg>   Output Directory to save results from Sre.
+
  ```
+
+To limit which process runs, use the `-i` (include) option at the command line with a comma separated list of ids (below) of desired processes.
+
+| id | process |
+|:---|:---|
+| 1 | Missing direction location scan |
+| 2 | Bad ORC Filenames |
+| 3 | Managed Table Migrations |
+| 4 | Compaction Check |
+| 5 | Questionable Serde's Check |
+| 6 | Managed Table Shadows |
+
 
 #### #### The Configuration File
 
@@ -164,17 +173,35 @@ Same as above, defined in the 'sre' sub program.
 
 I have included all the classes in the binary distro to work, without requiring `hadoop classpath`.  So don't include that in the classpath for this application.
 
+##### Examples
+*All Hive Databases* - Will run ALL processes.
+```
+java -cp $SRE_CP com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out
+```
+
+*Targeted Hive Database* - Will run ALL processes on the 'priv_dstreev' hive database.
 ```
 java -cp $SRE_CP com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out
 ```
 
+*Run ONLY compaction check on All Hive Database* - Using the `-i` option to run only the 'compaction check' sub routine.
+```
+java -cp $SRE_CP com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out -i 4
+```
+
+
 #### Check and Validations Performed
 
-NO action is taken by this process.  The output of each section will contain 'actions' for you to take when a scenario is discovered.  It is up to you to carry out those actions after reviewing them.
+NO action is taken by this process.  The output of each section will contain 'actions' for you to take when a scenario materializes.  It is up to you to carry out those actions after reviewing them.
 
 1. Hive 3 Upgrade Checks - Locations Scan
     - Missing Directories
     > Missing Directories cause the upgrade conversion process to fail.  To prevent that failure, there are two choices for a 'missing directory'.  Either create it of drop the table/partition.
+
+    - You have two choices based on the output of this process.                        
+        - Drop the table/partition OR
+        - Create the missing directory referenced by the table/partition.
+    - The output file from this process will provide commands to accomplish which ever direction you choose. Use 'hive' to run the sql statements.  Use [hadoopcli](https://github.com/dstreev/hadoop-cli) to run the 'hdfs' commands in bulk.
 2. Hive 3 Upgrade Checks - Bad ORC Filenames
     - Bad Filename Format
     > Tables that would be convert from a Managed Non-Acid table to an ACID transactional table require the files to match a certain pattern. This process will scan the potential directories of these tables for bad filename patterns.  When located, it will indicate which tables/partitions have been file naming conventions that would prevent a successful conversion to ACID.  The best and easiest way to correct these files names is to use HiveSQL to rewrite the contents of the table/partition with a simple 'INSERT OVERWRITE TABLE xxx SELECT * FROM xxx'.  This type of statement will replace the current bad filenames with valid file names by rewriting the contents in HiveSQL.
@@ -186,7 +213,15 @@ NO action is taken by this process.  The output of each section will contain 'ac
     - Compaction Check
     > Review ACID tables for 'delta' directories.  Where 'delta' directories are found, we'll 
 5. Questionable Serde's Check
+    > Will list tables using SERDE's that are not standard to the platform.
+    
+    - Action here either:
+        - Remove the table using the SERDE, if the SERDE isn't available
+        - Ensure the SERDE is available during the upgrade so table can be evaluated.
 6. Managed Table Shadows
+    > In Hive 3, Managed tables are 'ACID' tables.  Sharing a location between two 'ACID' tables will cause compaction issues and data issues.  These need to be resolved before the upgrade.
+    
+                            
 
 
 

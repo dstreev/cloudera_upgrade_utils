@@ -9,21 +9,12 @@ import static com.streever.hive.reporting.ReportCounter.*;
 
 public class Reporter implements Runnable {
 
-    //    public static final String clearConsole = "\33[H\33[2J";
-//    public static final String resetToPreviousLine = "\33[1A\33[2K";
-//    public static final String ANSI_RESET = "\u001B[0m";
-//    public static final String ANSI_BLACK = "\u001B[30m";
-//    public static final String ANSI_RED = "\u001B[31m";
-//    public static final String ANSI_GREEN = "\u001B[32m";
-//    public static final String ANSI_YELLOW = "\u001B[33m";
-//    public static final String ANSI_BLUE = "\u001B[34m";
-//    public static final String ANSI_PURPLE = "\u001B[35m";
-//    public static final String ANSI_CYAN = "\u001B[36m";
-//    public static final String ANSI_WHITE = "\u001B[37m";
-//    private final int ANSI_SIZE = 5;
     private int WIDTH = 100;
     private int linePos = 0;
     private boolean tictoc = false;
+
+    private int ERROR_POS = 0;
+    private int SUCCESS_POS = 1;
 
     private String name;
     private Date startTime = new Date();
@@ -63,9 +54,9 @@ public class Reporter implements Runnable {
                 "/" + ReportingConf.ANSI_RED + counter.getError() + ReportingConf.ANSI_BLUE + "/" +
                 ReportingConf.ANSI_GREEN + total + ReportingConf.ANSI_BLUE + "]" + ReportingConf.ANSI_RESET);
 
-        for (ReportCounter child : counter.getChildren()) {
-            displayLines.addAll(Arrays.asList(getShortCounterDisplay(prefix, child)));
-        }
+//        for (ReportCounter child : counter.getChildren()) {
+//            displayLines.addAll(Arrays.asList(getShortCounterDisplay(prefix, child)));
+//        }
         Wrap rtn = new Wrap();
         rtn.status = counter.getStatus();
         rtn.details = displayLines;
@@ -107,8 +98,6 @@ public class Reporter implements Runnable {
 
     // Return true when not completed.
     public boolean refresh() {
-        int ERROR = 0;
-        int SUCCESS = 1;
         boolean rtn = false;
         String INDENT = "    ";
 
@@ -130,33 +119,51 @@ public class Reporter implements Runnable {
             pushLine(StringUtils.rightPad("=", WIDTH, "="));
 
             Map<Integer, AtomicLong> totals = new TreeMap<Integer, AtomicLong>();
-            totals.put(ERROR, new AtomicLong(0));
-            totals.put(SUCCESS, new AtomicLong(0));
+            totals.put(ERROR_POS, new AtomicLong(0));
+            totals.put(SUCCESS_POS, new AtomicLong(0));
             Map<Integer, AtomicLong> progress = new TreeMap<Integer, AtomicLong>();
+            progress.put(CONSTRUCTED, new AtomicLong(0));
+            progress.put(WAITING, new AtomicLong(0));
+            progress.put(STARTED, new AtomicLong(0));
+            progress.put(PROCESSING, new AtomicLong(0));
+            progress.put(ERROR, new AtomicLong(0));
+            progress.put(COMPLETED, new AtomicLong(0));
             for (ReportCounter ctr : counters) {
-                switch (ctr.getStatus()) {
-                    case ReportCounter.CONSTRUCTED:
-                    case ReportCounter.WAITING:
-                    case ReportCounter.STARTED:
-                    case ReportCounter.PROCESSING:
-                        if (progress.containsKey(ctr.getStatus())) {
-                            progress.get(ctr.getStatus()).addAndGet(1);
-                        } else {
-                            progress.put(ctr.getStatus(), new AtomicLong(1));
-                        }
-                        if (ctr.getStatus() == PROCESSING) {
-                                Wrap cd = getCounterDisplay(INDENT, ctr);
-                                currentProcessing.addAll(cd.details);
-                        }
-                        for (ReportCounter child : ctr.getChildren()) {
-                            totals.get(ERROR).addAndGet(child.getError());
-                            totals.get(SUCCESS).addAndGet(child.getSuccess());
-                        }
-                        break;
-                    case ReportCounter.ERROR:
-                    case ReportCounter.COMPLETED:
-                        break;
+                progress.get(ctr.getStatus()).addAndGet(1);
+
+                for (ReportCounter child : ctr.getChildren()) {
+                    totals.get(ERROR_POS).addAndGet(child.getError());
+                    totals.get(SUCCESS_POS).addAndGet(child.getSuccess());
                 }
+
+                if (ctr.getStatus() == PROCESSING) {
+                    Wrap cd = getCounterDisplay(INDENT, ctr);
+                    currentProcessing.addAll(cd.details);
+                }
+
+//                switch (ctr.getStatus()) {
+//                    case ReportCounter.CONSTRUCTED:
+//                    case ReportCounter.WAITING:
+//                    case ReportCounter.STARTED:
+//                    case ReportCounter.PROCESSING:
+//                        if (progress.containsKey(ctr.getStatus())) {
+//                            progress.get(ctr.getStatus()).addAndGet(1);
+//                        } else {
+//                            progress.put(ctr.getStatus(), new AtomicLong(1));
+//                        }
+//                        if (ctr.getStatus() == PROCESSING) {
+//                                Wrap cd = getCounterDisplay(INDENT, ctr);
+//                                currentProcessing.addAll(cd.details);
+//                        }
+//                        for (ReportCounter child : ctr.getChildren()) {
+//                            totals.get(ERROR_POS).addAndGet(child.getError());
+//                            totals.get(SUCCESS_POS).addAndGet(child.getSuccess());
+//                        }
+//                        break;
+//                    case ReportCounter.ERROR:
+//                    case ReportCounter.COMPLETED:
+//                        break;
+//                }
             }
             for (String line : currentProcessing) {
                 pushLine(line);
@@ -189,8 +196,8 @@ public class Reporter implements Runnable {
 
             StringBuilder overallTotalsSb = new StringBuilder();
             overallTotalsSb.append(ReportingConf.ANSI_BLUE).append("[").append(ReportingConf.ANSI_GREEN);
-            overallTotalsSb.append(totals.get(ERROR).get()).append(ReportingConf.ANSI_BLUE).append("/").append(ReportingConf.ANSI_GREEN);
-            overallTotalsSb.append(totals.get(SUCCESS).get()).append(ReportingConf.ANSI_BLUE).append("]").append(ReportingConf.ANSI_RESET);
+            overallTotalsSb.append(totals.get(ERROR_POS).get()).append(ReportingConf.ANSI_BLUE).append("/").append(ReportingConf.ANSI_GREEN);
+            overallTotalsSb.append(totals.get(SUCCESS_POS).get()).append(ReportingConf.ANSI_BLUE).append("]").append(ReportingConf.ANSI_RESET);
             String totalsSummary = overallTotalsSb.toString();
             totalsSummary = StringUtils.leftPad(totalsSummary, WIDTH - (summary.length() + 1) + (20 * 5), " ");
 //        summary = StringUtils.leftPad(summary, WIDTH + (8 * 5), " ");

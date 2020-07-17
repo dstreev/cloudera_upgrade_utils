@@ -23,6 +23,7 @@ import java.net.URL;
         @JsonSubTypes.Type(value = MetastoreQuery.class, name = "metastore.query")})
 public abstract class SreProcessBase {
     private String name = "not set";
+    private String id = null;
     private Boolean active = Boolean.TRUE;
 
     private ProcessContainer parent;
@@ -32,6 +33,8 @@ public abstract class SreProcessBase {
     private String queryDefinitionReference = null;
 
     private String[] dbsOverride = {};
+    private String errorDescription = null;
+    private String successDescription = null;
     private String errorFilename = null;
     private String successFilename = null;
 
@@ -56,6 +59,14 @@ public abstract class SreProcessBase {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public Boolean isActive() {
@@ -88,7 +99,7 @@ public abstract class SreProcessBase {
             try {
                 URL configURL = this.getClass().getResource(this.queryDefinitionReference);
                 if (configURL == null) {
-                    throw new RuntimeException("Can build URL for Resource: " +
+                    throw new RuntimeException("Can't build URL for Resource: " +
                             this.queryDefinitionReference);
                 }
                 String yamlConfigDefinition = IOUtils.toString(configURL);
@@ -126,6 +137,22 @@ public abstract class SreProcessBase {
 
     public void setDbsOverride(String[] dbsOverride) {
         this.dbsOverride = dbsOverride;
+    }
+
+    public String getErrorDescription() {
+        return errorDescription;
+    }
+
+    public void setErrorDescription(String errorDescription) {
+        this.errorDescription = errorDescription;
+    }
+
+    public String getSuccessDescription() {
+        return successDescription;
+    }
+
+    public void setSuccessDescription(String successDescription) {
+        this.successDescription = successDescription;
     }
 
     public String getErrorFilename() {

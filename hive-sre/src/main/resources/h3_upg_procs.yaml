@@ -1,9 +1,12 @@
 processes:
   - type: "dbSet"
+    id: 1
     active: true
     name: "Hive 3 Upgrade Checks - Locations Scan"
-    errorFilename: h3_upgrade_loc_scan.err
-    successFilename: h3_upgrade_loc_scan.txt
+    errorDescription: "Scan Actions"
+    successDescription: "Issues"
+    errorFilename: h3_upgrade_loc_scan_action.txt
+    successFilename: h3_upgrade_loc_scan_issues.txt
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
@@ -12,17 +15,20 @@ processes:
       - name: "Missing Directories"
         invertCheck: false
         pathCommand: "lsp -f path -t %5$s"
-        onErrorPathCommand: "mkdir -p %5$s"
+        onErrorPathCommand: "HDFS     | mkdir -p %5$s\nHIVE_SQL | DROP TABLE %1$s.%2$s;"
         reportOnResults: false
         reportOnPath: true
         processOnError: true
         processOnSuccess: false
   - type: "dbSet"
+    id: 2
     active: true
     name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorFilename: "h3_upgrade_filename_scan.err"
-    successFilename: "h3_upgrade_filename_scan.txt"
+    errorDescription: "Bad Filenames"
+    successDescription: "Issues"
+    errorFilename: "bad_filenames_for_orc_conversion.txt"
+    successFilename: "bad_filename_issues.txt"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
     pathsListingQuery: "tbl_mngd_non_acid_locations"
@@ -37,10 +43,13 @@ processes:
         processOnError: true
         processOnSuccess: false
   - type: "dbSet"
+    id: 3
     active: true
     name: "Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorFilename: "managed_upgrade_2_acid.err"
+    errorDescription: "Issues"
+    successDescription: "SQL Conversion Scipt"
+    errorFilename: "managed_upgrade_2_acid_issues.txt"
     successFilename: "managed_upgrade_2_acid.sql"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"tbl_location"]
@@ -68,10 +77,13 @@ processes:
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
               params: ["hive"]
   - type: "dbSet"
+    id: 4
     active: true
     name: "Hive 3 Upgrade Checks - Compaction Check"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorFilename: "managed_compactions.err"
+    errorDescription: "Issues"
+    successDescription: "Compaction SQL Script"
+    errorFilename: "managed_compactions_issues.txt"
     successFilename: "managed_compactions.sql"
     dbListingQuery: "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location"]
@@ -99,10 +111,13 @@ processes:
               params: ["hive"]
 
   - type: "metastore.query"
+    id: 5
     active: true
     name: "Questionable Serde's Check"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorFilename: "hive_questionable_serde.err"
+    errorDescription: "Issues"
+    successDescription: "Tables using non-standard SERDE's"
+    errorFilename: "hive_questionable_serde_issues.txt"
     successFilename: "hive_questionable_serde.txt"
     metastoreQuery: "questionable_serdes"
     listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
@@ -112,10 +127,13 @@ processes:
   ***********************************************************"
     resultMessageDetailTemplate: "%1$s.%2$s is using a non-base serde '%3$s'"
   - type: "metastore.query"
+    id: 6
     active: true
     name: "Managed Table Shadows"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorFilename: "managed_tbl_shadows.err"
+    errorDescription: "Issues"
+    successDescription: "Shadow Tables"
+    errorFilename: "managed_tbl_shadows_issue.txt"
     successFilename: "managed_tbl_shadows.txt"
     metastoreQuery: "managed_tbl_shadows"
     listingColumns: ["db_name" ,"tbl_name", "tbl_location"]

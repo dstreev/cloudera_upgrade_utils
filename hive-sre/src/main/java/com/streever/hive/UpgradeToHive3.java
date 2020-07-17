@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.streever.hive.sre.ProcessContainer;
+import com.streever.hive.sre.SreProcessBase;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Hello world!
@@ -77,10 +79,26 @@ public class UpgradeToHive3 implements SreSubApp{
         try {
             URL configURL = this.getClass().getResource(stackResource);
             if (configURL == null) {
-                throw new RuntimeException("Can build URL for Hive Upgrade Stack Resource: " + stackResource);
+                throw new RuntimeException("Can't build URL for Hive Upgrade Stack Resource: " + stackResource);
             }
             String yamlConfigDefinition = IOUtils.toString(configURL);
-            setProcessContainer(mapper.readerFor(ProcessContainer.class).readValue(yamlConfigDefinition));
+            ProcessContainer procContainer = mapper.readerFor(ProcessContainer.class).readValue(yamlConfigDefinition);
+            if (cmd.hasOption("i")) {
+                String[] includeIds = cmd.getOptionValues("i");
+                List<String> includes = Arrays.asList(includeIds);
+                // Disable all procs
+                for (SreProcessBase proc: procContainer.getProcesses()) {
+                    proc.setActive(false);
+                }
+                // Enable procs in 'include'
+                for (SreProcessBase proc: procContainer.getProcesses()) {
+                    if (includes.contains(proc.getId())) {
+                        proc.setActive(true);
+                    }
+                }
+
+            }
+            setProcessContainer(procContainer);
             // Initialize with config and output directory.
             getProcessContainer().init(cmd.getOptionValue("cfg"), cmd.getOptionValue("o"), getDbsOverride());
 
@@ -109,11 +127,18 @@ public class UpgradeToHive3 implements SreSubApp{
         options.addOption(outputOption);
 
         Option dbOption = new Option("db", "database", true,
-                "Comma separated list of Databases.  Will override config. (upto 100)");
+                "Comma separated list of 'Hive' Databases.  Will override config. (upto 100)");
         dbOption.setValueSeparator(',');
         dbOption.setArgs(100);
         dbOption.setRequired(false);
         options.addOption(dbOption);
+
+        Option includeOption = new Option("i", "include", true,
+                "Comma separated list of process id's to run.  When not specified, ALL processes are run.");
+        includeOption.setValueSeparator(',');
+        includeOption.setArgs(100);
+        includeOption.setRequired(false);
+        options.addOption(includeOption);
 
         Option cfgOption = new Option("cfg", "config", true,
                 "Config with details for the Sre Job.  Must match the either sre or u3 selection.");
