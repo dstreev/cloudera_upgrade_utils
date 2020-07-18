@@ -1,10 +1,10 @@
-## Hive SRE Tooling
+# Hive SRE Tooling
 
 This application has 3 sub-programs:
 
-- `perf` is used to check the throughput of a JDBC connection.
-- `sre` is used to find potential 'Hive' performance issues caused by small files and excessive partitions.
-- `u3` is used to review 'Hive 1/2' environments for Hive3 upgrade planning.
+- [`perf`](#hive-jdbc-performance-testing-tool-perf) is used to check the throughput of a JDBC connection.
+- [`sre`](#sre-application-sre) is used to find potential 'Hive' performance issues caused by small files and excessive partitions.
+- [`u3`](#hive-upgrade-check-u3) is used to review 'Hive 1/2' environments for Hive3 upgrade planning.
 
 ### Binary
 
@@ -12,7 +12,7 @@ USE THE PRE-BUILT BINARY!!!  You won't have the necessary dependencies to build 
 
 [Releases](https://github.com/dstreev/cloudera_upgrade_utils/releases)
 
-### Hive JDBC Performance Testing Tool (perf)
+## Hive JDBC Performance Testing Tool (perf)
 
 JDBC Performance Testing tool.  Will provide connection timing details and rolling windows of performance for long running queries.  Details in the windows will show not only records but also an estimate of the data volume.
 
@@ -80,7 +80,7 @@ java -cp $SRE_PERF:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e 
 
 Even with a valid Kerberos ticket, this type of host will not have all the `hadoop` libs we get from `hadoop classpath` to work.  I have not yet been able to find the right mix of classes to add to the 'uber' jar to get this working.
 
-### SRE Application (sre)
+## SRE Application (sre)
 
 The Sre Tool brings together information from the HMS RDBMS and HDFS to provide reports and potential actions to address areas of concern.  This process is a READ-ONLY process and does not perform any actions automatically.
 
@@ -88,7 +88,7 @@ Action commands for identified scenarios are written out to file(s), which can b
 
 This process is driven by a control file.  A template is [here](configs/driver.yaml.template).  Make a copy, edit the needed parameters and reference it with the '-cfg' parameter when running the process.
 
-#### Application Help
+### Application Help
 
 ```
 Launching: sre
@@ -115,7 +115,7 @@ To limit which process runs, use the `-i` (include) option at the command line w
 
 Sre needs to be run by a user with READ access to all the potential HDFS locations presented by the database/table/partition defined locations.
  
-#### The Configuration File
+### The Configuration File
 
 ```
 # Required to connect to Metastore RDBMS.  RDBMS driver needs to be included in the classpath
@@ -138,7 +138,7 @@ queries:
         override: "%"
 ```
 
-#### Running
+### Running
 
 To ease the launch of the application below, configure these core environment variables.
 
@@ -150,15 +150,15 @@ export SRE_HIVE=hive-sre-shaded.jar:<rdbms-metastore-driver.jar>
 java -cp $SRE_HIVE com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
 ```
 
-### Hive Upgrade Check (u3)
+## Hive Upgrade Check (u3)
 
 Review Hive Metastore Databases and Tables for upgrade or simply to evaluate potential issues.  Using [HDP Upgrade Utils](https://github.com/dstreev/hdp3_upgrade_utils) as the baseline for this effort.  The intent is to make that process much more prescriptive and consumable by Cloudera customers.  The application is 'Hive' based, so it should work against both 'HDP', 'CDH', and 'CDP' clusters.
 
-#### Testing
+### Testing
 
 I have tested this against MariaDB 10.2, Postgres, and Oracle.  I have seen reports of SQL issues against MySql 5.6, so this process will certainly have issues there.  If you run this in other DB configs, I would like to hear from you about it.
 
-#### Application Help
+### Application Help
 
 ```
 Launching: u3
@@ -186,11 +186,11 @@ To limit which process runs, use the `-i` (include) option at the command line w
 | 7 | List Databases with Table/Partition Counts |
 
 
-#### #### The Configuration File
+### The Configuration File
 
-Same as above, defined in the 'sre' sub program.
+Same as above, defined in the ['sre'](#the-configuration-file) sub program.
 
-#### Running
+### Running
 
 Run the process first with the `-i 7` option to get a list of databases with table and partition counts.  With this information, you can develop a strategy to run the tool in parts using the `-db` option.  Multi-tasking can be controlled in the configuration files `parallelism` setting.
 
@@ -200,7 +200,7 @@ To ease the launch of the application below, configure these core environment va
 export SRE_HIVE=hive-sre-shaded.jar:<rdbms-metastore-driver.jar>
 ```
 
-##### Examples
+#### Examples
 *All Hive Databases* - Will run ALL processes.
 ```
 java -cp $SRE_HIVE com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out
@@ -216,7 +216,7 @@ java -cp $SRE_HIVE com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml
 java -cp $SRE_HIVE com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out -i 4
 ```
 
-#### Check and Validations Performed
+### Check and Validations Performed
 
 NO action is taken by this process.  The output of each section will contain 'actions' for you to take when a scenario materializes.  It is up to you to carry out those actions after reviewing them.
 
