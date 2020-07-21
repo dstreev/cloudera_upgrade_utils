@@ -15,11 +15,25 @@ processes:
       - name: "Missing Directories"
         invertCheck: false
         pathCommand: "lsp -f path -t %5$s"
-        onErrorPathCommand: "HDFS     | mkdir -p %5$s\nHIVE_SQL | DROP TABLE %1$s.%2$s;"
+        onErrorPathCommand: "## Missing hive directory: '%5$s'\n## Choose 'one' of the options below."
         reportOnResults: false
         reportOnPath: true
         processOnError: true
         processOnSuccess: false
+        checkCalculations:
+          partitionCheck:
+            RECORDS:
+              test: "if (\"%4$s\".equals(\" \")) true; else false;"
+              pass: "\"-- HIVE (recommended)\\n
+                      DROP TABLE IF EXIST `%1$s`.`%2$s`;\\n
+                      -- HDFS \\n
+                      mkdir -p %5$s\\n\""
+              fail: "\"-- HIVE (recommended)\\n
+                      ALTER TABLE `%1$s`.`%2$s` DROP IF EXISTS PARTITION (\" + '%4$s'.split(\"=\")[0] + \"=\\\"\" + '%4$s'.split(\"=\")[1] + \"\\\");\\n
+                      -- HDFS \\n
+                       mkdir -p %5$s\\n\""
+              params: ["hive"]
+
   - type: "dbSet"
     id: 2
     active: true
@@ -68,10 +82,10 @@ processes:
           ownershipCheck:
             RECORDS:
               test: "if (\"%5$s\".equals(\"%6$s\")) true; else false;"
-              pass: "\"-- Table is OWNED by '%6$s' and not currently ACID.\\n
+              pass: "\"-- Table is owned by '%5$s' and not currently ACID.\\n
                     -- This table will be migrated unless changed.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
-              fail: "\"-- Table is NOT owned by '%6$s' and NOT currently ACID.\\n
+              fail: "\"-- Table is owned by '%5$s', not '%6$s', and NOT currently ACID.\\n
                     -- This table 'could' be migrated to an ACID table unless changed.\\n
                     -- Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""

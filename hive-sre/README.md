@@ -225,8 +225,8 @@ NO action is taken by this process.  The output of each section will contain 'ac
     > Missing Directories cause the upgrade conversion process to fail.  To prevent that failure, there are two choices for a 'missing directory'.  Either create it of drop the table/partition.
 
     - You have two choices based on the output of this process.                        
-        - Drop the table/partition OR
-        - Create the missing directory referenced by the table/partition.
+        - RECOMMENDED: Drop the table/partition OR
+        - Create the missing directory referenced by the table/partition (empty directories have been known to cause hive table CBO issues, leading to performance slowdowns).
     - The output file from this process will provide commands to accomplish which ever direction you choose. Use 'hive' to run the sql statements.  Use [hadoopcli](https://github.com/dstreev/hadoop-cli) to run the 'hdfs' commands in bulk.
 2. Hive 3 Upgrade Checks - Bad ORC Filenames
     - Bad Filename Format
