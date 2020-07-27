@@ -25,8 +25,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @JsonIgnoreProperties({"config", "reporter", "threadPool", "processThreads", "connectionPools", "outputDirectory"})
 public class ProcessContainer {
+    private boolean initializing = Boolean.TRUE;
     private SreProcessesConfig config;
-    private Reporter reporter = new Reporter();
+    private Reporter reporter;
     private ScheduledExecutorService threadPool;
     private List<ScheduledFuture> processThreads;
     private ConnectionPools connectionPools;
@@ -106,6 +107,15 @@ public class ProcessContainer {
         this.parallelism = parallelism;
     }
 
+    public boolean isInitializing() {
+        return initializing;
+    }
+
+    public ProcessContainer() {
+        this.reporter = new Reporter();
+        this.reporter.setProcessContainer(this);
+    }
+
     public void start() {
         while (true) {
             boolean check = true;
@@ -121,11 +131,11 @@ public class ProcessContainer {
         getThreadPool().shutdown();
         for (SreProcessBase process: getProcesses()) {
             if (process.isActive()) {
-                System.out.println(process.getId() + ":" + process.getName());
-                System.out.println(process.getErrorDescription() + " -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
-                        process.getErrorFilename());
-                System.out.println(process.getSuccessDescription() + " -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
+                System.out.println(process.getUniqueName());
+                System.out.println("\t" + process.getSuccessDescription() + " -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
                         process.getSuccessFilename());
+                System.out.println("\t" + process.getErrorDescription() + " -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
+                        process.getErrorFilename());
             }
         }
     }
@@ -153,8 +163,9 @@ public class ProcessContainer {
                 throw new RuntimeException("Missing configuration file: " + config);
             }
             String yamlCfgFile = FileUtils.readFileToString(cfgFile, Charset.forName("UTF-8"));
-
-            setConfig(mapper.readerFor(SreProcessesConfig.class).readValue(yamlCfgFile));
+            SreProcessesConfig sreConfig = mapper.readerFor(SreProcessesConfig.class).readValue(yamlCfgFile);
+            sreConfig.validate();
+            setConfig(sreConfig);
 
             this.connectionPools = new ConnectionPools(getConfig());
             this.connectionPools.init();
@@ -165,9 +176,16 @@ public class ProcessContainer {
                 if (process.isActive()) {
                     process.setDbsOverride(dbsOverride);
                     process.init(this, job_run_dir);
+                    int delay = 100;
                     if (process instanceof Runnable && process instanceof Counter) {
-                        getReporter().addCounter(process.getName(), ((Counter)process).getCounter());
-                        getProcessThreads().add(getThreadPool().schedule((Runnable)process, 100, MILLISECONDS));
+                        getReporter().addCounter(process.getUniqueName(), ((Counter)process).getCounter());
+                        if (process instanceof MetastoreProcess) {
+                            delay = 3000;
+                        } else {
+                            delay = 100;
+                        }
+                        delay = 100;
+                        getProcessThreads().add(getThreadPool().schedule((Runnable)process, delay, MILLISECONDS));
                     }
                 }
             }
@@ -176,6 +194,7 @@ public class ProcessContainer {
         } catch (IOException e) {
             throw new RuntimeException("Issue getting configs", e);
         }
+        initializing = Boolean.FALSE;
     }
 
     @Override

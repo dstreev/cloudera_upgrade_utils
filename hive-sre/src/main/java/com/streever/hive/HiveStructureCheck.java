@@ -75,7 +75,8 @@ public class HiveStructureCheck implements SreSubApp {
         }
 
         // Load Hive Upgrade Stack.
-        String stackResource = "/h3_perf_procs.yaml";
+//        String stackResource = "/h3_perf_procs.yaml";
+        String stackResource = "/hive_sre_procs.yaml";
 
         try {
             URL configURL = this.getClass().getResource(stackResource);

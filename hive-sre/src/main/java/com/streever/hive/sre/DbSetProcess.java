@@ -20,7 +20,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @JsonIgnoreProperties({"parent", "config", "metastoreDirectDataSource", "h2DataSource",
         "outputDirectory", "dbPaths", "cliSession", "success", "error"})
-public class DbSet extends SreProcessBase {
+public class DbSetProcess extends SreProcessBase {
 
     private List<DbPaths> dbPaths;
     private List<CommandReturnCheck> checks;
@@ -72,11 +72,13 @@ public class DbSet extends SreProcessBase {
     @Override
     public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
         setParent(parent);
+
         if (outputDirectory == null) {
             throw new RuntimeException("Config File and Output Directory must be set before init.");
         }
 
         setOutputDirectory(outputDirectory);
+        this.success.println(getHeader());
 
         String[] dbs = null;
         if (getDbsOverride() != null && getDbsOverride().length > 0) {

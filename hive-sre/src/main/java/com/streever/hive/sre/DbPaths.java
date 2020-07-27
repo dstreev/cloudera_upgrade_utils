@@ -19,16 +19,16 @@ import static com.streever.hive.reporting.ReportCounter.*;
 
 public class DbPaths extends SRERunnable {
 
-    private DbSet parent;
+    private DbSetProcess parent;
     private HadoopSession cliSession;
 
     private List<CommandReturnCheck> checks = new ArrayList<CommandReturnCheck>();
 
-    public DbSet getParent() {
+    public DbSetProcess getParent() {
         return parent;
     }
 
-    public void setParent(DbSet parent) {
+    public void setParent(DbSetProcess parent) {
         this.parent = parent;
     }
 
@@ -44,7 +44,7 @@ public class DbPaths extends SRERunnable {
         this.checks = checks;
     }
 
-    public DbPaths(String name, DbSet dbSet) {
+    public DbPaths(String name, DbSetProcess dbSet) {
         setName(name);
         setParent(dbSet);
     }
@@ -152,6 +152,6 @@ public class DbPaths extends SRERunnable {
 
     @Override
     public String toString() {
-        return "DbPaths{}";
+        return "DbPathsProcess{}";
     }
 }

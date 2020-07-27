@@ -19,8 +19,9 @@ import java.net.URL;
         include = JsonTypeInfo.As.PROPERTY,
         property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = DbSet.class, name = "dbSet"),
-        @JsonSubTypes.Type(value = MetastoreQuery.class, name = "metastore.query")})
+        @JsonSubTypes.Type(value = DbSetProcess.class, name = "dbSet"),
+        @JsonSubTypes.Type(value = MetastoreQueryProcess.class, name = "metastore.query"),
+        @JsonSubTypes.Type(value = MetastoreReportProcess.class, name = "metastore.report")})
 public abstract class SreProcessBase {
     private String name = "not set";
     private String id = null;
@@ -33,6 +34,7 @@ public abstract class SreProcessBase {
     private String queryDefinitionReference = null;
 
     private String[] dbsOverride = {};
+    private String header = null;
     private String errorDescription = null;
     private String successDescription = null;
     private String errorFilename = null;
@@ -57,6 +59,24 @@ public abstract class SreProcessBase {
         return name;
     }
 
+    public String getHeader() {
+        if (header != null)
+            return header;
+        else
+            return name;
+    }
+
+    public void setHeader(String header) {
+        this.header = header;
+    }
+
+    public String getUniqueName() {
+        if (id != null) {
+            return id + ":" + name;
+        } else {
+            return name;
+        }
+    }
     public void setName(String name) {
         this.name = name;
     }

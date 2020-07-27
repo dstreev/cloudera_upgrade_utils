@@ -3,8 +3,13 @@ package com.streever.hive.config;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.streever.sql.QueryDefinition;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class SreProcessesConfig {
     @JsonProperty(value = "metastore_direct")
@@ -41,5 +46,10 @@ public class SreProcessesConfig {
 
     public void setParallelism(int parallelism) {
         this.parallelism = parallelism;
+    }
+
+    public void validate() {
+//        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+//        Set<ConstraintViolation<Metastore>> violations = validator.validate(metastoreDirect);
     }
 }

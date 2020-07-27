@@ -33,7 +33,8 @@ processes:
     successDescription: "Excessive Partitions Report"
     errorFilename: "excessive_partitions_proc_err.txt"
     successFilename: "excessive_partitions.txt"
-    metastoreQuery: "tbl_partition_count"
-    listingColumns: ["db_name" ,"tbl_name", "tbl_type", "num_of_partitions"]
-    resultMessageHeader: "***********************************************************"
-    resultMessageDetailTemplate: "Table %1$s.%2$s has %4$s partitions"
+    metastoreQueryDefinition:
+      query: "tbl_partition_count"
+      listingColumns: ["db_name" ,"tbl_name", "tbl_type", "num_of_partitions"]
+      resultMessageHeader: "***********************************************************"
+      resultMessageDetailTemplate: "Table %1$s.%2$s has %4$s partitions"

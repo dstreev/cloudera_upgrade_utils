@@ -1,5 +1,6 @@
 package com.streever.hive.reporting;
 
+import com.streever.hive.sre.ProcessContainer;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -18,6 +19,7 @@ public class Reporter implements Runnable {
 
     private String name;
     private Date startTime = new Date();
+    private ProcessContainer processContainer;
 
     private Map<String, List<ReportCounter>> counterGroups = new HashMap<String, List<ReportCounter>>();
 
@@ -37,6 +39,14 @@ public class Reporter implements Runnable {
             counters.add(counter);
             counterGroups.put(groupName, counters);
         }
+    }
+
+    public ProcessContainer getProcessContainer() {
+        return processContainer;
+    }
+
+    public void setProcessContainer(ProcessContainer processContainer) {
+        this.processContainer = processContainer;
     }
 
     private Wrap getCounterDisplay(String prefix, ReportCounter counter) {
@@ -101,7 +111,8 @@ public class Reporter implements Runnable {
         boolean rtn = false;
         String INDENT = "    ";
 
-        if (counterGroups.size() == 0)
+        // Prevent the Reporter Thread from terminating too quickly
+        if (counterGroups.size() == 0 | processContainer.isInitializing())
             return true;
         resetLines();
         String version = ReportingConf.substituteVariables("v.${Implementation-Version}");
@@ -131,9 +142,15 @@ public class Reporter implements Runnable {
             for (ReportCounter ctr : counters) {
                 progress.get(ctr.getStatus()).addAndGet(1);
 
-                for (ReportCounter child : ctr.getChildren()) {
-                    totals.get(ERROR_POS).addAndGet(child.getError());
-                    totals.get(SUCCESS_POS).addAndGet(child.getSuccess());
+                // If there aren't children counters, use the parent values
+                if (ctr.getChildren().size() > 0) {
+                    for (ReportCounter child : ctr.getChildren()) {
+                        totals.get(ERROR_POS).addAndGet(child.getError());
+                        totals.get(SUCCESS_POS).addAndGet(child.getSuccess());
+                    }
+                } else {
+                    totals.get(ERROR_POS).addAndGet(ctr.getError());
+                    totals.get(SUCCESS_POS).addAndGet(ctr.getSuccess());
                 }
 
                 if (ctr.getStatus() == PROCESSING) {

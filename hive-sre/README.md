@@ -121,6 +121,7 @@ Sre needs to be run by a user with READ access to all the potential HDFS locatio
 # Required to connect to Metastore RDBMS.  RDBMS driver needs to be included in the classpath
 metastore_direct:
   uri: "FULL_RDMBS_URL_FOR_METASTORE_INCLUDING_THE_DB_NAME"
+  type: MYSQL | POSTRGES | ORACLE | MSSQL
   connectionProperties:
     user: "DB_USER"
     password: "DB_PASSWORD"
