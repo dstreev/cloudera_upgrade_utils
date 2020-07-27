@@ -110,8 +110,8 @@ To limit which process runs, use the `-i` (include) option at the command line w
 
 | id | process |
 |:---|:---|
-| 1 | Small Files Check |
-| 2 | Excessive Partitions Review |
+| 1 | Hive Metastore Summaries<br/> - Numerous HMS reports outlining summary information about databases and tables |
+| 2 | Hive Metastore Details<br/> - Numerous HMS reports outlining detailed information about databases and tables |
 
 Sre needs to be run by a user with READ access to all the potential HDFS locations presented by the database/table/partition defined locations.
  
@@ -186,9 +186,7 @@ To limit which process runs, use the `-i` (include) option at the command line w
 | 2 | Bad ORC Filenames |
 | 3 | Managed Table Migrations |
 | 4 | Compaction Check |
-| 5 | Questionable Serde's Check |
-| 6 | Managed Table Shadows |
-| 7 | List Databases with Table/Partition Counts |
+| 5 | Hive Metastore Check <br/> - Questionable Serde's Check<br/> - Managed Table Shadows<br/> - List Databases with Table/Partition Counts |
 
 
 ### The Configuration File
