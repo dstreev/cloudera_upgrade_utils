@@ -46,8 +46,12 @@ public class MetastoreReportProcess extends MetastoreProcess {
                 metastoreRecords = rarray.getColumns(metastoreQueryDefinition.getListingColumns());
 
                 if (metastoreRecords[0] != null && metastoreRecords[0].length > 0) {
-                    if (metastoreQueryDefinition.getResultMessageHeader() != null)
+                    if (metastoreQueryDefinition.getResultMessageHeader() != null) {
                         success.println(metastoreQueryDefinition.getResultMessageHeader());
+                    }
+                    if (metastoreQueryDefinition.getResultMessageDetailHeader() != null) {
+                        success.println(metastoreQueryDefinition.getResultMessageDetailHeader());
+                    }
                     for (int i = 0; i < metastoreRecords[0].length; i++) {
 //                    incSuccess(1);
                         String[] record = new String[metastoreQueryDefinition.getListingColumns().length];
@@ -58,6 +62,11 @@ public class MetastoreReportProcess extends MetastoreProcess {
                         String message = String.format(metastoreQueryDefinition.getResultMessageDetailTemplate(), record);
                         success.println(message);
                     }
+                } else {
+                    if (metastoreQueryDefinition.getResultMessageHeader() != null) {
+                        success.println(metastoreQueryDefinition.getResultMessageHeader());
+                    }
+                    success.println("\n> **Results empty**\n");
                 }
                 incSuccess(1);
             } catch (SQLException e) {

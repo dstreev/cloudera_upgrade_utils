@@ -5,6 +5,7 @@ public class MetastoreQuery {
     private String query;
     private String[] listingColumns;
     private String resultMessageHeader;
+    private String resultMessageDetailHeader;
     private String resultMessageDetailTemplate;
 
     public String getQuery() {
@@ -29,6 +30,14 @@ public class MetastoreQuery {
 
     public void setResultMessageHeader(String resultMessageHeader) {
         this.resultMessageHeader = resultMessageHeader;
+    }
+
+    public String getResultMessageDetailHeader() {
+        return resultMessageDetailHeader;
+    }
+
+    public void setResultMessageDetailHeader(String resultMessageDetailHeader) {
+        this.resultMessageDetailHeader = resultMessageDetailHeader;
     }
 
     public String getResultMessageDetailTemplate() {

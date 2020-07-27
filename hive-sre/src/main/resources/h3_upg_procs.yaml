@@ -1,25 +1,27 @@
 processes:
-  - type: "dbSet"
-    id: 1
-    active: true
-    name: "Hive 3 Upgrade Checks - Locations Scan"
-    errorDescription: "Scan Actions"
-    successDescription: "Issues"
-    errorFilename: h3_upgrade_loc_scan_action.txt
-    successFilename: h3_upgrade_loc_scan_issues.txt
+  - type:                     "dbSet"
+    id:                       1
+    active:                   true
+    name:                     "Hive 3 Upgrade Checks - Locations Scan"
+    errorDescription:         "Scan Actions"
+    successDescription:       "Issues"
+    errorFilename:            h3_upgrade_loc_scan_action.txt
+    successFilename:          h3_upgrade_loc_scan_issues.txt
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    dbListingQuery: "db_tbl_count"
+    dbListingQuery:           "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
-    pathsListingQuery: "tbl_part_locations"
+    pathsListingQuery:        "tbl_part_locations"
     checks:
-      - name: "Missing Directories"
-        invertCheck: false
-        pathCommand: "lsp -f path -t %5$s"
+      - name:               "Missing Directories"
+#        header:             "# Missing Directories"
+#        detailHeader:       "| Path | Hive SQL | HDFS |\n|:---|:---|:---|"
+        invertCheck:        false
+        pathCommand:        "lsp -f path -t %5$s"
         onErrorPathCommand: "## Missing hive directory: '%5$s'\n## Choose 'one' of the options below."
-        reportOnResults: false
-        reportOnPath: true
-        processOnError: true
-        processOnSuccess: false
+        reportOnResults:    false
+        reportOnPath:       true
+        processOnError:     true
+        processOnSuccess:   false
         checkCalculations:
           partitionCheck:
             RECORDS:
@@ -34,50 +36,50 @@ processes:
                        mkdir -p %5$s\\n\""
               params: ["hive"]
 
-  - type: "dbSet"
-    id: 2
-    active: true
-    name: "Hive 3 Upgrade Checks - Bad ORC Filenames"
+  - type:                     "dbSet"
+    id:                       2
+    active:                   true
+    name:                     "Hive 3 Upgrade Checks - Bad ORC Filenames"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorDescription: "Bad Filenames"
-    successDescription: "Issues"
-    errorFilename: "bad_filenames_for_orc_conversion.txt"
-    successFilename: "bad_filename_issues.txt"
-    dbListingQuery: "db_tbl_count"
+    errorDescription:         "Bad Filenames"
+    successDescription:       "Issues"
+    errorFilename:            "bad_filenames_for_orc_conversion.txt"
+    successFilename:          "bad_filename_issues.txt"
+    dbListingQuery:           "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
-    pathsListingQuery: "tbl_mngd_non_acid_locations"
+    pathsListingQuery:        "tbl_mngd_non_acid_locations"
     checks:
-      - name: "Bad Filename Format"
-        invertCheck: true
-        pathCommand: "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)\" -i -Fe file -v -f parent,file %5$s"
-        onErrorPathCommand: "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
+      - name:                 "Bad Filename Format"
+        invertCheck:          true
+        pathCommand:          "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)\" -i -Fe file -v -f parent,file %5$s"
+        onErrorPathCommand:   "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
         onErrorRecordCommand: "# Bad filename %2$s in directory: %1$s "
-        reportOnResults: true
-        reportOnPath: true
-        processOnError: true
-        processOnSuccess: false
-  - type: "dbSet"
-    id: 3
-    active: true
-    name: "Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations"
+        reportOnResults:      true
+        reportOnPath:         true
+        processOnError:       true
+        processOnSuccess:     false
+  - type:                     "dbSet"
+    id:                       3
+    active:                   true
+    name:                     "Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorDescription: "Issues"
-    successDescription: "SQL Conversion Scipt"
-    errorFilename: "managed_upgrade_2_acid_issues.txt"
-    successFilename: "managed_upgrade_2_acid.sql"
-    dbListingQuery: "db_tbl_count"
+    errorDescription:         "Issues"
+    successDescription:       "SQL Conversion Scipt"
+    errorFilename:            "managed_upgrade_2_acid_issues.txt"
+    successFilename:          "managed_upgrade_2_acid.sql"
+    dbListingQuery:           "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"tbl_location"]
-    pathsListingQuery: "managed_2_acid"
+    pathsListingQuery:        "managed_2_acid"
     checks:
-      - name: "Ownership Check"
-        invertCheck: false
-        pathCommand: "lsp -f user -self %4$s"
-        onSuccessPathCommand: "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
+      - name:                   "Ownership Check"
+        invertCheck:            false
+        pathCommand:            "lsp -f user -self %4$s"
+        onSuccessPathCommand:   "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
         onSuccessRecordCommand: "# Bad filename %2$s in directory: %1$s "
-        reportOnResults: false
-        reportOnPath: false
-        processOnError: false
-        processOnSuccess: true
+        reportOnResults:        false
+        reportOnPath:           false
+        processOnError:         false
+        processOnSuccess:       true
         checkCalculations:
           ownershipCheck:
             RECORDS:
@@ -90,27 +92,27 @@ processes:
                     -- Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
               params: ["hive"]
-  - type: "dbSet"
-    id: 4
-    active: true
-    name: "Hive 3 Upgrade Checks - Compaction Check"
+  - type:                     "dbSet"
+    id:                       4
+    active:                   true
+    name:                     "Hive 3 Upgrade Checks - Compaction Check"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorDescription: "Issues"
-    successDescription: "Compaction SQL Script"
-    errorFilename: "managed_compactions_issues.txt"
-    successFilename: "managed_compactions.sql"
-    dbListingQuery: "db_tbl_count"
+    errorDescription:         "Issues"
+    successDescription:       "Compaction SQL Script"
+    errorFilename:            "managed_compactions_issues.txt"
+    successFilename:          "managed_compactions.sql"
+    dbListingQuery:           "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location"]
-    pathsListingQuery: "managed_tbl_locations"
+    pathsListingQuery:        "managed_tbl_locations"
     checks:
-      - name: "Compaction Check"
-        invertCheck: true
-        pathCommand: "lsp -R -F .*delta_.* -t -sp -f path %5$s"
+      - name:                 "Compaction Check"
+        invertCheck:          true
+        pathCommand:          "lsp -R -F .*delta_.* -t -sp -f path %5$s"
         onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
-        reportOnResults: false
-        reportOnPath: false
-        processOnError: false
-        processOnSuccess: true
+        reportOnResults:      false
+        reportOnPath:         false
+        processOnError:       false
+        processOnSuccess:     true
         checkCalculations:
           partitionCheck:
             PATH:
@@ -124,45 +126,79 @@ processes:
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
               params: ["hive"]
 
-  - type: "metastore.query"
-    id: 5
-    active: true
-    name: "Questionable Serde's Check"
+  #  - type: "metastore.query"
+  #    id: 5
+  #    active: true
+  #    name: "Questionable Serde's Check"
+  #    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
+  #    errorDescription: "Issues"
+  #    successDescription: "Tables using non-standard SERDE's"
+  #    errorFilename: "hive_questionable_serde_issues.txt"
+  #    successFilename: "hive_questionable_serde.txt"
+  #    metastoreQueryDefinition:
+  #      query: "questionable_serdes"
+  #      listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
+  #      resultMessageHeader: "***********************************************************\n
+  #                            Listed tables should be review to ensure the Serde is still available.\n
+  #                            Missing Serde's can disrupt a Hive Upgrade/Migration Process\n
+  #                            ***********************************************************"
+  #      resultMessageDetailTemplate: "%1$s.%2$s is using a non-base serde '%3$s'"
+  - type:                     "metastore.report"
+    id:                       5
+    active:                   true
+    name:                     "Hive Metastore Checks"
+    header:                   "# Hive Metastore Checks"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorDescription: "Issues"
-    successDescription: "Tables using non-standard SERDE's"
-    errorFilename: "hive_questionable_serde_issues.txt"
-    successFilename: "hive_questionable_serde.txt"
-    metastoreQuery: "questionable_serdes"
-    listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
-    resultMessageHeader: "***********************************************************\n
-  Listed tables should be review to ensure the Serde is still available.\n
-  Missing Serde's can disrupt a Hive Upgrade/Migration Process\n
-  ***********************************************************"
-    resultMessageDetailTemplate: "%1$s.%2$s is using a non-base serde '%3$s'"
-  - type: "metastore.query"
-    id: 6
-    active: true
-    name: "Managed Table Shadows"
-    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorDescription: "Issues"
-    successDescription: "Shadow Tables"
-    errorFilename: "managed_tbl_shadows_issue.txt"
-    successFilename: "managed_tbl_shadows.txt"
-    metastoreQuery: "managed_tbl_shadows"
-    listingColumns: ["db_name" ,"tbl_name", "tbl_location"]
-    resultMessageHeader: "***********************************************************"
-    resultMessageDetailTemplate: "Table %1$s.%2$s at location %3$s is sharing location with another managed table."
-  - type: "metastore.query"
-    id: 7
-    active: true
-    name: "Database / Table / Partition Count"
-    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorDescription: "Issues"
-    successDescription: "Database / Table / Partition Counts"
-    errorFilename: "db_counts_issue.txt"
-    successFilename: "db_counts.txt"
-    metastoreQuery: "db_tbl_part_count"
-    listingColumns: ["name" ,"tbl_count", "part_count"]
-    resultMessageHeader: "***********************************************************"
-    resultMessageDetailTemplate: "%1$s\t%2$s\t%3$s"
+    errorDescription:         "Processing Issues"
+    successDescription:       "Hive Metastore"
+    errorFilename:            hms_checks_err.txt
+    successFilename:          hms_checks.md
+    metastoreQueryDefinitions:
+      - query:                       "questionable_serdes"
+        listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
+        resultMessageHeader:         "## Questionable Serde's\n
+                              > Listed tables should be review to ensure the Serde is still available.\n
+                              Missing Serde's can disrupt a Hive Upgrade/Migration Process"
+        resultMessageDetailHeader:   " | Database | Table | Serde |\n|:---|:---|:---|"
+        resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
+
+      - query:                       "managed_tbl_shadows"
+        listingColumns: ["db_name" ,"tbl_name", "tbl_location"]
+        resultMessageHeader:         "## Managed Shadow Tables"
+        resultMessageDetailHeader:   "| Database | Table | Path |\n|:---|:---|:---|"
+        resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
+      - query:                       "db_tbl_part_count"
+        listingColumns: ["name" ,"tbl_count", "part_count"]
+        resultMessageHeader:         " ## Table Partition Count"
+        resultMessageDetailHeader:   "| Database | Tables | Partitions |\n|:---|:---|:---|"
+        resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
+#
+#
+#  - type: "metastore.query"
+#    id: 6
+#    active: true
+#    name: "Managed Table Shadows"
+#    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
+#    errorDescription: "Issues"
+#    successDescription: "Shadow Tables"
+#    errorFilename: "managed_tbl_shadows_issue.txt"
+#    successFilename: "managed_tbl_shadows.txt"
+#    metastoreQueryDefinition:
+#      query: "managed_tbl_shadows"
+#      listingColumns: ["db_name" ,"tbl_name", "tbl_location"]
+#      resultMessageHeader: "***********************************************************"
+#      resultMessageDetailTemplate: "Table %1$s.%2$s at location %3$s is sharing location with another managed table."
+#  - type: "metastore.query"
+#    id: 7
+#    active: true
+#    name: "Database / Table / Partition Count"
+#    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
+#    errorDescription: "Issues"
+#    successDescription: "Database / Table / Partition Counts"
+#    errorFilename: "db_counts_issue.txt"
+#    successFilename: "db_counts.txt"
+#    metastoreQueryDefinition:
+#      query: "db_tbl_part_count"
+#      listingColumns: ["name" ,"tbl_count", "part_count"]
+#      resultMessageHeader: "***********************************************************"
+#      resultMessageDetailTemplate: "%1$s\t%2$s\t%3$s"
