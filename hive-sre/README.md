@@ -151,6 +151,10 @@ export SRE_HIVE=hive-sre-shaded.jar:<rdbms-metastore-driver.jar>
 java -cp $SRE_HIVE com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
 ```
 
+### Output
+
+The output is a set of files with actions and error (when encountered).  The files maybe `txt` files or `markdown`.  You may want to use a `markdown` viewer for easier viewing of those reports.  The markdown viewer needs to support [github markdown tables](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables) .
+
 ## Hive Upgrade Check (u3)
 
 Review Hive Metastore Databases and Tables for upgrade or simply to evaluate potential issues.  Using [HDP Upgrade Utils](https://github.com/dstreev/hdp3_upgrade_utils) as the baseline for this effort.  The intent is to make that process much more prescriptive and consumable by Cloudera customers.  The application is 'Hive' based, so it should work against both 'HDP', 'CDH', and 'CDP' clusters.
@@ -200,6 +204,9 @@ To ease the launch of the application below, configure these core environment va
 ```
 export SRE_HIVE=hive-sre-shaded.jar:<rdbms-metastore-driver.jar>
 ```
+### Output
+
+The output is a set of files with actions and error (when encountered).  The files maybe `txt` files or `markdown`.  You may want to use a `markdown` viewer for easier viewing of those reports.  The markdown viewer needs to support [github markdown tables](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables) .
 
 #### Examples
 *All Hive Databases* - Will run ALL processes.
