@@ -17,7 +17,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <javax.validation.version>2.0.1.Final</javax.validation.version>
-        <jackson.json.version>2.9.5</jackson.json.version>
+        <jackson.json.version>2.11.1</jackson.json.version>
         <jackson.yaml.version>2.9.5</jackson.yaml.version>
         <commons-cli.version>1.2</commons-cli.version>
         <commons-lang.version>3.4</commons-lang.version>
