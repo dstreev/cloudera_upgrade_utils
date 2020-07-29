@@ -122,10 +122,13 @@ The `-o` parameter is *required*.
 
 To limit which process runs, use the `-i` (include) option at the command line with a comma separated list of ids (below) of desired processes.
 
-| id | process |
+| id (link to sample report) | process |
 |:---|:---|
-| 1 | Hive Metastore Summaries<br/> - Numerous HMS reports outlining summary information about databases and tables |
-| 2 | Hive Metastore Details<br/> - Numerous HMS reports outlining detailed information about databases and tables |
+| [1](./sample_reports/sre/hms_report_summary.md) | Hive Metastore Summary<br/> - Numerous HMS reports outlining summary information about databases and tables |
+| [2](./sample_reports/sre/hms_report_detail.md) | Hive Metastore Details<br/> - Numerous HMS reports outlining detailed information about databases and tables |
+| [3](./sample_reports/sre/small_files.md) | Table and Partition Scan - Small Files |
+| [4](./sample_reports/sre/table_volume.md) | Table and Partition Scan - Volume Report |
+| [5](./sample_reports/sre/empty_datasets.md) | Table and Partition Scan - Empty Datasets |
 
 Sre needs to be run by a user with READ access to all the potential HDFS locations presented by the database/table/partition defined locations.
  
@@ -208,13 +211,13 @@ usage: Sre
 
 To limit which process runs, use the `-i` (include) option at the command line with a comma separated list of ids (below) of desired processes.
 
-| id | process |
+| id (link to sample report) | process |
 |:---|:---|
-| 1 | Missing direction location scan |
-| 2 | Bad ORC Filenames |
-| 3 | Managed Table Migrations |
-| 4 | Compaction Check |
-| 5 | Hive Metastore Check <br/> - Questionable Serde's Check<br/> - Managed Table Shadows<br/> - List Databases with Table/Partition Counts |
+| [1](./sample_reports/u3/loc_scan_missing_dirs.md) | Table / Partition Location Scan - Missing Directories |
+| [2](./sample_reports/u3/bad_filenames_for_orc_conversion.md) | Table / Partition Location Scan - Bad ACID ORC Filenames |
+| [3](./sample_reports/u3/managed_upgrade_2_acid.sql) | Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations |
+| [4](./sample_reports/u3/managed_compactions.sql) | Hive 3 Upgrade Checks - Compaction Check |
+| [5](./sample_reports/u3/hms_checks.md) | Hive Metastore Check <br/> - Questionable Serde's Check<br/> - Managed Table Shadows<br/> - List Databases with Table/Partition Counts |
 
 
 ### The Configuration File
