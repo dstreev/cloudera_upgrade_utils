@@ -71,7 +71,7 @@ public abstract class SRERunnable implements Counter, Runnable {
     public void incSuccess(int increment) {
         counter.incSuccess(increment);
     }
-    
+
     @Override
     public void incError(int increment) {
         counter.incError(increment);

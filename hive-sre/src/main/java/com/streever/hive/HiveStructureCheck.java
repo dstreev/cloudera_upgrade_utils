@@ -74,8 +74,7 @@ public class HiveStructureCheck implements SreSubApp {
             dbsOverride = cmd.getOptionValues("db");
         }
 
-        // Load Hive Upgrade Stack.
-//        String stackResource = "/h3_perf_procs.yaml";
+        // Load Hive SRE Stack.
         String stackResource = "/hive_sre_procs.yaml";
 
         try {
