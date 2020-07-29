@@ -24,7 +24,14 @@ import java.util.*;
 public class CommandReturnCheck implements Counter, Cloneable {
 
     private String name;
+    private String header;
     private String pathCommand;
+
+    private String errorDescription = null;
+    private String successDescription = null;
+    private String errorFilename = null;
+    private String successFilename = null;
+
     // Most commands that run will not be an error, but are issues that need to
     // be put into the 'error' or action bucket.  Use this to control that direction.
     private Boolean invertCheck = true;
@@ -45,13 +52,69 @@ public class CommandReturnCheck implements Counter, Cloneable {
     /**
      * allows stdout to be captured if necessary
      */
-    public PrintStream success = System.out;
+    public PrintStream successStream = System.out;
     /**
      * allows stderr to be captured if necessary
      */
-    public PrintStream error = System.err;
+    public PrintStream errorStream = System.err;
 
     public ReportCounter counter = new ReportCounter();
+
+    public String getHeader() {
+        return header;
+    }
+
+    public void setHeader(String header) {
+        this.header = header;
+    }
+
+    public PrintStream getSuccessStream() {
+        return successStream;
+    }
+
+    public void setSuccessStream(PrintStream successStream) {
+        this.successStream = successStream;
+    }
+
+    public PrintStream getErrorStream() {
+        return errorStream;
+    }
+
+    public void setErrorStream(PrintStream errorStream) {
+        this.errorStream = errorStream;
+    }
+
+    public String getErrorDescription() {
+        return errorDescription;
+    }
+
+    public void setErrorDescription(String errorDescription) {
+        this.errorDescription = errorDescription;
+    }
+
+    public String getSuccessDescription() {
+        return successDescription;
+    }
+
+    public void setSuccessDescription(String successDescription) {
+        this.successDescription = successDescription;
+    }
+
+    public String getErrorFilename() {
+        return errorFilename;
+    }
+
+    public void setErrorFilename(String errorFilename) {
+        this.errorFilename = errorFilename;
+    }
+
+    public String getSuccessFilename() {
+        return successFilename;
+    }
+
+    public void setSuccessFilename(String successFilename) {
+        this.successFilename = successFilename;
+    }
 
     public void onError(CommandReturn commandReturn) {
         if (!invertCheck) {
@@ -184,8 +247,11 @@ public class CommandReturnCheck implements Counter, Cloneable {
         if (getReportOnResults() && getOnErrorRecordCommand() != null) {
             for (List<Object> record : commandReturn.getRecords()) {
                 String action = null;
+                String[] combined = new String[getCurrentArgs().length + record.size()];
+                System.arraycopy(getCurrentArgs(), 0, combined, 0, getCurrentArgs().length);
+                System.arraycopy(record.toArray(), 0, combined, getCurrentArgs().length, record.toArray().length);
                 try {
-                    action = String.format(getOnErrorRecordCommand(), record.toArray());
+                    action = String.format(getOnErrorRecordCommand(), combined);
                 } catch (Throwable t) {
                     throw new RuntimeException("Bad string format in 'errorRecord' action command of CommandReturnCheck", t);
                 }
@@ -198,7 +264,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
             if (checkCalcs != null)
                 sb.append(checkCalcs);
         }
-        error.print(sb.toString());
+        errorStream.print(sb.toString());
     }
 
     private void internalOnSuccess(CommandReturn commandReturn) {
@@ -234,7 +300,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
             if (checkCalcs != null)
                 sb.append(checkCalcs);
         }
-        success.print(sb.toString());
+        successStream.print(sb.toString());
     }
 
     @Override
@@ -341,11 +407,6 @@ public class CommandReturnCheck implements Counter, Cloneable {
     public String getFullCommand(String[] args) {
         setCurrentArgs(args);
         String action = String.format(getPathCommand(), getCurrentArgs());
-//        StringBuilder sb = new StringBuilder(getPathCommand());
-//        for (int i = 0; i < args.length; i++) {
-//            sb.append(" ").append(args[i]);
-//        }
-//        return sb.toString();
         return action;
     }
 
@@ -383,21 +444,6 @@ public class CommandReturnCheck implements Counter, Cloneable {
     }
 
     @Override
-    public long getProcessed() {
-        return counter.getProcessed();
-    }
-
-    @Override
-    public void setProcessed(long processed) {
-        counter.setProcessed(processed);
-    }
-
-    @Override
-    public long getTotalCount() {
-        return counter.getTotalCount();
-    }
-
-    @Override
     public void setTotalCount(long totalCount) {
         counter.setTotalCount(totalCount);
     }
@@ -408,28 +454,8 @@ public class CommandReturnCheck implements Counter, Cloneable {
     }
 
     @Override
-    public long getSuccess() {
-        return counter.getSuccess();
-    }
-
-    @Override
-    public void setSuccess(long success) {
-        counter.setSuccess(success);
-    }
-
-    @Override
     public void incError(int increment) {
         counter.incError(increment);
-    }
-
-    @Override
-    public long getError() {
-        return counter.getError();
-    }
-
-    @Override
-    public void setError(long error) {
-        counter.setError(error);
     }
 
     public String[] getCurrentArgs() {
@@ -438,13 +464,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
 
     public void setCurrentArgs(String[] currentArgs) {
         this.currentArgs = new String[currentArgs.length];
-        for (int i = 0; i < currentArgs.length; i++) {
-//            if (currentArgs[i] != null && currentArgs[i].contains(" ")) {
-//                this.currentArgs[i] = "\"" + currentArgs[i] + "\"";
-//            } else {
-            this.currentArgs[i] = currentArgs[i];
-//            }
-        }
+        System.arraycopy(currentArgs, 0, this.currentArgs, 0, currentArgs.length);
     }
 
     @Override
@@ -460,6 +480,13 @@ public class CommandReturnCheck implements Counter, Cloneable {
         clone.setCounter(new ReportCounter());
         clone.getCounter().setName(this.name);
         clone.setCheckCalculations(this.checkCalculations);
+        clone.setErrorStream(this.errorStream);
+        clone.setErrorDescription(this.errorDescription);
+        clone.setErrorFilename(this.errorFilename);
+        clone.setHeader(this.header);
+        clone.setSuccessStream(this.successStream);
+        clone.setSuccessDescription(this.successDescription);
+        clone.setSuccessFilename(this.successFilename);
         return clone;
 
     }

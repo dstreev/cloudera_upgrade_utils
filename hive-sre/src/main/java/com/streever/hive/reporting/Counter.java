@@ -19,24 +19,10 @@ public interface Counter {
 
     void incProcessed(int increment);
 
-    long getProcessed();
-
-    void setProcessed(long processed);
-
-    long getTotalCount();
-
     void setTotalCount(long totalCount);
 
     void incSuccess(int increment);
 
-    long getSuccess();
-
-    void setSuccess(long success);
-
     void incError(int increment);
-
-    long getError();
-
-    void setError(long error);
 
 }

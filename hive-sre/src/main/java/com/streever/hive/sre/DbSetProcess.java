@@ -70,6 +70,36 @@ public class DbSetProcess extends SreProcessBase {
     }
 
     @Override
+    public void setOutputDirectory(String outputDirectory) throws FileNotFoundException {
+        // Allow each Check to have its own output stream.
+//        if (getChecks().size() == 0) {
+            super.setOutputDirectory(outputDirectory);
+//        } else  {
+            for (CommandReturnCheck check: getChecks()) {
+                // If details for stream output are available in the check definition.
+                if (check.getErrorFilename() != null) {
+                    check.errorStream = outputFile(outputDirectory + System.getProperty("file.separator") + check.getErrorFilename());
+                } else {
+                    check.errorStream = this.error;
+                }
+                if (check.getSuccessFilename() != null) {
+                    check.successStream = outputFile(outputDirectory + System.getProperty("file.separator") + check.getSuccessFilename());
+                } else {
+                    check.successStream = this.success;
+                }
+                // Set the Header if defined.
+                if (check.getInvertCheck() && check.getHeader() != null) {
+                    check.errorStream.println(check.getHeader());
+                }
+                if (!check.getInvertCheck() && check.getHeader() != null) {
+                    check.successStream.println(check.getHeader());
+                }
+            }
+
+//        }
+    }
+
+    @Override
     public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
         setParent(parent);
 
@@ -132,6 +162,25 @@ public class DbSetProcess extends SreProcessBase {
             getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
         }
 
+    }
+
+    @Override
+    public String getOutputDetails() {
+        String defaultReturnInfo = super.getOutputDetails();
+        StringBuilder sb = new StringBuilder();
+        if (defaultReturnInfo.length() > 0)
+            sb.append(defaultReturnInfo).append("\n");
+        for (CommandReturnCheck check: getChecks()) {
+            if (check.getSuccessFilename() != null) {
+                sb.append("\t" + check.getSuccessDescription() + " -> " + getOutputDirectory() + System.getProperty("file.separator") +
+                        check.getSuccessFilename()).append("\n");
+            }
+            if (check.getErrorFilename() != null) {
+                sb.append("\t" + check.getErrorDescription() + " -> " + getOutputDirectory() + System.getProperty("file.separator") +
+                        check.getErrorFilename());
+            }
+        }
+        return sb.toString();
     }
 
     @Override

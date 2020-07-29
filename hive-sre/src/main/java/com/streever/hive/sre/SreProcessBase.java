@@ -197,8 +197,12 @@ public abstract class SreProcessBase {
 
     public void setOutputDirectory(String outputDirectory) throws FileNotFoundException {
         this.outputDirectory = outputDirectory;
-        error = outputFile(outputDirectory + System.getProperty("file.separator") + this.getErrorFilename());
-        success = outputFile(outputDirectory + System.getProperty("file.separator") + this.getSuccessFilename());
+        if (getErrorFilename() != null) {
+            error = outputFile(outputDirectory + System.getProperty("file.separator") + this.getErrorFilename());
+        }
+        if (getSuccessFilename() != null) {
+            success = outputFile(outputDirectory + System.getProperty("file.separator") + this.getSuccessFilename());
+        }
     }
 
     protected PrintStream outputFile(String name) throws FileNotFoundException {
@@ -209,6 +213,19 @@ public abstract class SreProcessBase {
         QueryDefinition rtn = null;
         rtn = getParent().getConfig().getQuery(definitionName);
         return rtn;
+    }
+
+    public String getOutputDetails() {
+        StringBuilder sb = new StringBuilder();
+        if (getSuccessFilename() != null) {
+            sb.append("\t" + getSuccessDescription() + " -> " + getOutputDirectory() + System.getProperty("file.separator") +
+                    getSuccessFilename() + "\n");
+        }
+        if (getErrorFilename() != null) {
+            sb.append("\t" + getErrorDescription() + " -> " + getOutputDirectory() + System.getProperty("file.separator") +
+                    getErrorFilename());
+        }
+        return sb.toString();
     }
 
     public abstract void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException;

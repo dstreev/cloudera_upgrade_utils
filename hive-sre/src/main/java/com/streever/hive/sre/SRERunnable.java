@@ -63,21 +63,6 @@ public abstract class SRERunnable implements Counter, Runnable {
     }
 
     @Override
-    public long getProcessed() {
-        return counter.getProcessed();
-    }
-
-    @Override
-    public void setProcessed(long processed) {
-        counter.setProcessed(processed);
-    }
-
-    @Override
-    public long getTotalCount() {
-        return counter.getTotalCount();
-    }
-
-    @Override
     public void setTotalCount(long totalCount) {
         counter.setTotalCount(totalCount);
     }
@@ -86,30 +71,10 @@ public abstract class SRERunnable implements Counter, Runnable {
     public void incSuccess(int increment) {
         counter.incSuccess(increment);
     }
-
-    @Override
-    public long getSuccess() {
-        return counter.getSuccess();
-    }
-
-    @Override
-    public void setSuccess(long success) {
-        counter.setSuccess(success);
-    }
-
+    
     @Override
     public void incError(int increment) {
         counter.incError(increment);
-    }
-
-    @Override
-    public long getError() {
-        return counter.getError();
-    }
-
-    @Override
-    public void setError(long error) {
-        counter.setError(error);
     }
 
     public abstract Boolean init();

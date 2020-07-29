@@ -88,6 +88,20 @@ Action commands for identified scenarios are written out to file(s), which can b
 
 This process is driven by a control file.  A template is [here](configs/driver.yaml.template).  Make a copy, edit the needed parameters and reference it with the '-cfg' parameter when running the process.
 
+### Known Issues
+
+For a while during the evolution of Hive 3, there was a separate 'catalog' for Spark.  The queries in this process do NOT consider this alternate catalog and may yield cross products in some areas if the 'spark' catalog was used at any point.  Do to the nature of this tool and an attempt to use it across multiple versions of Hive, we do NOT include criteria regarding the 'catalog'.
+
+### Assumptions
+
+- Ran from a node on the cluster
+    - That includes clients and configuration files for HDFS
+- Ran by a user that has READ privileges to all HDFS directories.
+- If cluster is 'kerberized', the user has a valid Kerberos Ticket 'before' starting the application.
+- Drivers for the HMS database are available.
+- The configuration file has been defined
+- The HMS Metastore DB is on a supported RDBMS for the platform (version matters!)
+
 ### Application Help
 
 ```
@@ -162,6 +176,20 @@ Review Hive Metastore Databases and Tables for upgrade or simply to evaluate pot
 ### Testing
 
 I have tested this against MariaDB 10.2, Postgres, and Oracle.  I have seen reports of SQL issues against MySql 5.6, so this process will certainly have issues there.  If you run this in other DB configs, I would like to hear from you about it.
+
+### Known Issues
+
+For a while during the evolution of Hive 3, there was a separate 'catalog' for Spark.  The queries in this process do NOT consider this alternate catalog and may yield cross products in some areas if the 'spark' catalog was used at any point.  Even though this tool was designed for Hive 1 and 2 in mind, it can be run against Hive 3.  We do NOT include criteria regarding the 'catalog'.
+
+### Assumptions
+
+- Ran from a node on the cluster
+    - That includes clients and configuration files for HDFS
+- Ran by a user that has READ privileges to all HDFS directories.
+- If cluster is 'kerberized', the user has a valid Kerberos Ticket 'before' starting the application.
+- Drivers for the HMS database are available.
+- The configuration file has been defined
+- The HMS Metastore DB is on a supported RDBMS for the platform (version matters!)
 
 ### Application Help
 

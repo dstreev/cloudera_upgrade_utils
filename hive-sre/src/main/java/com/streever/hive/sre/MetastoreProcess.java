@@ -2,15 +2,8 @@ package com.streever.hive.sre;
 
 import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
-import com.streever.sql.JDBCUtils;
-import com.streever.sql.QueryDefinition;
-import com.streever.sql.ResultArray;
 
 import java.io.FileNotFoundException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 import static com.streever.hive.reporting.ReportCounter.*;
@@ -68,20 +61,20 @@ public abstract class MetastoreProcess extends SreProcessBase implements Counter
         counter.incProcessed(increment);
     }
 
-    @Override
-    public long getProcessed() {
-        return counter.getProcessed();
-    }
-
-    @Override
-    public void setProcessed(long processed) {
-        counter.setProcessed(processed);
-    }
-
-    @Override
-    public long getTotalCount() {
-        return counter.getTotalCount();
-    }
+//    @Override
+//    public long getProcessed() {
+//        return counter.getProcessed();
+//    }
+//
+//    @Override
+//    public void setProcessed(long processed) {
+//        counter.setProcessed(processed);
+//    }
+//
+//    @Override
+//    public long getTotalCount() {
+//        return counter.getTotalCount();
+//    }
 
     @Override
     public void setTotalCount(long totalCount) {
@@ -93,30 +86,30 @@ public abstract class MetastoreProcess extends SreProcessBase implements Counter
         counter.incSuccess(increment);
     }
 
-    @Override
-    public long getSuccess() {
-        return counter.getSuccess();
-    }
-
-    @Override
-    public void setSuccess(long success) {
-        counter.setSuccess(success);
-    }
+//    @Override
+//    public long getSuccessStream() {
+//        return counter.getSuccess();
+//    }
+//
+//    @Override
+//    public void setSuccessStream(long successStream) {
+//        counter.setSuccess(successStream);
+//    }
 
     @Override
     public void incError(int increment) {
         counter.incError(increment);
     }
 
-    @Override
-    public long getError() {
-        return counter.getError();
-    }
-
-    @Override
-    public void setError(long error) {
-        counter.setError(error);
-    }
+//    @Override
+//    public long getErrorStream() {
+//        return counter.getError();
+//    }
+//
+//    @Override
+//    public void setErrorStream(long errorStream) {
+//        counter.setError(errorStream);
+//    }
 
     @Override
     public String toString() {

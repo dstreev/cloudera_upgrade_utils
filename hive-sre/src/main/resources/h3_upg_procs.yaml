@@ -3,61 +3,59 @@ processes:
     id:                       1
     active:                   true
     name:                     "Hive 3 Upgrade Checks - Locations Scan"
-    errorDescription:         "Scan Actions"
-    successDescription:       "Issues"
-    errorFilename:            h3_upgrade_loc_scan_action.txt
-    successFilename:          h3_upgrade_loc_scan_issues.txt
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
     pathsListingQuery:        "tbl_part_locations"
     checks:
-      - name:               "Missing Directories"
-#        header:             "# Missing Directories"
-#        detailHeader:       "| Path | Hive SQL | HDFS |\n|:---|:---|:---|"
-        invertCheck:        false
-        pathCommand:        "lsp -f path -t %5$s"
-        onErrorPathCommand: "## Missing hive directory: '%5$s'\n## Choose 'one' of the options below."
-        reportOnResults:    false
-        reportOnPath:       true
-        processOnError:     true
-        processOnSuccess:   false
+      - name:                     "Missing Directories"
+        header:                   "# Missing Directory Remediation Options\n| DB.Table:Part | Hive SQL (recommended) | HDFS |\n|:---|:---|:---|"
+        errorDescription:         "Scan Actions"
+        successDescription:       "Issues"
+        errorFilename:            h3_upgrade_loc_scan_action.md
+        successFilename:          h3_upgrade_loc_scan_issues.txt
+        invertCheck:              true
+        pathCommand:              "lsp -f path -t %5$s"
+        reportOnResults:          false
+        reportOnPath:             true
+        processOnError:           true
+        processOnSuccess:         false
         checkCalculations:
           partitionCheck:
             RECORDS:
               test: "if (\"%4$s\".equals(\" \")) true; else false;"
-              pass: "\"-- HIVE (recommended)\\n
-                      DROP TABLE IF EXIST `%1$s`.`%2$s`;\\n
-                      -- HDFS \\n
-                      mkdir -p %5$s\\n\""
-              fail: "\"-- HIVE (recommended)\\n
-                      ALTER TABLE `%1$s`.`%2$s` DROP IF EXISTS PARTITION (\" + '%4$s'.split(\"=\")[0] + \"=\\\"\" + '%4$s'.split(\"=\")[1] + \"\\\");\\n
-                      -- HDFS \\n
-                       mkdir -p %5$s\\n\""
+              pass: "\"| %1$s.%2$s | DROP TABLE IF EXIST `%1$s`.`%2$s`; | mkdir -p %5$s |\""
+              fail: "\"| %1$s.%2$s:\" + '%4$s'.split(\"=\")[0] + \"=\\\"\" + '%4$s'.split(\"=\")[1] + \"\\\" | ALTER TABLE `%1$s`.`%2$s` DROP IF EXISTS PARTITION (\" + '%4$s'.split(\"=\")[0] + \"=\\\"\" + '%4$s'.split(\"=\")[1] + \"\\\"); | mkdir -p %5$s |\""
               params: ["hive"]
 
   - type:                     "dbSet"
     id:                       2
     active:                   true
-    name:                     "Hive 3 Upgrade Checks - Bad ORC Filenames"
+    name:                     "Hive 3 Upgrade Checks - Bad ACID ORC Filenames"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorDescription:         "Bad Filenames"
-    successDescription:       "Issues"
-    errorFilename:            "bad_filenames_for_orc_conversion.txt"
-    successFilename:          "bad_filename_issues.txt"
     dbListingQuery:           "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
     pathsListingQuery:        "tbl_mngd_non_acid_locations"
     checks:
-      - name:                 "Bad Filename Format"
-        invertCheck:          true
-        pathCommand:          "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)\" -i -Fe file -v -f parent,file %5$s"
-        onErrorPathCommand:   "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
-        onErrorRecordCommand: "# Bad filename %2$s in directory: %1$s "
-        reportOnResults:      true
-        reportOnPath:         true
-        processOnError:       true
-        processOnSuccess:     false
+      - name:                     "Bad Filename Format for ACID ORC Conversion"
+        header:                   "# Bad ACID ORC Filenames\n> File naming conventions that could prevent a 'managed' ORC table from transitioning to an 'ACID' table\n\n
+                              | DB.Table:Partition | Path | Filename |\n|:---|:---|:---|"
+        invertCheck:              true
+        errorDescription:         "Bad ACID Filenames"
+        successDescription:       "Bad ACID Filename Issues"
+        errorFilename:            "bad_filenames_for_orc_conversion.md"
+        successFilename:          "bad_filename_issues.txt"
+        pathCommand:              "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)|(_orc_acid_version)|(bucket_\\d+(_\\d+)?)|(_metadata_acid)\" -i -Fe file -v -f parent,file %5$s"
+        onErrorRecordCommand:     "| %1$s.%2$s:%4$s | %6$s | %7$s |"
+        reportOnResults:          true
+        reportOnPath:             true
+        processOnError:           true
+        processOnSuccess:         false
+  #        checkCalculations:
+  #          managedCheck:
+  #            RECORDS:
+  #              test: "if ( \"%3$s\".equals(\"MANAGED\\_TABLE\")) true; else false;"
+  #              pass: "\"| %1$s.%2$s:%4$s | %5$s | %7$s |\""
   - type:                     "dbSet"
     id:                       3
     active:                   true

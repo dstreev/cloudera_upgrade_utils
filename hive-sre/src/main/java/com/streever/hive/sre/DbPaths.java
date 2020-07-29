@@ -60,8 +60,12 @@ public class DbPaths extends SRERunnable {
                 // TODO: Need to set Counters name from the 'check'
                 getCounter().addChild(newCheck.getCounter());
                 // Redirect Output.
-                newCheck.error = this.error;
-                newCheck.success = this.success;
+                if (newCheck.getErrorFilename() == null) {
+                    newCheck.setErrorStream(this.error);
+                }
+                if (newCheck.getSuccessFilename() == null) {
+                    newCheck.setSuccessStream(this.success);
+                }
                 // TODO: Set success and error printstreams to output files.
             } catch (CloneNotSupportedException e) {
                 e.printStackTrace();

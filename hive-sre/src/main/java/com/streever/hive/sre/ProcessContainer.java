@@ -132,10 +132,7 @@ public class ProcessContainer {
         for (SreProcessBase process: getProcesses()) {
             if (process.isActive()) {
                 System.out.println(process.getUniqueName());
-                System.out.println("\t" + process.getSuccessDescription() + " -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
-                        process.getSuccessFilename());
-                System.out.println("\t" + process.getErrorDescription() + " -> " + process.getOutputDirectory() + System.getProperty("file.separator") +
-                        process.getErrorFilename());
+                System.out.println(process.getOutputDetails());
             }
         }
     }
