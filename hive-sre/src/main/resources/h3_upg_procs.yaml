@@ -12,8 +12,8 @@ processes:
         header:                   "# Missing Directory Remediation Options\n| DB.Table:Part | Hive SQL (recommended) | HDFS |\n|:---|:---|:---|"
         errorDescription:         "Scan Actions"
         successDescription:       "Issues"
-        errorFilename:            h3_upgrade_loc_scan_action.md
-        successFilename:          h3_upgrade_loc_scan_issues.txt
+        errorFilename:            loc_scan_missing_dirs.md
+        successFilename:          loc_scan_missing_dirs_issue.txt
         invertCheck:              true
         pathCommand:              "lsp -f path -t %5$s"
         reportOnResults:          false
