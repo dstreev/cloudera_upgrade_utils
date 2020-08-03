@@ -6,7 +6,7 @@
 
     <groupId>com.streever.hive</groupId>
     <artifactId>hive-sre</artifactId>
-    <version>2.2.0.0-SNAPSHOT</version>
+    <version>2.3.0.0-SNAPSHOT</version>
 
     <name>hive</name>
     <!-- FIXME change it to the project's website -->
@@ -17,8 +17,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <javax.validation.version>2.0.1.Final</javax.validation.version>
-        <jackson.json.version>2.9.5</jackson.json.version>
-        <jackson.yaml.version>2.9.5</jackson.yaml.version>
+        <jackson.json.version>2.11.1</jackson.json.version>
+        <jackson.yaml.version>2.11.1</jackson.yaml.version>
         <commons-cli.version>1.2</commons-cli.version>
         <commons-lang.version>3.4</commons-lang.version>
         <commons-dbcp2.version>2.7.0</commons-dbcp2.version>
@@ -35,7 +35,7 @@
         <hadoop.major>3.1</hadoop.major>
         <hive.version>3.1.1</hive.version>
 
-        <hadoop.cli.version>2.2.1.0-SNAPSHOT</hadoop.cli.version>
+        <hadoop.cli.version>2.2.1.1-SNAPSHOT</hadoop.cli.version>
 
     </properties>
 
@@ -269,6 +269,24 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <descriptor>src/main/assembly/assembly.xml</descriptor>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <!-- this is used for inheritance merges -->
+                        <phase>package</phase>
+                        <!-- bind to the packaging phase -->
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!--
             <plugin>
               <artifactId>maven-assembly-plugin</artifactId>

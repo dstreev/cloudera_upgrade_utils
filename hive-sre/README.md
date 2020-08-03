@@ -5,6 +5,7 @@ This application has 3 sub-programs:
 - [`perf`](#hive-jdbc-performance-testing-tool-perf) is used to check the throughput of a JDBC connection.
 - [`sre`](#sre-application-sre) is used to find potential 'Hive' performance issues caused by small files and excessive partitions.
 - [`u3`](#hive-upgrade-check-u3) is used to review 'Hive 1/2' environments for Hive3 upgrade planning.
+- [`cli`-external reference](https://github.com/dstreev/hadoop-cli/blob/master/README.md) is an hdfs interactive client.  It is a core part of the `hive-sre` application, so we've exposed the shell here via the `hive-sre-cli` executable.
 
 ### Binary
 
@@ -12,6 +13,39 @@ USE THE PRE-BUILT BINARY!!!  You won't have the necessary dependencies to build 
 
 [Releases](https://github.com/dstreev/cloudera_upgrade_utils/releases)
 
+* Download the release 'tar.gz' file to a temp location.
+* Untar the file (tar.gz).
+```
+tar xzvf <release>.tar.gz
+cd hive-sre
+```  
+* As a root user, chmod +x the 3 shell script files.
+* Run the 'setup.sh'.
+```
+./setup
+```  
+
+This will create and install the `hive-sre` and `hive-sre-cli` applications to your path.
+
+Try it out on a host with default configs (if kerberized, get a ticket first):
+
+    hive-sre-cli
+OR
+    
+    hive-sre
+    
+
+### AUX_LIBS - CLASSPATH Additions
+
+The directory `$HOME/.hive-sre/aux_libs` will be scanned for 'jar' files. Each 'jar' will be added the java classpath of the application.  Add any required libaries here.
+
+The application contains all the necesasry `hdfs` classes already.  You will need to add to the `aux_libs` directory the following:
+- JDBC drivers for Metastore Connectivity
+- JDBC drivers for Hive (Can be the Standalone driver from the cluster or other Hive Driver)
+- AWS S3 Drivers (appropriate versions)
+    - `hadoop-aws.jar`
+    - `aws-java-sdk-bundle.jar`
+    
 ## Hive JDBC Performance Testing Tool (perf)
 
 JDBC Performance Testing tool.  Will provide connection timing details and rolling windows of performance for long running queries.  Details in the windows will show not only records but also an estimate of the data volume.
@@ -46,12 +80,6 @@ Window Length(ms) | Record Average | Records per/sec | Data Size per/sec
 Running for: 80966ms		Started: 2020-03-06 13:57:40.492		Record Count: 10020000		Data Size: 1171392406
 ```
 
-To ease the launch of the application below, configure these core environment variables.
-
-```
-export SRE_PERF=hive-sre-shaded.jar:<hive-standalone-jdbc-driver.jar>
-```
-
 **Environment and Connection via Knox**
 
 *Example*  Note: The additional `cp` setting with `hadoop classpath` is required when connecting to a Kerberized endpoint.
@@ -61,19 +89,19 @@ QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
 BATCH_SIZE=10000
 PW=<set_me>
 
-java -cp $SRE_PERF:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p <password> 
+hive-sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE -n ${USER} -p <password> 
 ```
 
 **Environment and Connection via Kerberos from Edge**
 
-*Example* Note: The additional `cp` setting with `hadoop classpath` is required when connecting to a Kerberized endpoint.
+*Example* Note: Additional hadoop libraries are required for a kerberized connection.  Use `--hadoop-classpath` in the commandline to call the environments hadoop classpath and add it to the `cp` of the application.
 ```
 URL="jdbc:hive2://os05.streever.local:10601/default;httpPath=cliservice;principal=hive/_HOST@STREEVER.LOCAL;transportMode=http"
 QUERY="SELECT field1_1,field1_2,field1_3,field1_4 FROM perf_test.wide_table"
 # Note that `hadoop classpath` statement to bring in all necessary libs.
 BATCH_SIZE=10000
 
-java -cp $SRE_PERF:`hadoop classpath` com.streever.hive.Sre perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
+hive-sre --hadoop-classpath perf -u "${URL}" -e "${QUERY}" -b $BATCH_SIZE 
 ```
 
 **Environment and Connection via Kerberos from a Client Host (Non-Edge)**
@@ -161,11 +189,7 @@ queries:
 To ease the launch of the application below, configure these core environment variables.
 
 ```
-export SRE_HIVE=hive-sre-shaded.jar:<rdbms-metastore-driver.jar>
-```
-
-```
-java -cp $SRE_HIVE com.streever.hive.Sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
+hive-sre sre -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out` 
 ```
 
 ### Output
@@ -230,9 +254,6 @@ Run the process first with the `-i 7` option to get a list of databases with tab
 
 To ease the launch of the application below, configure these core environment variables.
 
-```
-export SRE_HIVE=hive-sre-shaded.jar:<rdbms-metastore-driver.jar>
-```
 ### Output
 
 The output is a set of files with actions and error (when encountered).  The files maybe `txt` files or `markdown`.  You may want to use a `markdown` viewer for easier viewing of those reports.  The markdown viewer needs to support [github markdown tables](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables) .
@@ -240,17 +261,17 @@ The output is a set of files with actions and error (when encountered).  The fil
 #### Examples
 *All Hive Databases* - Will run ALL processes.
 ```
-java -cp $SRE_HIVE com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out
+hive-sre u3 -cfg /tmp/test.yaml -o ./sre-out
 ```
 
 *Targeted Hive Database* - Will run ALL processes on the 'priv_dstreev' hive database.
 ```
-java -cp $SRE_HIVE com.streever.hive.Sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out
+hive-sre u3 -db priv_dstreev -cfg /tmp/test.yaml -o ./sre-out
 ```
 
 *Run ONLY compaction check on All Hive Database* - Using the `-i` option to run only the 'compaction check' sub routine.
 ```
-java -cp $SRE_HIVE com.streever.hive.Sre u3 -cfg /tmp/test.yaml -o ./sre-out -i 4
+hive-sre u3 -cfg /tmp/test.yaml -o ./sre-out -i 4
 ```
 
 ### Check and Validations Performed
