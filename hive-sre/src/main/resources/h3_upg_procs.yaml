@@ -14,8 +14,8 @@ processes:
         successDescription:       "Issues"
         errorFilename:            loc_scan_missing_dirs.md
         successFilename:          loc_scan_missing_dirs_issue.txt
-        invertCheck:              true
-        pathCommand:              "lsp -f path -t %5$s"
+        invertCheck:              false
+        pathCommand:              "lsp -f path -self -t %5$s"
         reportOnResults:          false
         reportOnPath:             true
         processOnError:           true

@@ -323,6 +323,12 @@ The number of concurrent processes is controlled by the `parallelism` variable i
 
 ![UI Details](images/hive-ui-details.png)
                          
+### Tips
 
+- Sorting results for loc_scan..
+
+```
+sort -k 1 --field-separator="|" loc_scan_missing_dirs.md > loc_scan_missing_dirs_sorted.txt
+```
 
 
