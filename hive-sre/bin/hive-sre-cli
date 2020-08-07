@@ -4,7 +4,7 @@ APP_DIR=`dirname $0`
 CURR_DIR=`pwd`
 
 if [[ -f ./hive-sre-cli && "${APP_DIR}" != "${CURR_DIR}" && "${APP_DIR}" != "." ]]; then
-  echo "Appears you are referencing a previously installed 'hadoopcli' while "
+  echo "Appears you are referencing a previously installed 'hive-sre-cli' while "
   echo "  in the installation directory of 'hive-sre-cli'."
   echo "Change directories and run 'hive-sre-cli' to run installed version OR "
   echo "Run current directories 'hive-sre-cli' via './hive-sre-cli'"
