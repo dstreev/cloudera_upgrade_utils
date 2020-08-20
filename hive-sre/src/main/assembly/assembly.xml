@@ -22,7 +22,7 @@
   -->
 
 <assembly>
-    <id>${hadoop.major}</id>
+    <id>dist</id>
     <formats>
         <format>tar.gz</format>
     </formats>
@@ -44,7 +44,14 @@
             <outputDirectory>hive-sre</outputDirectory>
             <useDefaultExcludes>true</useDefaultExcludes>
         </fileSet>
-
+        <fileSet>
+            <directory>${project.basedir}/configs</directory>
+            <includes>
+                <include>default.yaml.template</include>
+            </includes>
+            <outputDirectory>hive-sre</outputDirectory>
+            <useDefaultExcludes>true</useDefaultExcludes>
+        </fileSet>
         <fileSet>
             <directory>${project.basedir}/target</directory>
             <includes>

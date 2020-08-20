@@ -89,10 +89,11 @@ public class DbPaths extends SRERunnable {
     @Override
     public void run() {
         this.setStatus(STARTED);
+        QueryDefinition queryDefinition = null;
         try (Connection conn = getParent().getParent().getConnectionPools().
                 getMetastoreDirectConnection()) {
 
-            QueryDefinition queryDefinition = getParent().getQueryDefinitions().
+            queryDefinition = getParent().getQueryDefinitions().
                     getQueryDefinition(getParent().getPathsListingQuery());
             PreparedStatement preparedStatement = JDBCUtils.getPreparedStatement(conn, queryDefinition);
 
@@ -145,6 +146,8 @@ public class DbPaths extends SRERunnable {
                 }
             }
         } catch (SQLException e) {
+            System.err.println((queryDefinition != null)? queryDefinition.getStatement(): "Unknown");
+            System.err.println("Failure in DbPaths");
             e.printStackTrace();
             setStatus(ERROR);
         } catch (Throwable t) {

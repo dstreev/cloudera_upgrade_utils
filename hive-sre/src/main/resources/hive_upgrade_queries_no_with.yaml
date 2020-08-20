@@ -154,9 +154,10 @@ query_definitions:
                         TBLS t
                     INNER JOIN
                         TABLE_PARAMS tp
-                    WHERE
+                    ON
                         t.TBL_ID = tp.TBL_ID
-                    AND t.TBL_TYPE = 'MANAGED_TABLE'
+                    WHERE
+                        t.TBL_TYPE = 'MANAGED_TABLE'
                     AND tp.PARAM_KEY = 'transactional'
                     AND tp.PARAM_VALUE='true' ) MANAGED_TBL)
     GROUP BY

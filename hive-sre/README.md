@@ -11,7 +11,8 @@ This application has 3 sub-programs:
 
 USE THE PRE-BUILT BINARY!!!  You won't have the necessary dependencies to build this from scratch without downloading and building the 'Hadoop Cli'.
 
-[Releases](https://github.com/dstreev/cloudera_upgrade_utils/releases)
+### Don't Build, Download the LATEST binary here!!!
+[![Download the LATEST Binary](./images/download.png)](https://github.com/dstreev/cloudera_upgrade_utils/releases)
 
 * Download the release 'tar.gz' file to a temp location.
 * Untar the file (tar.gz).
@@ -114,7 +115,7 @@ The Sre Tool brings together information from the HMS RDBMS and HDFS to provide 
 
 Action commands for identified scenarios are written out to file(s), which can be reviewed / edited and run through either "beeline" for "hive" actions or in [Hadoop-CLI](https://github.com/dstreev/hadoop-cli) for hdfs commands.
 
-This process is driven by a control file.  A template is [here](configs/driver.yaml.template).  Make a copy, edit the needed parameters and reference it with the '-cfg' parameter when running the process.
+This process is driven by a control file.  A template is [here](configs/default.yaml.template).  Make a copy, edit the needed parameters and reference it with the '-cfg' parameter when running the process.
 
 ### Known Issues
 
@@ -166,7 +167,9 @@ Sre needs to be run by a user with READ access to all the potential HDFS locatio
 # Required to connect to Metastore RDBMS.  RDBMS driver needs to be included in the classpath
 metastore_direct:
   uri: "FULL_RDMBS_URL_FOR_METASTORE_INCLUDING_THE_DB_NAME"
-  type: MYSQL | POSTRGES | ORACLE | MSSQL
+  type: MYSQL | POSTRGES | ORACLE
+  # Needed for Oracle Connections to pick the right schema for hive.
+  # initSql: "ALTER SESSION SET CURRENT_SCHEMA=<hive_schema>"
   connectionProperties:
     user: "DB_USER"
     password: "DB_PASSWORD"

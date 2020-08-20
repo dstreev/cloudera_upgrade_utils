@@ -158,6 +158,8 @@ public class ProcessContainer {
             File cfgFile = new File(config);
             if (!cfgFile.exists()) {
                 throw new RuntimeException("Missing configuration file: " + config);
+            } else {
+                System.out.println("Using Config: " + config);
             }
             String yamlCfgFile = FileUtils.readFileToString(cfgFile, Charset.forName("UTF-8"));
             SreProcessesConfig sreConfig = mapper.readerFor(SreProcessesConfig.class).readValue(yamlCfgFile);

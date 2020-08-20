@@ -12,6 +12,8 @@ public class Metastore {
     private String uri;
     @NotNull(message = "Need to specify one of: MYSQL, ORACLE, POSTGRES, MSSQL")
     private DB_TYPE type;
+    // Run for each fetch connection.  Mainly used to help set the DB/Schema for Oracle
+    private String initSql;
     @NotNull
     private Properties connectionProperties;
     @NotNull
@@ -31,6 +33,14 @@ public class Metastore {
 
     public void setType(DB_TYPE type) {
         this.type = type;
+    }
+
+    public String getInitSql() {
+        return initSql;
+    }
+
+    public void setInitSql(String initSql) {
+        this.initSql = initSql;
     }
 
     public Properties getConnectionProperties() {

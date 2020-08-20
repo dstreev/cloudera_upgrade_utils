@@ -99,7 +99,13 @@ public class UpgradeToHive3 implements SreSubApp{
             }
             setProcessContainer(procContainer);
             // Initialize with config and output directory.
-            getProcessContainer().init(cmd.getOptionValue("cfg"), cmd.getOptionValue("o"), getDbsOverride());
+            String configFile = null;
+            if (cmd.hasOption("cfg")) {
+                configFile = cmd.getOptionValue("cfg");
+            } else {
+                configFile = System.getProperty("user.home") + System.getProperty("file.separator") + ".hive-sre/cfg/default.yaml";
+            }
+            getProcessContainer().init(configFile, cmd.getOptionValue("o"), getDbsOverride());
 
         } catch (IOException e) {
             throw new RuntimeException("Missing resource file: " + stackResource, e);
@@ -140,8 +146,8 @@ public class UpgradeToHive3 implements SreSubApp{
         options.addOption(includeOption);
 
         Option cfgOption = new Option("cfg", "config", true,
-                "Config with details for the Sre Job.  Must match the either sre or u3 selection.");
-        cfgOption.setRequired(true);
+                "Config with details for the Sre Job.  Must match the either sre or u3 selection. Default: $HOME/.hive-sre/cfg/default.yaml");
+        cfgOption.setRequired(false);
         options.addOption(cfgOption);
 
         return options;

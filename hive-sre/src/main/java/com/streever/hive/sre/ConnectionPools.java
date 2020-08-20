@@ -41,6 +41,9 @@ public class ConnectionPools {
 
     public Connection getMetastoreDirectConnection() throws SQLException {
         Connection conn = getMetastoreDirectDataSource().getConnection();
+        if (this.config.getMetastoreDirect().getInitSql() != null) {
+            conn.createStatement().execute(this.config.getMetastoreDirect().getInitSql());
+        }
         return conn;
     }
 
