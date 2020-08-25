@@ -59,7 +59,7 @@ processes:
   - type:                     "dbSet"
     id:                       3
     active:                   true
-    name:                     "Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations"
+    name:                     "-- Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     errorDescription:         "Issues"
     successDescription:       "SQL Conversion Scipt"
@@ -93,7 +93,7 @@ processes:
   - type:                     "dbSet"
     id:                       4
     active:                   true
-    name:                     "Hive 3 Upgrade Checks - Compaction Check"
+    name:                     "-- Hive 3 Upgrade Checks - Compaction Check"
     queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     errorDescription:         "Issues"
     successDescription:       "Compaction SQL Script"
@@ -104,24 +104,19 @@ processes:
     pathsListingQuery:        "managed_tbl_locations"
     checks:
       - name:                 "Compaction Check"
-        invertCheck:          true
+        invertCheck:          false
         pathCommand:          "lsp -R -F .*delta_.* -t -sp -f path %5$s"
-        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
+#        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
         reportOnResults:      false
-        reportOnPath:         false
+        reportOnPath:         true
         processOnError:       false
         processOnSuccess:     true
         checkCalculations:
           partitionCheck:
             PATH:
-              test: "if (\"%4$s\".equals(\"%6$s\")) true; else false;"
-              pass: "\"-- Table is OWNED by '%6$s' and not currently ACID.\\n
-                    -- This table will be migrated unless changed.\\n
-                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
-              fail: "\"-- Table is NOT owned by '%6$s' and NOT currently ACID.\\n
-                    -- This table 'could' be migrated to an ACID table unless changed.\\n
-                    -- Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
-                    ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
+              test: "if (\"%4$s\".trim().length() == 0) true; else false;"
+              pass: "\"ALTER TABLE %1$s.%2$s COMPACT 'MAJOR';\""
+              fail: "\"ALTER TABLE %1$s.%2$s PARTITION (\" + '%4$s'.split(\"=\")[0] + \" = '\" + '%4$s'.split(\"=\")[1] + \"') COMPACT 'MAJOR'\\;\""
               params: ["hive"]
 
   #  - type: "metastore.query"

@@ -83,7 +83,7 @@ processes:
     id:                       3
     active:                   true
     name:                     "Table and Partition Scan for Small Files"
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
     pathsListingQuery:        "tbl_part_locations"
@@ -111,7 +111,7 @@ processes:
     id:                       4
     active:                   true
     name:                     "Table and Partition Scan - Volume Report"
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
     pathsListingQuery:        "tbl_part_locations"
@@ -139,7 +139,7 @@ processes:
     id:                       5
     active:                   true
     name:                     "Table and Partition Scan - Empty Datasets"
-    queryDefinitionReference: "/hive_upgrade_queries.yaml"
+    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
     pathsListingQuery:        "tbl_part_locations"
