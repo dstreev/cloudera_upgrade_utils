@@ -11,6 +11,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+/*
+The control structure used to connect to resources used by the @link ProcessContainer
+
+ */
 public class SreProcessesConfig {
     @JsonProperty(value = "metastore_direct")
     private Metastore metastoreDirect;

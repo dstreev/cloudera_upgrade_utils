@@ -645,7 +645,7 @@ query_definitions:
             GROUP BY
                 TBL_LOCATION
             HAVING
-                SHARES > 1 ) S
+                COUNT(*) > 1 ) S
     ON
         B1.TBL_LOCATION = S.TBL_LOCATION
     ORDER BY

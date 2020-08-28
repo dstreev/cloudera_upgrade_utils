@@ -1,17 +1,7 @@
 package com.streever.hive;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.streever.hive.perf.JDBCPerfTest;
-import com.streever.hive.sre.ProcessContainer;
-import org.apache.commons.cli.*;
-import org.apache.commons.io.IOUtils;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import java.net.URL;
 import java.util.Arrays;
 
 /**
@@ -33,15 +23,16 @@ public class Sre {
 
     public void init(String[] args) throws Throwable {
         // Check first item in args.  It should be one of:
-        // - perf
-        // - sre
-        // - u3
+        // perf
+        // sre
+        // u3
+        // cust
         String subApp = null;
-        if (args.length > 0 && args[0].matches("perf|sre|u3")) {
+        if (args.length > 0 && args[0].matches("perf|sre|u3|cust")) {
             System.out.println("Launching: " + args[0]);
             subApp = args[0];
         } else {
-            System.out.println("First element must be one of: perf,sre,u3");
+            System.out.println("First element must be one of: perf,sre,u3,cust");
             System.exit(-1);
         }
 
@@ -55,10 +46,13 @@ public class Sre {
                 sreApp = new JDBCPerfTest();
                 break;
             case "sre":
-                sreApp = new HiveStructureCheck();
+                sreApp = new HiveFrameworkCheck("/hive_sre_procs.yaml");
                 break;
             case "u3":
-                sreApp = new UpgradeToHive3();
+                sreApp = new HiveFrameworkCheck("/h3_upg_procs.yaml");
+                break;
+            case "cust":
+                sreApp = new HiveFrameworkCheck();
                 break;
         }
 

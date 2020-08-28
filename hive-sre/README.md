@@ -11,7 +11,8 @@ This application has 3 sub-programs:
 
 USE THE PRE-BUILT BINARY!!!  You won't have the necessary dependencies to build this from scratch without downloading and building the 'Hadoop Cli'.
 
-### Don't Build, Download the LATEST binary here!!!
+_**Don't Build, Download the LATEST binary here!!!**_ 
+
 [![Download the LATEST Binary](./images/download.png)](https://github.com/dstreev/cloudera_upgrade_utils/releases)
 
 * Download the release 'tar.gz' file to a temp location.

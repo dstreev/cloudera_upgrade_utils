@@ -8,6 +8,7 @@ import com.streever.hive.sre.SreProcessBase;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
+import java.io.File;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -15,8 +16,8 @@ import java.util.List;
 /**
  * Hello world!
  */
-public class HiveStructureCheck implements SreSubApp {
-
+public class HiveFrameworkCheck implements SreSubApp {
+    private String stackResource;
     private ProcessContainer processContainer;
     private String[] dbsOverride;
 
@@ -36,17 +37,32 @@ public class HiveStructureCheck implements SreSubApp {
         this.processContainer = processContainer;
     }
 
-    public static void main(String[] args) {
-        HiveStructureCheck sre = new HiveStructureCheck();
-        try {
-            sre.init(args);
-            sre.start();
-            System.exit(0);
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-
+    public String getStackResource() {
+        return stackResource;
     }
+
+    public void setStackResource(String stackResource) {
+        this.stackResource = stackResource;
+    }
+
+    public HiveFrameworkCheck(String stackResource) {
+        this.stackResource = stackResource;
+    }
+
+    public HiveFrameworkCheck() {
+    }
+
+    //    public static void main(String[] args) {
+//        HiveFrameWorkCheck sre = new HiveFrameWorkCheck();
+//        try {
+//            sre.init(args);
+//            sre.start();
+//            System.exit(0);
+//        } catch (Throwable t) {
+//            t.printStackTrace();
+//        }
+//
+//    }
 
     public void start() {
         getProcessContainer().start();
@@ -67,6 +83,12 @@ public class HiveStructureCheck implements SreSubApp {
             System.exit(-1);
         }
 
+        if (getStackResource() == null) {
+            if (cmd.hasOption("hfw")) {
+                setStackResource(cmd.getOptionValue("hfw"));
+            }
+        }
+
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
@@ -74,32 +96,40 @@ public class HiveStructureCheck implements SreSubApp {
             dbsOverride = cmd.getOptionValues("db");
         }
 
-        // Load Hive SRE Stack.
-        String stackResource = "/hive_sre_procs.yaml";
+        // Should be set by now. If 'cust' option used, then it's set above with the -hfw option.  If that wasn't
+        // present, this gets triggered.
+        if (getStackResource() == null) {
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("'cust' requires `-hfw` <framework_resource>", options);
+            System.exit(-1);
+        }
 
         try {
-            URL configURL = this.getClass().getResource(stackResource);
-            if (configURL == null) {
-                throw new RuntimeException("Can build URL for Hive Upgrade Stack Resource: " + stackResource);
+            ProcessContainer procContainer = null;
+            // First look for it as a Resource (in classpath)
+            URL configURL = this.getClass().getResource(getStackResource());
+            if (configURL != null) {
+                String yamlConfigDefinition = IOUtils.toString(configURL);
+                procContainer = mapper.readerFor(ProcessContainer.class).readValue(yamlConfigDefinition);
+            } else {
+                throw new RuntimeException("Couldn't locate 'HiveFramework Configuration File': " +
+                        configURL.toString());
             }
-            String yamlConfigDefinition = IOUtils.toString(configURL);
-            ProcessContainer procContainer = mapper.readerFor(ProcessContainer.class).readValue(yamlConfigDefinition);
 
             if (cmd.hasOption("i")) {
                 String[] includeIds = cmd.getOptionValues("i");
                 List<String> includes = Arrays.asList(includeIds);
                 // Disable all procs
-                for (SreProcessBase proc: procContainer.getProcesses()) {
+                for (SreProcessBase proc : procContainer.getProcesses()) {
                     proc.setActive(false);
                 }
                 // Enable procs in 'include'
-                for (SreProcessBase proc: procContainer.getProcesses()) {
+                for (SreProcessBase proc : procContainer.getProcesses()) {
                     if (includes.contains(proc.getId())) {
                         proc.setActive(true);
                     }
                 }
             }
-
             setProcessContainer(procContainer);
             // Initialize with config and output directory.
             String configFile = null;
@@ -111,7 +141,7 @@ public class HiveStructureCheck implements SreSubApp {
             getProcessContainer().init(configFile, cmd.getOptionValue("o"), getDbsOverride());
 
         } catch (Exception e) {
-            throw new RuntimeException("Missing resource file: " + stackResource, e);
+            throw new RuntimeException("Missing resource file: " + getStackResource(), e);
         }
     }
 
@@ -139,11 +169,15 @@ public class HiveStructureCheck implements SreSubApp {
         includeOption.setRequired(false);
         options.addOption(includeOption);
 
-
         Option cfgOption = new Option("cfg", "config", true,
                 "Config with details for the Sre Job.  Must match the either sre or u3 selection. Default: $HOME/.hive-sre/cfg/default.yaml");
         cfgOption.setRequired(false);
         options.addOption(cfgOption);
+
+        Option hfwOption = new Option("hfw", "hive-framework", true,
+                "The custom HiveFramework check configuration. Needs to be in the 'Classpath'.");
+        hfwOption.setRequired(false);
+        options.addOption(hfwOption);
 
         return options;
 
@@ -151,6 +185,6 @@ public class HiveStructureCheck implements SreSubApp {
 
     @Override
     public String toString() {
-        return "HiveStructureCheck{}";
+        return "HiveFrameworkCheck{}";
     }
 }

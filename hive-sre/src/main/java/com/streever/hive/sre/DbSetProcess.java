@@ -89,10 +89,20 @@ public class DbSetProcess extends SreProcessBase {
                 }
                 // Set the Header if defined.
                 if (check.getInvertCheck() && check.getHeader() != null) {
-                    check.errorStream.println(check.getHeader());
+                    if (check.getProcessOnError()) {
+                        check.errorStream.println(check.getHeader());
+                    }
+                    if (check.getProcessOnSuccess()) {
+                        check.successStream.println(check.getHeader());
+                    }
                 }
                 if (!check.getInvertCheck() && check.getHeader() != null) {
-                    check.successStream.println(check.getHeader());
+                    if (check.getProcessOnError()) {
+                        check.errorStream.println(check.getHeader());
+                    }
+                    if (check.getProcessOnSuccess()) {
+                        check.successStream.println(check.getHeader());
+                    }
                 }
             }
 

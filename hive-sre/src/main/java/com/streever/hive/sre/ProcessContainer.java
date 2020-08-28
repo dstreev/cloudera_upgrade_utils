@@ -22,7 +22,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
+/*
+The 'ProcessContainer' is the definition and runtime structure
+ */
 @JsonIgnoreProperties({"config", "reporter", "threadPool", "processThreads", "connectionPools", "outputDirectory"})
 public class ProcessContainer {
     private boolean initializing = Boolean.TRUE;
@@ -34,6 +36,9 @@ public class ProcessContainer {
     private String outputDirectory;
     private List<Integer> includes = new ArrayList<Integer>();
 
+    /*
+    The list of @link SreProcessBase instances to run in this container.
+     */
     private List<SreProcessBase> processes = new ArrayList<SreProcessBase>();
     private int parallelism = 3;
 
