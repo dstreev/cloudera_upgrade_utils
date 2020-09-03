@@ -9,13 +9,17 @@ processes:
     pathsListingQuery:        "tbl_part_locations"
     checks:
       - name:                     "Missing Directories"
-        header:                   "# Missing Directory Remediation Options\n| DB.Table:Part | Hive SQL (recommended) | HDFS |\n|:---|:---|:---|"
+        header:                   "# Missing Directory Remediation Options\n
+        _NOTE:_ Beware of \"Smart Quote\" AND other conversions via Markdown Renderers. Copy/paste from 'raw' text to ensure compatibility.\n
+        #### Rendered text may not work in 'Hive' or 'Hadoop CLI'\n
+        #### Parse either of these options and run in 'hive' or 'hive-sre-cli' (alias for [hadoopcli](https://github.com/dstreev/hadoop-cli) )\n
+        \n| DB.Table:Partition Spec | Hive SQL (recommended) | HDFS |\n|:---|:---|:---|"
         errorDescription:         "Scan Actions"
         successDescription:       "Issues"
         errorFilename:            loc_scan_missing_dirs.md
         successFilename:          loc_scan_missing_dirs_issue.txt
         invertCheck:              false
-        pathCommand:              "lsp -f path -self -t %5$s"
+        pathCommand:              "lsp -f path -self -t \"%5$s\""
         reportOnResults:          false
         reportOnPath:             true
         processOnError:           true
@@ -24,8 +28,8 @@ processes:
           partitionCheck:
             RECORDS:
               test: "if (\"%4$s\".equals(\" \")) true; else false;"
-              pass: "\"| %1$s.%2$s | DROP TABLE IF EXIST `%1$s`.`%2$s`; | mkdir -p %5$s |\""
-              fail: "\"| %1$s.%2$s:\" + '%4$s'.split(\"=\")[0] + \"=\\\"\" + '%4$s'.split(\"=\")[1] + \"\\\" | ALTER TABLE `%1$s`.`%2$s` DROP IF EXISTS PARTITION (\" + '%4$s'.split(\"=\")[0] + \"=\\\"\" + '%4$s'.split(\"=\")[1] + \"\\\"); | mkdir -p %5$s |\""
+              pass: "\"| %1$s.%2$s | DROP TABLE IF EXIST `%1$s`.`%2$s`; | mkdir -p \\\"%5$s\\\" |\""
+              fail: "\"| %1$s.%2$s:\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \" | ALTER TABLE `%1$s`.`%2$s` DROP IF EXISTS PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \"); | mkdir -p \\\"%5$s\\\" |\""
               params: ["hive"]
 
   - type:                     "dbSet"
@@ -45,8 +49,8 @@ processes:
         successDescription:       "Bad ACID Filename Issues"
         errorFilename:            "bad_filenames_for_orc_conversion.md"
         successFilename:          "bad_filename_issues.txt"
-        pathCommand:              "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)|(_orc_acid_version)|(bucket_\\d+(_\\d+)?)|(_metadata_acid)\" -i -Fe file -v -f parent,file %5$s"
-        onErrorRecordCommand:     "| %1$s.%2$s:%4$s | %6$s | %7$s |"
+        pathCommand:              "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)|(_orc_acid_version)|(bucket_\\d+(_\\d+)?)|(_metadata_acid)\" -i -Fe file -v -f parent,file \"%5$s\""
+        onErrorRecordCommand:     "| %1$s.%2$s:%4$s | %6$s | %7$s |\""
         reportOnResults:          true
         reportOnPath:             true
         processOnError:           true
@@ -71,8 +75,8 @@ processes:
     checks:
       - name:                   "Ownership Check"
         invertCheck:            false
-        pathCommand:            "lsp -f user -self %4$s"
-        onSuccessPathCommand:   "Rewrite database table: %1$s.%2$s [Partition: %4$s]"
+        pathCommand:            "lsp -f user -self \"%4$s\""
+        onSuccessPathCommand:   "\"Rewrite database table: %1$s.%2$s [Partition: \" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \"]"
         onSuccessRecordCommand: "# Bad filename %2$s in directory: %1$s "
         reportOnResults:        false
         reportOnPath:           false
@@ -105,7 +109,7 @@ processes:
     checks:
       - name:                 "Compaction Check"
         invertCheck:          false
-        pathCommand:          "lsp -R -F .*delta_.* -t -sp -f path %5$s"
+        pathCommand:          "lsp -R -F .*delta_.* -t -sp -f path \"%5$s\""
 #        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
         reportOnResults:      false
         reportOnPath:         true
@@ -116,7 +120,7 @@ processes:
             PATH:
               test: "if (\"%4$s\".trim().length() == 0) true; else false;"
               pass: "\"ALTER TABLE %1$s.%2$s COMPACT 'MAJOR';\""
-              fail: "\"ALTER TABLE %1$s.%2$s PARTITION (\" + '%4$s'.split(\"=\")[0] + \" = '\" + '%4$s'.split(\"=\")[1] + \"') COMPACT 'MAJOR'\\;\""
+              fail: "\"ALTER TABLE %1$s.%2$s PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \") COMPACT \\\"MAJOR\\\"\\;\""
               params: ["hive"]
 
   #  - type: "metastore.query"

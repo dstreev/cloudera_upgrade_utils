@@ -162,31 +162,3 @@ processes:
               test: "if ( \"%6$s\".equals(\"1\") & \"%7$s\".equals(\"0\") & \"%8$s\".equals(\"0\") ) true; else false;"
               pass: "\"| %1$s | %2$s | %3$s | %4$s | %5$s |\""
               params: ["67108864"]
-  - type:                     "dbSet"
-    id:                       6
-    active:                   true
-    name:                     "-- Hive Compaction Check"
-    queryDefinitionReference: "/hive_upgrade_queries_no_with.yaml"
-    errorDescription:         "Issues"
-    successDescription:       "Compaction SQL Script"
-    errorFilename:            "compactions_issues.txt"
-    successFilename:          "compactions.sql"
-    dbListingQuery:           "db_tbl_count"
-    listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location"]
-    pathsListingQuery:        "managed_tbl_locations"
-    checks:
-      - name:                 "Compaction Check"
-        invertCheck:          false
-        pathCommand:          "lsp -R -F .*delta_.* -t -sp -f path \"%5$s\""
-        #        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
-        reportOnResults:      false
-        reportOnPath:         true
-        processOnError:       false
-        processOnSuccess:     true
-        checkCalculations:
-          partitionCheck:
-            PATH:
-              test: "if (\"%4$s\".trim().length() == 0) true; else false;"
-              pass: "\"ALTER TABLE `%1$s`.`%2$s` COMPACT \\\"MAJOR\\\";\""
-              fail: "\"ALTER TABLE `%1$s`.`%2$s` PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \") COMPACT \\\"MAJOR\\\"\\;\""
-              params: ["hive"]
