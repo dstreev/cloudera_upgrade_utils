@@ -112,8 +112,13 @@ public class Reporter implements Runnable {
         String INDENT = "    ";
 
         // Prevent the Reporter Thread from terminating too quickly
-        if (counterGroups.size() == 0 | processContainer.isInitializing())
+        if (processContainer.isInitializing()) {
             return true;
+        } else if (counterGroups.size() == 0) {
+            // Done initializing and nothing to do.
+            return false;
+        }
+
         resetLines();
         String version = ReportingConf.substituteVariables("v.${Implementation-Version}");
         if (tictoc) {

@@ -14,6 +14,7 @@ public abstract class MetastoreProcess extends SreProcessBase implements Counter
 
     @Override
     public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
+        super.init(parent, outputDirectory);
         setParent(parent);
         if (outputDirectory == null) {
             throw new RuntimeException("Config File and Output Directory must be set before init.");

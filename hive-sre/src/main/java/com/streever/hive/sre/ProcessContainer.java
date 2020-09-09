@@ -4,10 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.streever.hive.config.Metastore;
 import com.streever.hive.config.SreProcessesConfig;
 import com.streever.hive.reporting.Counter;
+import com.streever.hive.reporting.ReportCounter;
 import com.streever.hive.reporting.Reporter;
 import org.apache.commons.io.FileUtils;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 /*
 The 'ProcessContainer' is the definition and runtime structure
  */
@@ -124,7 +128,7 @@ public class ProcessContainer {
     public void start() {
         while (true) {
             boolean check = true;
-            for (ScheduledFuture sf: getProcessThreads()) {
+            for (ScheduledFuture sf : getProcessThreads()) {
                 if (!sf.isDone()) {
                     check = false;
                     break;
@@ -134,7 +138,7 @@ public class ProcessContainer {
                 break;
         }
         getThreadPool().shutdown();
-        for (SreProcessBase process: getProcesses()) {
+        for (SreProcessBase process : getProcesses()) {
             if (process.isActive()) {
                 System.out.println(process.getUniqueName());
                 System.out.println(process.getOutputDetails());
@@ -174,34 +178,53 @@ public class ProcessContainer {
             this.connectionPools = new ConnectionPools(getConfig());
             this.connectionPools.init();
 
+            // Needs to be added first, so it runs the reporter thread.
             getProcessThreads().add(getThreadPool().schedule(getReporter(), 100, MILLISECONDS));
 
-            for (SreProcessBase process: getProcesses()) {
+            for (SreProcessBase process : getProcesses()) {
                 if (process.isActive()) {
                     process.setDbsOverride(dbsOverride);
                     // Set the dbType here.
                     if (getConfig().getMetastoreDirect().getType() != null) {
-                        process.setDbType(getConfig().getMetastoreDirect().getType());
+                        switch (getConfig().getMetastoreDirect().getType()) {
+                            case MYSQL:
+                            case ORACLE:
+                                process.setDbType(Metastore.DB_TYPE.MYSQL);
+                                break;
+                            case POSTGRES:
+                                process.setDbType(Metastore.DB_TYPE.POSTGRES);
+                                break;
+                            case MSSQL:
+                                System.err.println("MSSQL hasn't been implemented yet.");
+                                throw new NotImplementedException();
+                        }
                     }
                     process.init(this, job_run_dir);
+                    // Check that it's still active after init.
+                    // When there's nothing to process, it won't be active.
                     int delay = 100;
                     if (process instanceof Runnable && process instanceof Counter) {
-                        getReporter().addCounter(process.getUniqueName(), ((Counter)process).getCounter());
+                        getReporter().addCounter(process.getUniqueName(), ((Counter) process).getCounter());
                         if (process instanceof MetastoreProcess) {
                             delay = 3000;
                         } else {
                             delay = 100;
                         }
                         delay = 100;
-                        getProcessThreads().add(getThreadPool().schedule((Runnable)process, delay, MILLISECONDS));
+
+                        if (process.isActive()) {
+                            getProcessThreads().add(getThreadPool().schedule((Runnable) process, delay, MILLISECONDS));
+                        }
                     }
+
                 }
             }
 
-
-        } catch (IOException e) {
+        } catch (
+                IOException e) {
             throw new RuntimeException("Issue getting configs", e);
         }
+
         initializing = Boolean.FALSE;
     }
 

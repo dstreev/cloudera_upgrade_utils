@@ -146,8 +146,13 @@ public class DbPaths extends SRERunnable {
                 }
             }
         } catch (SQLException e) {
-            System.err.println((queryDefinition != null)? queryDefinition.getStatement(): "Unknown");
-            System.err.println("Failure in DbPaths");
+            if (getChecks().size() > 0) {
+                getChecks().get(0).errorStream.println((queryDefinition != null) ? queryDefinition.getStatement() : "Unknown");
+                getChecks().get(0).errorStream.println("Failure in DbPaths" + e.getMessage());
+            } else {
+                error.println((queryDefinition != null) ? queryDefinition.getStatement() : "Unknown");
+                error.println("Failure in DbPaths" + e.getMessage());
+            }
             e.printStackTrace();
             setStatus(ERROR);
         } catch (Throwable t) {

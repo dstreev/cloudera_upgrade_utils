@@ -3,19 +3,20 @@ query_definitions:
     statement: "SELECT
                     name,
                     COUNT(DISTINCT T.tbl_name) tbl_count,
-                    COUNT(P.part_name) part_count
+                    COUNT(P.part_name)         part_count
                 FROM
                     DBS D
-                INNER JOIN
-                    TBLS T
-                ON
-                    D.db_id = T.db_id
-                    LEFT OUTER JOIN
-                                    PARTITIONS P
-                                ON
-                                    T.TBL_ID = P.TBL_ID
+                        INNER JOIN
+                        TBLS T
+                        ON
+                            D.db_id = T.db_id
+                        LEFT OUTER JOIN
+                        PARTITIONS P
+                        ON
+                            T.TBL_ID = P.TBL_ID
                 GROUP BY
-                    name"
+                    name
+                    "
   tbl_part_locations:
     statement: "SELECT DISTINCT
                     D.NAME      ,
@@ -87,7 +88,7 @@ query_definitions:
         b.part_name ,
         b.part_location AS path_check ,
         COUNT(*)
-    FROM
+    FRO3M
         (   SELECT
                 D.NAME             AS DB_NAME ,
                 D.DB_LOCATION_URI  AS DB_DEFAULT_LOC ,
@@ -504,78 +505,78 @@ query_definitions:
     "
   managed_2_acid:
     statement: "
-  SELECT
-      DISTINCT db_name,
-      tbl_name,
-      tbl_type,
-      tbl_location
-  FROM
-      (   SELECT
-              D.NAME             AS DB_NAME ,
-              D.DB_LOCATION_URI  AS DB_DEFAULT_LOC ,
-              D.OWNER_NAME       AS DB_OWNER ,
-              T.TBL_ID           AS TBL_ID ,
-              T.TBL_NAME         AS TBL_NAME ,
-              T.OWNER            AS TBL_OWNER ,
-              T.TBL_TYPE         AS TBL_TYPE ,
-              S.LOCATION         AS TBL_LOCATION ,
-              PARAMS.PARAM_KEY   AS TBL_PARAM_KEY ,
-              PARAMS.PARAM_VALUE AS TBL_PARAM_VALUE
-          FROM
-              DBS D
-          INNER JOIN
-              TBLS T
-          ON
-              D.DB_ID = T.DB_ID
-          LEFT OUTER JOIN
-              SDS S
-          ON
-              T.SD_ID = S.SD_ID
-          LEFT OUTER JOIN
-              TABLE_PARAMS PARAMS
-          ON
-              T.TBL_ID = PARAMS.TBL_ID
-          WHERE
-              D.NAME LIKE ?
-          AND T.TBL_TYPE = 'MANAGED_TABLE' ) b
-  WHERE
-      NOT EXISTS
-      (   SELECT
-              1
-          FROM
-              (   SELECT
-                      D.NAME             AS DB_NAME ,
-                      D.DB_LOCATION_URI  AS DB_DEFAULT_LOC ,
-                      D.OWNER_NAME       AS DB_OWNER ,
-                      T.TBL_ID           AS TBL_ID ,
-                      T.TBL_NAME         AS TBL_NAME ,
-                      T.OWNER            AS TBL_OWNER ,
-                      T.TBL_TYPE         AS TBL_TYPE ,
-                      S.LOCATION         AS TBL_LOCATION ,
-                      PARAMS.PARAM_KEY   AS TBL_PARAM_KEY ,
-                      PARAMS.PARAM_VALUE AS TBL_PARAM_VALUE
-                  FROM
-                      DBS D
-                  INNER JOIN
+SELECT DISTINCT
+    db_name,
+    tbl_name,
+    tbl_type,
+    tbl_location
+FROM
+    (SELECT
+         D.NAME             AS DB_NAME,
+         D.DB_LOCATION_URI  AS DB_DEFAULT_LOC,
+         D.OWNER_NAME       AS DB_OWNER,
+         T.TBL_ID           AS TBL_ID,
+         T.TBL_NAME         AS TBL_NAME,
+         T.OWNER            AS TBL_OWNER,
+         T.TBL_TYPE         AS TBL_TYPE,
+         S.LOCATION         AS TBL_LOCATION,
+         PARAMS.PARAM_KEY   AS TBL_PARAM_KEY,
+         PARAMS.PARAM_VALUE AS TBL_PARAM_VALUE
+     FROM
+         DBS D
+             INNER JOIN
+             TBLS T
+             ON
+                 D.DB_ID = T.DB_ID
+             LEFT OUTER JOIN
+             SDS S
+             ON
+                 T.SD_ID = S.SD_ID
+             LEFT OUTER JOIN
+             TABLE_PARAMS PARAMS
+             ON
+                 T.TBL_ID = PARAMS.TBL_ID
+     WHERE
+           D.NAME LIKE ?
+       AND T.TBL_TYPE = 'MANAGED_TABLE') b
+WHERE
+    NOT EXISTS
+        (SELECT
+             1
+         FROM
+             (SELECT
+                  D.NAME             AS DB_NAME,
+                  D.DB_LOCATION_URI  AS DB_DEFAULT_LOC,
+                  D.OWNER_NAME       AS DB_OWNER,
+                  T.TBL_ID           AS TBL_ID,
+                  T.TBL_NAME         AS TBL_NAME,
+                  T.OWNER            AS TBL_OWNER,
+                  T.TBL_TYPE         AS TBL_TYPE,
+                  S.LOCATION         AS TBL_LOCATION,
+                  PARAMS.PARAM_KEY   AS TBL_PARAM_KEY,
+                  PARAMS.PARAM_VALUE AS TBL_PARAM_VALUE
+              FROM
+                  DBS D
+                      INNER JOIN
                       TBLS T
-                  ON
-                      D.DB_ID = T.DB_ID
-                  LEFT OUTER JOIN
+                      ON
+                          D.DB_ID = T.DB_ID
+                      LEFT OUTER JOIN
                       SDS S
-                  ON
-                      T.SD_ID = S.SD_ID
-                  LEFT OUTER JOIN
+                      ON
+                          T.SD_ID = S.SD_ID
+                      LEFT OUTER JOIN
                       TABLE_PARAMS PARAMS
-                  ON
-                      T.TBL_ID = PARAMS.TBL_ID
-                  WHERE
-                      D.NAME LIKE ?
-                  AND T.TBL_TYPE = 'MANAGED_TABLE' ) ma
-          WHERE
-              ma.TBL_PARAM_KEY = 'transactional'
-          AND ma.TBL_PARAM_VALUE = 'true'
-          AND b.db_name = ma.db_name
-          AND b.tbl_name = ma.tbl_name)
+                      ON
+                          T.TBL_ID = PARAMS.TBL_ID
+              WHERE
+                    D.NAME LIKE ?
+                AND T.TBL_TYPE = 'MANAGED_TABLE') ma
+         WHERE
+               ma.TBL_PARAM_KEY = 'transactional'
+           AND ma.TBL_PARAM_VALUE = 'true'
+           AND b.db_name = ma.db_name
+           AND b.tbl_name = ma.tbl_name)
     "
     parameters:
       dbs:

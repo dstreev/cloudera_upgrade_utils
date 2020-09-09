@@ -73,6 +73,7 @@ public class MetastoreReportProcess extends MetastoreProcess {
                 incError(1);
                 error.println(metastoreQueryDefinition.getQuery());
                 error.println("> Processing Issue: " + e.getMessage());
+//                setStatus(ERROR);
 //                throw new RuntimeException("Issue getting 'databases' to process.", e);
             }
             incProcessed(1);

@@ -43,6 +43,8 @@ public class MetastoreQueryProcess extends MetastoreProcess {
             incError(1);
             error.println(metastoreQueryDefinition.getQuery());
             error.println("> Processing Issue: " + e.getMessage());
+            setStatus(ERROR);
+            return;
         }
 
         if (metastoreRecords[0] != null && metastoreRecords[0].length > 0) {

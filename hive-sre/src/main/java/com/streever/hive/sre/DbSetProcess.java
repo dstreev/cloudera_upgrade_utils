@@ -22,7 +22,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
         "outputDirectory", "dbPaths", "cliSession", "success", "error"})
 public class DbSetProcess extends SreProcessBase {
 
-    private List<DbPaths> dbPaths;
+//    private List<DbPaths> dbPaths;
     private List<CommandReturnCheck> checks;
 
     private String dbListingQuery;
@@ -61,13 +61,13 @@ public class DbSetProcess extends SreProcessBase {
         this.pathsListingQuery = pathsListingQuery;
     }
 
-    public List<DbPaths> getDbPaths() {
-        return dbPaths;
-    }
-
-    public void setDbPaths(List<DbPaths> dbPaths) {
-        this.dbPaths = dbPaths;
-    }
+//    public List<DbPaths> getDbPaths() {
+//        return dbPaths;
+//    }
+//
+//    public void setDbPaths(List<DbPaths> dbPaths) {
+//        this.dbPaths = dbPaths;
+//    }
 
     @Override
     public void setOutputDirectory(String outputDirectory) throws FileNotFoundException {
@@ -172,7 +172,10 @@ public class DbSetProcess extends SreProcessBase {
             // Add Runnable to Main ThreadPool
             getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
         }
-
+        // When nothing is found.
+        if (sres.size() == 0) {
+            this.setActive(false);
+        }
     }
 
     @Override
@@ -197,7 +200,7 @@ public class DbSetProcess extends SreProcessBase {
     @Override
     public String toString() {
         return "DbSet{" +
-                "dbPaths=" + dbPaths +
+//                "dbPaths=" + dbPaths +
                 '}';
     }
 }
