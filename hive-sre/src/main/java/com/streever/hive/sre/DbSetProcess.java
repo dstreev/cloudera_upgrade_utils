@@ -111,6 +111,7 @@ public class DbSetProcess extends SreProcessBase {
 
     @Override
     public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
+        super.init(parent, outputDirectory);
         setParent(parent);
 
         if (outputDirectory == null) {

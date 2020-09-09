@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.streever.hive.config.Metastore;
 import com.streever.hive.config.QueryDefinitions;
 import com.streever.hive.config.SreProcessesConfig;
 import com.streever.sql.QueryDefinition;
@@ -14,7 +15,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.net.URL;
 
-@JsonIgnoreProperties({"parent", "config", "queryDefinitions", "dbsOverride", "outputDirectory", "success", "error"})
+@JsonIgnoreProperties({"parent", "config", "queryDefinitions", "dbsOverride", "dbType", "outputDirectory", "success", "error"})
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
         property = "type")
@@ -26,6 +27,7 @@ public abstract class SreProcessBase {
     private String name = "not set";
     private String id = null;
     private Boolean active = Boolean.TRUE;
+    private Metastore.DB_TYPE dbType = Metastore.DB_TYPE.MYSQL;
 
     private ProcessContainer parent;
 
@@ -97,6 +99,14 @@ public abstract class SreProcessBase {
         this.active = active;
     }
 
+    public Metastore.DB_TYPE getDbType() {
+        return dbType;
+    }
+
+    public void setDbType(Metastore.DB_TYPE dbType) {
+        this.dbType = dbType;
+    }
+
     public ProcessContainer getParent() {
         return parent;
     }
@@ -111,28 +121,6 @@ public abstract class SreProcessBase {
 
     public void setQueryDefinitionReference(String queryDefinitionReference) {
         this.queryDefinitionReference = queryDefinitionReference;
-
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        try {
-            try {
-                URL configURL = this.getClass().getResource(this.queryDefinitionReference);
-                if (configURL == null) {
-                    throw new RuntimeException("Can't build URL for Resource: " +
-                            this.queryDefinitionReference);
-                }
-                String yamlConfigDefinition = IOUtils.toString(configURL);
-                setQueryDefinitions(mapper.readerFor(QueryDefinitions.class).readValue(yamlConfigDefinition));
-            } catch (Exception e) {
-                throw new RuntimeException("Missing resource file: " +
-                        this.queryDefinitionReference, e);
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("Issue getting configs", e);
-        }
-
     }
 
     protected QueryDefinitions getQueryDefinitions() {
@@ -228,6 +216,28 @@ public abstract class SreProcessBase {
         return sb.toString();
     }
 
-    public abstract void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException;
+    public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        try {
+            String dbQueryDefReference = "/" + dbType.toString() + this.queryDefinitionReference;
+            try {
+                URL configURL = this.getClass().getResource(dbQueryDefReference);
+                if (configURL == null) {
+                    throw new RuntimeException("Can't build URL for Resource: " +
+                            dbQueryDefReference);
+                }
+                String yamlConfigDefinition = IOUtils.toString(configURL);
+                setQueryDefinitions(mapper.readerFor(QueryDefinitions.class).readValue(yamlConfigDefinition));
+            } catch (Exception e) {
+                throw new RuntimeException("Missing resource file: " +
+                        dbQueryDefReference, e);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Issue getting configs", e);
+        }
+    }
 
 }

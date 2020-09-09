@@ -1,14 +1,17 @@
 package com.streever.hive;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.streever.hive.reporting.ReportingConf;
 import com.streever.hive.sre.ProcessContainer;
 import com.streever.hive.sre.SreProcessBase;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -83,6 +86,13 @@ public class HiveFrameworkCheck implements SreSubApp {
             System.exit(-1);
         }
 
+        if (cmd.hasOption("h")) {
+            HelpFormatter formatter = new HelpFormatter();
+            System.out.println(ReportingConf.substituteVariables("v.${Implementation-Version}"));
+            formatter.printHelp("Sre", options);
+            System.exit(-1);
+        }
+
         if (getStackResource() == null) {
             if (cmd.hasOption("hfw")) {
                 setStackResource(cmd.getOptionValue("hfw"));
@@ -104,51 +114,61 @@ public class HiveFrameworkCheck implements SreSubApp {
             System.exit(-1);
         }
 
-        try {
-            ProcessContainer procContainer = null;
-            // First look for it as a Resource (in classpath)
-            URL configURL = this.getClass().getResource(getStackResource());
-            if (configURL != null) {
-                String yamlConfigDefinition = IOUtils.toString(configURL);
+        ProcessContainer procContainer = null;
+        // First look for it as a Resource (in classpath)
+        URL configURL = this.getClass().getResource(getStackResource());
+        if (configURL != null) {
+            String yamlConfigDefinition = null;
+            try {
+                yamlConfigDefinition = IOUtils.toString(configURL);
+            } catch (IOException e) {
+                throw new RuntimeException("Issue converting config: " + getStackResource(), e);
+            }
+            try {
                 procContainer = mapper.readerFor(ProcessContainer.class).readValue(yamlConfigDefinition);
-            } else {
-                throw new RuntimeException("Couldn't locate 'HiveFramework Configuration File': " +
-                        configURL.toString());
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Issue deserializing config: " + getStackResource(), e);
             }
-
-            if (cmd.hasOption("i")) {
-                String[] includeIds = cmd.getOptionValues("i");
-                List<String> includes = Arrays.asList(includeIds);
-                // Disable all procs
-                for (SreProcessBase proc : procContainer.getProcesses()) {
-                    proc.setActive(false);
-                }
-                // Enable procs in 'include'
-                for (SreProcessBase proc : procContainer.getProcesses()) {
-                    if (includes.contains(proc.getId())) {
-                        proc.setActive(true);
-                    }
-                }
-            }
-            setProcessContainer(procContainer);
-            // Initialize with config and output directory.
-            String configFile = null;
-            if (cmd.hasOption("cfg")) {
-                configFile = cmd.getOptionValue("cfg");
-            } else {
-                configFile = System.getProperty("user.home") + System.getProperty("file.separator") + ".hive-sre/cfg/default.yaml";
-            }
-            getProcessContainer().init(configFile, cmd.getOptionValue("o"), getDbsOverride());
-
-        } catch (Exception e) {
-            throw new RuntimeException("Missing resource file: " + getStackResource(), e);
+        } else {
+            throw new RuntimeException("Couldn't locate 'HiveFramework Configuration File': " +
+                    configURL.toString());
         }
+
+        if (cmd.hasOption("i")) {
+            String[] includeIds = cmd.getOptionValues("i");
+            List<String> includes = Arrays.asList(includeIds);
+            // Disable all procs
+            for (SreProcessBase proc : procContainer.getProcesses()) {
+                proc.setActive(false);
+            }
+            // Enable procs in 'include'
+            for (SreProcessBase proc : procContainer.getProcesses()) {
+                if (includes.contains(proc.getId())) {
+                    proc.setActive(true);
+                }
+            }
+        }
+        setProcessContainer(procContainer);
+        // Initialize with config and output directory.
+        String configFile = null;
+        if (cmd.hasOption("cfg")) {
+            configFile = cmd.getOptionValue("cfg");
+        } else {
+            configFile = System.getProperty("user.home") + System.getProperty("file.separator") + ".hive-sre/cfg/default.yaml";
+        }
+        getProcessContainer().init(configFile, cmd.getOptionValue("o"), getDbsOverride());
+
     }
 
     private Options getOptions() {
 
         // create Options object
         Options options = new Options();
+
+        Option helpOption = new Option("h", "help", false,
+                "Help");
+        helpOption.setRequired(false);
+        options.addOption(helpOption);
 
         Option outputOption = new Option("o", "output-dir", true,
                 "Output Directory to save results from Sre.");

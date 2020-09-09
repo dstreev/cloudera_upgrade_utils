@@ -179,6 +179,10 @@ public class ProcessContainer {
             for (SreProcessBase process: getProcesses()) {
                 if (process.isActive()) {
                     process.setDbsOverride(dbsOverride);
+                    // Set the dbType here.
+                    if (getConfig().getMetastoreDirect().getType() != null) {
+                        process.setDbType(getConfig().getMetastoreDirect().getType());
+                    }
                     process.init(this, job_run_dir);
                     int delay = 100;
                     if (process instanceof Runnable && process instanceof Counter) {
