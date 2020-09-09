@@ -88,7 +88,7 @@ query_definitions:
         b.part_name ,
         b.part_location AS path_check ,
         COUNT(*)
-    FRO3M
+    FROM
         (   SELECT
                 D.NAME             AS DB_NAME ,
                 D.DB_LOCATION_URI  AS DB_DEFAULT_LOC ,
