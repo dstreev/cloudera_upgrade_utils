@@ -28,7 +28,7 @@ processes:
           partitionCheck:
             RECORDS:
               test: "if (\"%4$s\".equals(\" \")) true; else false;"
-              pass: "\"| %1$s.%2$s | DROP TABLE IF EXIST `%1$s`.`%2$s`; | mkdir -p \\\"%5$s\\\" |\""
+              pass: "\"| %1$s.%2$s | DROP TABLE IF EXISTS `%1$s`.`%2$s`; | mkdir -p \\\"%5$s\\\" |\""
               fail: "\"| %1$s.%2$s:\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \" | ALTER TABLE `%1$s`.`%2$s` DROP IF EXISTS PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \"); | mkdir -p \\\"%5$s\\\" |\""
               params: ["hive"]
 
