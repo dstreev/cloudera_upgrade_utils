@@ -55,7 +55,7 @@
         <!--        <hadoop.major>3.1</hadoop.major>-->
         <!--        <hive.version>3.1.1</hive.version>-->
 
-        <hadoop.cli.version>2.2.2.0-SNAPSHOT</hadoop.cli.version>
+        <hadoop-cli.version>2.2.2.0-SNAPSHOT</hadoop-cli.version>
 
     </properties>
 
@@ -70,8 +70,8 @@
 
         <dependency> <!-- This will bring in the hadoop-client libs too-->
             <groupId>com.streever.hadoop</groupId>
-            <artifactId>hadoop.cli</artifactId>
-            <version>${hadoop.cli.version}</version>
+            <artifactId>hadoop-cli</artifactId>
+            <version>${hadoop-cli.version}</version>
         </dependency>
 
         <!-- Apache Libraries -->
