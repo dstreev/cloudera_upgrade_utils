@@ -172,6 +172,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
                                         }
                                     } catch (ScriptException e) {
                                         e.printStackTrace();
+                                        System.err.println("Issue with script eval: " + this.getName() + ":" + calcKey);
                                     } catch (MissingFormatArgumentException mfa) {
                                         mfa.printStackTrace();
                                         System.err.println("Bad Argument Match up for PATH check rule: " + this.getName() + ":" + calcKey);
@@ -209,6 +210,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
                                             }
                                         } catch (ScriptException e) {
                                             e.printStackTrace();
+                                            System.err.println("Issue with script eval: " + this.getName() + ":" + calcKey);
                                         } catch (MissingFormatArgumentException mfa) {
                                             mfa.printStackTrace();
                                             System.err.println("Bad Argument Match up for RECORDS check rule: " + this.getName() + ":" + calcKey);

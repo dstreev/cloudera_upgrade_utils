@@ -2,6 +2,8 @@ package com.streever.hive.sre;
 
 import org.junit.Test;
 
+import java.io.UnsupportedEncodingException;
+
 import static org.junit.Assert.*;
 
 public class UtilsTest {
@@ -11,8 +13,29 @@ public class UtilsTest {
         String[] testSet = {"st=GA A/update_dt=2020-09-03"};
 
         for (String test: testSet) {
-            String spec = Utils.dirToPartitionSpec(test);
+            String spec = null;
+            try {
+                spec = Utils.dirToPartitionSpec(test);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
             System.out.println(spec);
         }
     }
+
+    @Test
+    public void decodeTS_001() {
+        String[] testSet = {"st=GA A/update_dt=2019-09-01 12%3A31%3A44.333"};
+
+        for (String test: testSet) {
+            String spec = null;
+            try {
+                spec = Utils.dirToPartitionSpec(test);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            System.out.println(spec);
+        }
+    }
+
 }
