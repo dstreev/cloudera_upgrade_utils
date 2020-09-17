@@ -23,7 +23,8 @@ import java.util.*;
 @JsonIgnoreProperties({"counter", "properties", "calculationResults", "scriptEngine"})
 public class CommandReturnCheck implements Counter, Cloneable {
 
-    private String name;
+    private String displayName;
+    private String title;
     private String header;
     private String note;
     private String pathCommand;
@@ -181,10 +182,10 @@ public class CommandReturnCheck implements Counter, Cloneable {
                                         }
                                     } catch (ScriptException e) {
                                         e.printStackTrace();
-                                        System.err.println("Issue with script eval: " + this.getName() + ":" + calcKey);
+                                        System.err.println("Issue with script eval: " + this.getDisplayName() + ":" + calcKey);
                                     } catch (MissingFormatArgumentException mfa) {
                                         mfa.printStackTrace();
-                                        System.err.println("Bad Argument Match up for PATH check rule: " + this.getName() + ":" + calcKey);
+                                        System.err.println("Bad Argument Match up for PATH check rule: " + this.getDisplayName() + ":" + calcKey);
                                     }
                                 }
                                 break;
@@ -219,10 +220,10 @@ public class CommandReturnCheck implements Counter, Cloneable {
                                             }
                                         } catch (ScriptException e) {
                                             e.printStackTrace();
-                                            System.err.println("Issue with script eval: " + this.getName() + ":" + calcKey);
+                                            System.err.println("Issue with script eval: " + this.getDisplayName() + ":" + calcKey);
                                         } catch (MissingFormatArgumentException mfa) {
                                             mfa.printStackTrace();
-                                            System.err.println("Bad Argument Match up for RECORDS check rule: " + this.getName() + ":" + calcKey);
+                                            System.err.println("Bad Argument Match up for RECORDS check rule: " + this.getDisplayName() + ":" + calcKey);
                                         }
                                     }
                                 }
@@ -315,12 +316,20 @@ public class CommandReturnCheck implements Counter, Cloneable {
     }
 
     @Override
-    public String getName() {
-        return name;
+    public String getDisplayName() {
+        return displayName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public Boolean getInvertCheck() {
@@ -481,7 +490,8 @@ public class CommandReturnCheck implements Counter, Cloneable {
     @Override
     protected Object clone() throws CloneNotSupportedException {
         CommandReturnCheck clone = (CommandReturnCheck) super.clone();
-        clone.setName(this.name);
+        clone.setDisplayName(this.displayName);
+        clone.setTitle(this.title);
         clone.setOnErrorRecordCommand(this.onErrorRecordCommand);
         clone.setOnSuccessRecordCommand(this.onSuccessRecordCommand);
         clone.setReportOnPath(this.reportOnPath);
@@ -489,7 +499,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
         clone.setProcessOnError(this.processOnError);
         clone.setProcessOnSuccess(this.processOnSuccess);
         clone.setCounter(new ReportCounter());
-        clone.getCounter().setName(this.name);
+        clone.getCounter().setName(this.displayName);
         clone.setCheckCalculations(this.checkCalculations);
         clone.setErrorStream(this.errorStream);
         clone.setErrorDescription(this.errorDescription);

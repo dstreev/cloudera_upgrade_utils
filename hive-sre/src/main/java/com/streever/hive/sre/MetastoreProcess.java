@@ -24,8 +24,8 @@ public abstract class MetastoreProcess extends SreProcessBase implements Counter
     }
 
     @Override
-    public void setName(String name) {
-        super.setName(name);
+    public void setDisplayName(String displayName) {
+        super.setDisplayName(displayName);
         this.getCounter().setName(getUniqueName());
     }
 

@@ -1,5 +1,7 @@
 package com.streever.hive.sre;
 
+import java.util.Arrays;
+
 public class CheckCalculation implements Cloneable {
 
     // Needs to return a boolean.
@@ -52,6 +54,29 @@ public class CheckCalculation implements Cloneable {
         rtn.setTest(this.test);
         rtn.setPass(this.pass);
         return super.clone();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        CheckCalculation that = (CheckCalculation) o;
+
+        if (test != null ? !test.equals(that.test) : that.test != null) return false;
+        if (pass != null ? !pass.equals(that.pass) : that.pass != null) return false;
+        if (!fail.equals(that.fail)) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        return Arrays.equals(params, that.params);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = test != null ? test.hashCode() : 0;
+        result = 31 * result + (pass != null ? pass.hashCode() : 0);
+        result = 31 * result + fail.hashCode();
+        result = 31 * result + Arrays.hashCode(params);
+        return result;
     }
 
     @Override

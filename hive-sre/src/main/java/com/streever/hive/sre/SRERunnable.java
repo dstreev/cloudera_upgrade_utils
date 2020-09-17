@@ -8,7 +8,7 @@ import java.util.List;
 
 public abstract class SRERunnable implements Counter, Runnable {
 
-    private String name;
+    private String displayName;
     private ReportCounter counter = new ReportCounter();
 
     /**
@@ -20,13 +20,13 @@ public abstract class SRERunnable implements Counter, Runnable {
      */
     public PrintStream error = System.err;
 
-    public String getName() {
-        return name;
+    public String getDisplayName() {
+        return displayName;
     }
 
-    public void setName(String name) {
-        this.name = name;
-        counter.setName(name);
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+        counter.setName(displayName);
     }
 
     public ReportCounter getCounter() {

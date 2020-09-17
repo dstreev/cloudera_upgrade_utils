@@ -7,6 +7,7 @@ public class MetastoreQuery {
     private String resultMessageHeader;
     private String resultMessageDetailHeader;
     private String resultMessageDetailTemplate;
+    private CheckCalculation check;
 
     public String getQuery() {
         return query;
@@ -34,6 +35,14 @@ public class MetastoreQuery {
 
     public String getResultMessageDetailHeader() {
         return resultMessageDetailHeader;
+    }
+
+    public CheckCalculation getCheck() {
+        return check;
+    }
+
+    public void setCheck(CheckCalculation check) {
+        this.check = check;
     }
 
     public void setResultMessageDetailHeader(String resultMessageDetailHeader) {

@@ -4,7 +4,7 @@ import java.util.List;
 
 public interface Counter {
 
-    String getName();
+    String getDisplayName();
 
     ReportCounter getCounter();
     void setCounter(ReportCounter reportCounter);

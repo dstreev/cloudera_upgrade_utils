@@ -2,14 +2,15 @@ processes:
   - type:                     "dbSet"
     id:                       1
     active:                   true
-    name:                     "Locations Scan"
+    displayName:              "Locations Scan"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
-    listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
+    listingColumns: [ "name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location" ]
     pathsListingQuery:        "tbl_part_locations"
     checks:
-      - name:                     "#Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Missing Directory Locations Scan"
-        note: "
+      - displayName:        "Hive 3 Upgrade Check - Missing Directory Locations Scan"
+        title:              "#Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Missing Directory Locations Scan"
+        note:               "
          *Remediation Options*\n
                 _NOTE:_ Beware of \"Smart Quote\" AND other conversions via Markdown Renderers. Copy/paste from 'raw' text to ensure compatibility.\n\n
                 - Rendered text may not work in 'Hive' or 'Hadoop CLI'\n
@@ -24,37 +25,38 @@ processes:
          always a good practice.\n\n
          This process should be run frequently, up to the point of the upgrade, to ensure all items have been addressed.  Before
          the upgrade can succeed, this report should be *empty*.\n\n"
-        header:                   "| DB.Table:Partition Spec | Hive SQL (recommended) | HDFS |\n|:---|:---|:---|"
-        errorDescription:         "Scan Actions"
-        successDescription:       "Issues"
-        errorFilename:            loc_scan_missing_dirs.md
-        successFilename:          loc_scan_missing_dirs_issue.txt
-        invertCheck:              false
-        pathCommand:              "lsp -f path -self -t \"%5$s\""
-        reportOnResults:          false
-        reportOnPath:             true
-        processOnError:           true
-        processOnSuccess:         false
+        header:             "| DB.Table:Partition Spec | Hive SQL (recommended) | HDFS |\n|:---|:---|:---|"
+        errorDescription:   "Scan Actions"
+        successDescription: "Issues"
+        errorFilename:      loc_scan_missing_dirs.md
+        successFilename:    loc_scan_missing_dirs_issue.txt
+        invertCheck:        false
+        pathCommand:        "lsp -f path -self -t \"%5$s\""
+        reportOnResults:    false
+        reportOnPath:       true
+        processOnError:     true
+        processOnSuccess:   false
         checkCalculations:
           partitionCheck:
             RECORDS:
               test: "if (\"%4$s\".equals(\" \")) true; else false;"
               pass: "\"| %1$s.%2$s | DROP TABLE IF EXISTS `%1$s`.`%2$s`; | mkdir -p \\\"%5$s\\\" |\""
               fail: "\"| %1$s.%2$s:\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \" | ALTER TABLE `%1$s`.`%2$s` DROP IF EXISTS PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \"); | mkdir -p \\\"%5$s\\\" |\""
-              params: ["hive"]
+              params: [ "hive" ]
 
   - type:                     "dbSet"
     id:                       2
     active:                   true
-    name:                     "Bad ACID ORC Filenames)"
+    displayName:              "Bad ACID ORC Filenames)"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
-    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
+    listingColumns: [ "db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check" ]
     pathsListingQuery:        "tbl_mngd_non_acid_locations"
     checks:
-      - name:                     "# Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Bad Filename Format for ACID ORC Conversion"
-        header:                   "| DB.Table:Partition | Path | Filename |\n|:---|:---|:---|"
-        note: "
+      - displayName:          "Hive 3 Upgrade Check - Bad Filename Format for ACID ORC Conversion"
+        title:                "# Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Bad Filename Format for ACID ORC Conversion"
+        header:               "| DB.Table:Partition | Path | Filename |\n|:---|:---|:---|"
+        note:                 "
         > File naming conventions that could prevent a 'managed' ORC table from transitioning to an 'ACID' table\n\n
         Tables that will be converted to ACID tables, require filenames to match a very specific pattern.  If files in the table(partition)
         directories do not meet this pattern, the conversion WILL fail.\n\n
@@ -64,17 +66,17 @@ processes:
         - Perform a classic 'INSERT OVERWRITE TABLE <self> FROM <self>'.  This exercise will force 'Hive' to rewrite the table data
         back into the same directories.  The process of _rewriting_ will ensure the filenames match the expected patterns.\n
         If the tables are converted to 'EXTERNAL', they will fall off this report when run again.\n\n"
-        invertCheck:              true
-        errorDescription:         "Bad ACID Filenames"
-        successDescription:       "Bad ACID Filename Issues"
-        errorFilename:            "bad_filenames_for_orc_conversion.md"
-        successFilename:          "bad_filename_issues.txt"
-        pathCommand:              "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)|(_orc_acid_version)|(bucket_\\d+(_\\d+)?)|(_metadata_acid)\" -i -Fe file -v -f parent,file \"%5$s\""
-        onErrorRecordCommand:     "| %1$s.%2$s:%4$s | %6$s | %7$s |"
-        reportOnResults:          true
-        reportOnPath:             true
-        processOnError:           true
-        processOnSuccess:         false
+        invertCheck:          true
+        errorDescription:     "Bad ACID Filenames"
+        successDescription:   "Bad ACID Filename Issues"
+        errorFilename:        "bad_filenames_for_orc_conversion.md"
+        successFilename:      "bad_filename_issues.txt"
+        pathCommand:          "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)|(_orc_acid_version)|(bucket_\\d+(_\\d+)?)|(_metadata_acid)\" -i -Fe file -v -f parent,file \"%5$s\""
+        onErrorRecordCommand: "| %1$s.%2$s:%4$s | %6$s | %7$s |"
+        reportOnResults:      true
+        reportOnPath:         true
+        processOnError:       true
+        processOnSuccess:     false
   #        checkCalculations:
   #          managedCheck:
   #            RECORDS:
@@ -83,18 +85,19 @@ processes:
   - type:                     "dbSet"
     id:                       3
     active:                   true
-    name:                     "Managed Non-ACID to ACID Table Migrations"
+    displayName:              "Managed Non-ACID to ACID Table Migrations"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     errorDescription:         "Issues"
     successDescription:       "SQL Conversion Scipt"
     errorFilename:            "managed_upgrade_2_acid_issues.txt"
     successFilename:          "managed_upgrade_2_acid.sql"
     dbListingQuery:           "db_tbl_count"
-    listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"tbl_location"]
+    listingColumns: [ "db_name" ,"tbl_name" , "tbl_type" ,"tbl_location" ]
     pathsListingQuery:        "managed_2_acid"
     checks:
-      - name:                   "-- Hive 3 Upgrade Check (v.${Implementation-Version})\n\n-- Potential ACID Conversions"
-        note: "
+      - displayName:            "Hive 3 Upgrade Check - Potential ACID Conversions"
+        title:                  "-- Managed Non - ACID to ACID Table Migrations  (v.${Implementation-Version})\n"
+        note:                   "
         -- This report highlights classic Managed Non-ACID tables that _could_ be converted to ACID tables by the post hive
         'strictmigration' process.  This will dramatically change the characteristics of the table and affect the integration
         methods used by Spark SQL, direct HDFS access, etc..  Many of which will 'fail' and/or 'corrupt' the newly converted
@@ -126,22 +129,23 @@ processes:
                     -- This table 'could' be migrated to an ACID table unless changed.\\n
                     -- Recommend forcing the manual conversion to ensure table isn't inadvertently migrated.\\n
                     ALTER TABLE %1$s.%2$s SET TBLPROPERTIES('EXTERNAL'='TRUE', 'external.table.purge'='true')\\;\""
-              params: ["hive"]
+              params: [ "hive" ]
   - type:                     "dbSet"
     id:                       4
     active:                   true
-    name:                     "Compaction Check"
+    displayName:              "Compaction Check"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     errorDescription:         "Issues"
     successDescription:       "Compaction SQL Script"
     errorFilename:            "managed_compactions_issues.txt"
     successFilename:          "managed_compactions.sql"
     dbListingQuery:           "db_tbl_count"
-    listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location"]
+    listingColumns: [ "name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location" ]
     pathsListingQuery:        "managed_tbl_locations"
     checks:
-      - name:                 "-- Hive 3 Upgrade Checks  (v.${Implementation-Version})\n -- Compaction Check\n"
-        note: "
+      - displayName:      "-- Hive 3 Upgrade Checks -- Compaction Check"
+        title:            "-- Hive 3 Upgrades - Compaction Check (v.${Implementation-Version})\n"
+        note:             "
         -- This process reviews existing ACID tables for 'delta' directories.  'Delta' directories for ACID v1 are NOT compatible
         with ACID v2 in Hive 3.  The _delta's_ must be compacted *BEFORE* the upgrade occurs.\n
 
@@ -156,20 +160,20 @@ processes:
 
         -- Run the report several times before the upgrade, with the goals of eliminating any items on this report BEFORE starting
         the upgrade.\n\n"
-        invertCheck:          false
-        pathCommand:          "lsp -R -F .*delta_.* -t -sp -f path \"%5$s\""
-#        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
-        reportOnResults:      false
-        reportOnPath:         true
-        processOnError:       false
-        processOnSuccess:     true
+        invertCheck:      false
+        pathCommand:      "lsp -R -F .*delta_.* -t -sp -f path \"%5$s\""
+        #        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
+        reportOnResults:  false
+        reportOnPath:     true
+        processOnError:   false
+        processOnSuccess: true
         checkCalculations:
           partitionCheck:
             PATH:
               test: "if (\"%4$s\".trim().length() == 0) true; else false;"
               pass: "\"ALTER TABLE %1$s.%2$s COMPACT 'MAJOR';\""
               fail: "\"ALTER TABLE %1$s.%2$s PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \") COMPACT \\\"MAJOR\\\"\\;\""
-              params: ["hive"]
+              params: [ "hive" ]
 
   #  - type: "metastore.query"
   #    id: 5
@@ -191,8 +195,8 @@ processes:
   - type:                     "metastore.report"
     id:                       5
     active:                   true
-    name:                     "Hive Metastore Checks"
-    header:                   "# Hive Metastore Checks  (v.${Implementation-Version})"
+    displayName:              "Hive Metastore Checks"
+    title:                    "# Hive Metastore Checks  (v.${Implementation-Version})"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     errorDescription:         "Processing Issues"
     successDescription:       "Hive Metastore"
@@ -200,21 +204,21 @@ processes:
     successFilename:          hms_checks.md
     metastoreQueryDefinitions:
       - query:                       "questionable_serdes"
-        listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
+        listingColumns: [ "db_name" ,"tbl_name", "tbl_serde_slib" ]
         resultMessageHeader:         "## Questionable Serde's\n
                               > Listed tables should be review to ensure the Serde is still available.\n
                               Missing Serde's can disrupt a Hive Upgrade/Migration Process"
-        resultMessageDetailHeader:   " | Database | Table | Serde |\n|:---|:---|:---|"
+        resultMessageDetailHeader:   "| Database | Table | Serde |\n|:---|:---|:---|"
         resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
 
       - query:                       "managed_tbl_shadows"
-        listingColumns: ["db_name" ,"tbl_name", "tbl_location"]
-        resultMessageHeader:         "## Managed Shadow Tables"
+        listingColumns: [ "db_name" ,"tbl_name", "tbl_location" ]
+        resultMessageHeader:         "\n## Managed Shadow Tables"
         resultMessageDetailHeader:   "| Database | Table | Path |\n|:---|:---|:---|"
         resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
       - query:                       "db_tbl_part_count"
-        listingColumns: ["name" ,"tbl_count", "part_count"]
-        resultMessageHeader:         " ## Table Partition Count"
+        listingColumns: [ "name" ,"tbl_count", "part_count" ]
+        resultMessageHeader:         "\n## Table Partition Count"
         resultMessageDetailHeader:   "| Database | Tables | Partitions |\n|:---|:---|:---|"
         resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
 #

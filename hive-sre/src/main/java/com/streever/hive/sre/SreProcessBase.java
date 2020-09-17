@@ -24,7 +24,9 @@ import java.net.URL;
         @JsonSubTypes.Type(value = MetastoreQueryProcess.class, name = "metastore.query"),
         @JsonSubTypes.Type(value = MetastoreReportProcess.class, name = "metastore.report")})
 public abstract class SreProcessBase {
-    private String name = "not set";
+    private String displayName = "not set";
+    private String title = null;
+    private String note = null;
     private String id = null;
     private Boolean active = Boolean.TRUE;
     private Metastore.DB_TYPE dbType = Metastore.DB_TYPE.MYSQL;
@@ -57,15 +59,23 @@ public abstract class SreProcessBase {
     // Set after construction.
     private SreProcessesConfig config = null;
 
-    public String getName() {
-        return name;
+    public String getDisplayName() {
+        return displayName;
+    }
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getHeader() {
-        if (header != null)
-            return header;
-        else
-            return name;
+        return header;
     }
 
     public void setHeader(String header) {
@@ -74,13 +84,18 @@ public abstract class SreProcessBase {
 
     public String getUniqueName() {
         if (id != null) {
-            return id + ":" + name;
+            return id + ":" + displayName;
         } else {
-            return name;
+            return displayName;
         }
     }
-    public void setName(String name) {
-        this.name = name;
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
     }
 
     public String getId() {

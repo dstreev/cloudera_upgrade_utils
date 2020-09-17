@@ -2,6 +2,7 @@ package com.streever.hive.sre;
 
 import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
+import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
@@ -48,7 +49,12 @@ public class MetastoreQueryProcess extends MetastoreProcess {
         }
 
         if (metastoreRecords[0] != null && metastoreRecords[0].length > 0) {
-            success.println(this.getHeader());
+            if (getTitle() != null)
+                success.println(ReportingConf.substituteVariables(getTitle()));
+            if (getHeader() != null)
+                success.println(this.getHeader());
+            if (getNote() != null)
+                success.println(this.getNote());
 
             if (getMetastoreQueryDefinition().getResultMessageHeader() != null) {
                 success.println(getMetastoreQueryDefinition().getResultMessageHeader());

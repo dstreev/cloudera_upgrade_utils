@@ -260,3 +260,28 @@ query_definitions:
     statement: "
       SELECT COUNT(*) as count FROM FUNCS
     "
+  acid_table_list:
+    statement: "
+SELECT
+    D.NAME             AS NAME,
+    T.TBL_NAME         AS TBL_NAME,
+    P.PART_NAME        AS PART_NAME
+FROM
+    DBS D
+        INNER JOIN
+        TBLS T
+        ON
+            D.DB_ID = T.DB_ID
+        LEFT OUTER JOIN
+        TABLE_PARAMS PARAMS
+        ON
+            T.TBL_ID = PARAMS.TBL_ID
+        LEFT OUTER JOIN
+        PARTITIONS P
+        ON
+            T.TBL_ID = P.TBL_ID
+WHERE
+      T.TBL_TYPE = 'MANAGED_TABLE'
+  AND PARAMS.PARAM_KEY = 'transactional'
+  AND PARAMS.PARAM_VALUE in ('true','True','TRUE')
+    "

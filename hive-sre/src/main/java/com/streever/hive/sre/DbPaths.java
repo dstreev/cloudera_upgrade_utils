@@ -45,7 +45,7 @@ public class DbPaths extends SRERunnable {
     }
 
     public DbPaths(String name, DbSetProcess dbSet) {
-        setName(name);
+        setDisplayName(name);
         setParent(dbSet);
     }
 
@@ -72,7 +72,7 @@ public class DbPaths extends SRERunnable {
             }
         }
 
-        this.cliSession = HadoopSession.get("DB Paths for: " + getName() + UUID.randomUUID());
+        this.cliSession = HadoopSession.get("DB Paths for: " + getDisplayName() + UUID.randomUUID());
         String[] api = {"-api"};
         try {
             // TODO: Need to promote failure when keytab doesn't exist.
@@ -98,7 +98,7 @@ public class DbPaths extends SRERunnable {
             PreparedStatement preparedStatement = JDBCUtils.getPreparedStatement(conn, queryDefinition);
 
             Properties overrides = new Properties();
-            overrides.setProperty("dbs", getName());
+            overrides.setProperty("dbs", getDisplayName());
             JDBCUtils.setPreparedStatementParameters(preparedStatement, queryDefinition, overrides);
 
             ResultSet epRs = preparedStatement.executeQuery();

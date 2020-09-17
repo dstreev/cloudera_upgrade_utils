@@ -71,18 +71,31 @@ public class DbSetProcess extends SreProcessBase {
 //    }
 
     protected void initHeader() {
-        if (getChecks() == null && getChecks().size() == 0) {
-            this.success.println(ReportingConf.substituteVariables(getHeader()));
-        }
+        if (getTitle() != null)
+            this.success.println(ReportingConf.substituteVariables(getTitle()));
+
         for (CommandReturnCheck check : getChecks()) {
+            if (getTitle() != null) {
+                check.successStream.println(ReportingConf.substituteVariables(getTitle()));
+                check.errorStream.println(ReportingConf.substituteVariables(getTitle()));
+            }
+            if (getHeader() != null) {
+                check.successStream.println(getHeader());
+                check.errorStream.println(getHeader());
+            }
+            if (getNote() != null) {
+                check.successStream.println(getNote());
+                check.errorStream.println(getNote());
+            }
+
             // If details for stream output are available in the check definition.
             // Set the Header if defined.
-            if (check.getInvertCheck() && check.getName() != null) {
+            if (check.getInvertCheck() && check.getTitle() != null) {
                 if (check.getProcessOnError()) {
-                    check.errorStream.println(ReportingConf.substituteVariables(check.getName()));
+                    check.errorStream.println(ReportingConf.substituteVariables(check.getTitle()));
                 }
                 if (check.getProcessOnSuccess()) {
-                    check.successStream.println(ReportingConf.substituteVariables(check.getName()));
+                    check.successStream.println(ReportingConf.substituteVariables(check.getTitle()));
                 }
             }
             if (check.getInvertCheck() && check.getNote() != null) {
@@ -103,12 +116,12 @@ public class DbSetProcess extends SreProcessBase {
             }
 
             // TODO: Validate inversion.
-            if (!check.getInvertCheck() && check.getName() != null) {
+            if (!check.getInvertCheck() && check.getTitle() != null) {
                 if (check.getProcessOnError()) {
-                    check.errorStream.println(ReportingConf.substituteVariables(check.getName()));
+                    check.errorStream.println(ReportingConf.substituteVariables(check.getTitle()));
                 }
                 if (check.getProcessOnSuccess()) {
-                    check.successStream.println(ReportingConf.substituteVariables(check.getName()));
+                    check.successStream.println(ReportingConf.substituteVariables(check.getTitle()));
                 }
             }
             if (!check.getInvertCheck() && check.getNote() != null) {
@@ -209,7 +222,7 @@ public class DbSetProcess extends SreProcessBase {
         for (SRERunnable sre : sres) {
             sre.setStatus(WAITING);
             // Add Counter to Main Reporter
-            getParent().getReporter().addCounter(getId() + ":" + getName(), sre.getCounter());
+            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), sre.getCounter());
             // Add Runnable to Main ThreadPool
             getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
         }
