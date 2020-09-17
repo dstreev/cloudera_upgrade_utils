@@ -49,6 +49,7 @@ public class MetastoreQueryProcess extends MetastoreProcess {
 
         if (metastoreRecords[0] != null && metastoreRecords[0].length > 0) {
             success.println(this.getHeader());
+
             if (getMetastoreQueryDefinition().getResultMessageHeader() != null) {
                 success.println(getMetastoreQueryDefinition().getResultMessageHeader());
             }

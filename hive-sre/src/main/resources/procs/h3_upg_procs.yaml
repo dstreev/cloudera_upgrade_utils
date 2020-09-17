@@ -2,18 +2,29 @@ processes:
   - type:                     "dbSet"
     id:                       1
     active:                   true
-    name:                     "Hive 3 Upgrade Checks - Locations Scan"
+    name:                     "Locations Scan"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location"]
     pathsListingQuery:        "tbl_part_locations"
     checks:
-      - name:                     "Missing Directories"
-        header:                   "# Missing Directory Remediation Options\n
-        _NOTE:_ Beware of \"Smart Quote\" AND other conversions via Markdown Renderers. Copy/paste from 'raw' text to ensure compatibility.\n
-        #### Rendered text may not work in 'Hive' or 'Hadoop CLI'\n
-        #### Parse either of these options and run in 'hive' or 'hive-sre-cli' (alias for [hadoopcli](https://github.com/dstreev/hadoop-cli) )\n
-        \n| DB.Table:Partition Spec | Hive SQL (recommended) | HDFS |\n|:---|:---|:---|"
+      - name:                     "#Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Missing Directory Locations Scan"
+        note: "
+         *Remediation Options*\n
+                _NOTE:_ Beware of \"Smart Quote\" AND other conversions via Markdown Renderers. Copy/paste from 'raw' text to ensure compatibility.\n\n
+                - Rendered text may not work in 'Hive' or 'Hadoop CLI'\n
+                - Parse either of these options and run in 'hive' or 'hive-sre-cli' (alias for [hadoopcli](https://github.com/dstreev/hadoop-cli) )\n
+                \n
+         These results represent tables or partitions that do NOT have a directory on the File System.\n\n
+         These missing directories will prevent the post upgrade (Hive 1 to 3) process from completing and must be addressed.
+         There are two options for addressing this, 'drop' the table/partition definition OR create the missing directory.
+         Both options are listed here.\n\n
+         We recommend, were possible, to 'drop' the table or partition.\n\n
+         Like other reports, this should be run far in advance of the upgrade.  Metastore hygiene is
+         always a good practice.\n\n
+         This process should be run frequently, up to the point of the upgrade, to ensure all items have been addressed.  Before
+         the upgrade can succeed, this report should be *empty*.\n\n"
+        header:                   "| DB.Table:Partition Spec | Hive SQL (recommended) | HDFS |\n|:---|:---|:---|"
         errorDescription:         "Scan Actions"
         successDescription:       "Issues"
         errorFilename:            loc_scan_missing_dirs.md
@@ -35,22 +46,31 @@ processes:
   - type:                     "dbSet"
     id:                       2
     active:                   true
-    name:                     "Hive 3 Upgrade Checks - Bad ACID ORC Filenames"
+    name:                     "Bad ACID ORC Filenames)"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check"]
     pathsListingQuery:        "tbl_mngd_non_acid_locations"
     checks:
-      - name:                     "Bad Filename Format for ACID ORC Conversion"
-        header:                   "# Bad ACID ORC Filenames\n> File naming conventions that could prevent a 'managed' ORC table from transitioning to an 'ACID' table\n\n
-                              | DB.Table:Partition | Path | Filename |\n|:---|:---|:---|"
+      - name:                     "# Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Bad Filename Format for ACID ORC Conversion"
+        header:                   "| DB.Table:Partition | Path | Filename |\n|:---|:---|:---|"
+        note: "
+        > File naming conventions that could prevent a 'managed' ORC table from transitioning to an 'ACID' table\n\n
+        Tables that will be converted to ACID tables, require filenames to match a very specific pattern.  If files in the table(partition)
+        directories do not meet this pattern, the conversion WILL fail.\n\n
+        There are two options for handling this:\n
+        - Convert the table to 'EXTERNAL' so the will NOT be converted.  These tables are listed in the *Managed Non-ACID to ACID Table Migrations*
+        report.\n
+        - Perform a classic 'INSERT OVERWRITE TABLE <self> FROM <self>'.  This exercise will force 'Hive' to rewrite the table data
+        back into the same directories.  The process of _rewriting_ will ensure the filenames match the expected patterns.\n
+        If the tables are converted to 'EXTERNAL', they will fall off this report when run again.\n\n"
         invertCheck:              true
         errorDescription:         "Bad ACID Filenames"
         successDescription:       "Bad ACID Filename Issues"
         errorFilename:            "bad_filenames_for_orc_conversion.md"
         successFilename:          "bad_filename_issues.txt"
         pathCommand:              "lsp -R -F \"([0-9]+_[0-9]+)|([0-9]+_[0-9]_copy_[0-9]+)|(_orc_acid_version)|(bucket_\\d+(_\\d+)?)|(_metadata_acid)\" -i -Fe file -v -f parent,file \"%5$s\""
-        onErrorRecordCommand:     "| %1$s.%2$s:%4$s | %6$s | %7$s |\""
+        onErrorRecordCommand:     "| %1$s.%2$s:%4$s | %6$s | %7$s |"
         reportOnResults:          true
         reportOnPath:             true
         processOnError:           true
@@ -63,7 +83,7 @@ processes:
   - type:                     "dbSet"
     id:                       3
     active:                   true
-    name:                     "-- Hive 3 Upgrade Checks - Managed Non-ACID to ACID Table Migrations"
+    name:                     "Managed Non-ACID to ACID Table Migrations"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     errorDescription:         "Issues"
     successDescription:       "SQL Conversion Scipt"
@@ -73,7 +93,20 @@ processes:
     listingColumns: ["db_name" ,"tbl_name" , "tbl_type" ,"tbl_location"]
     pathsListingQuery:        "managed_2_acid"
     checks:
-      - name:                   "Ownership Check"
+      - name:                   "-- Hive 3 Upgrade Check (v.${Implementation-Version})\n\n-- Potential ACID Conversions"
+        note: "
+        -- This report highlights classic Managed Non-ACID tables that _could_ be converted to ACID tables by the post hive
+        'strictmigration' process.  This will dramatically change the characteristics of the table and affect the integration
+        methods used by Spark SQL, direct HDFS access, etc..  Many of which will 'fail' and/or 'corrupt' the newly converted
+        Hive ACID table.\n
+
+        -- We recommend that you proactively force these tables to 'EXTERNAL' tables (with purge characteristics) to prevent this
+        conversion.  Changing tables to ACID, post migration is much easier than trying to revert converted ACID tables back
+        to non-ACID tables.\n
+
+        -- Tables that are managed and aren't converted by this program, will be converted to 'EXTERNAL/purge' when they don't
+        meet all the criteria for the conversion, regardless.  Using the 'action' elements of this report simply ensures
+        you are in control of the migration process.\n\n"
         invertCheck:            false
         pathCommand:            "lsp -f user -self \"%4$s\""
         onSuccessPathCommand:   "\"Rewrite database table: %1$s.%2$s [Partition: \" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \"]"
@@ -97,7 +130,7 @@ processes:
   - type:                     "dbSet"
     id:                       4
     active:                   true
-    name:                     "-- Hive 3 Upgrade Checks - Compaction Check"
+    name:                     "Compaction Check"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     errorDescription:         "Issues"
     successDescription:       "Compaction SQL Script"
@@ -107,7 +140,22 @@ processes:
     listingColumns: ["name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location"]
     pathsListingQuery:        "managed_tbl_locations"
     checks:
-      - name:                 "Compaction Check"
+      - name:                 "-- Hive 3 Upgrade Checks  (v.${Implementation-Version})\n -- Compaction Check\n"
+        note: "
+        -- This process reviews existing ACID tables for 'delta' directories.  'Delta' directories for ACID v1 are NOT compatible
+        with ACID v2 in Hive 3.  The _delta's_ must be compacted *BEFORE* the upgrade occurs.\n
+
+        -- ANY *delta* directories that are NOT compacted *SUCCESSFULLY* before the upgrade will NOT be compatible after the upgrade
+        and the data will be LOST.\n
+
+        -- The 'actions' listed in the report will issue the compaction commands to do this.  Be sure the compactions run *SUCCESSFULLY*
+        before upgrading.\n
+
+        -- We suggested running this report and issue the *action's* well before the upgrade.  The compactor _may_ require tuning
+        to complete these actions in a reasonable amount of time.\n
+
+        -- Run the report several times before the upgrade, with the goals of eliminating any items on this report BEFORE starting
+        the upgrade.\n\n"
         invertCheck:          false
         pathCommand:          "lsp -R -F .*delta_.* -t -sp -f path \"%5$s\""
 #        onSuccessPathCommand: "ALTER TABLE %1$s.%2$s COMPACT 'MAJOR'; TODO: Need to account for Partitions."
@@ -144,7 +192,7 @@ processes:
     id:                       5
     active:                   true
     name:                     "Hive Metastore Checks"
-    header:                   "# Hive Metastore Checks"
+    header:                   "# Hive Metastore Checks  (v.${Implementation-Version})"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     errorDescription:         "Processing Issues"
     successDescription:       "Hive Metastore"

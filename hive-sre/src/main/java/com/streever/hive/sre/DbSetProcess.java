@@ -1,6 +1,7 @@
 package com.streever.hive.sre;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
@@ -22,7 +23,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
         "outputDirectory", "dbPaths", "cliSession", "success", "error"})
 public class DbSetProcess extends SreProcessBase {
 
-//    private List<DbPaths> dbPaths;
+    //    private List<DbPaths> dbPaths;
     private List<CommandReturnCheck> checks;
 
     private String dbListingQuery;
@@ -69,44 +70,84 @@ public class DbSetProcess extends SreProcessBase {
 //        this.dbPaths = dbPaths;
 //    }
 
-    @Override
-    public void setOutputDirectory(String outputDirectory) throws FileNotFoundException {
-        // Allow each Check to have its own output stream.
-//        if (getChecks().size() == 0) {
-            super.setOutputDirectory(outputDirectory);
-//        } else  {
-            for (CommandReturnCheck check: getChecks()) {
-                // If details for stream output are available in the check definition.
-                if (check.getErrorFilename() != null) {
-                    check.errorStream = outputFile(outputDirectory + System.getProperty("file.separator") + check.getErrorFilename());
-                } else {
-                    check.errorStream = this.error;
+    protected void initHeader() {
+        if (getChecks() == null && getChecks().size() == 0) {
+            this.success.println(ReportingConf.substituteVariables(getHeader()));
+        }
+        for (CommandReturnCheck check : getChecks()) {
+            // If details for stream output are available in the check definition.
+            // Set the Header if defined.
+            if (check.getInvertCheck() && check.getName() != null) {
+                if (check.getProcessOnError()) {
+                    check.errorStream.println(ReportingConf.substituteVariables(check.getName()));
                 }
-                if (check.getSuccessFilename() != null) {
-                    check.successStream = outputFile(outputDirectory + System.getProperty("file.separator") + check.getSuccessFilename());
-                } else {
-                    check.successStream = this.success;
+                if (check.getProcessOnSuccess()) {
+                    check.successStream.println(ReportingConf.substituteVariables(check.getName()));
                 }
-                // Set the Header if defined.
-                if (check.getInvertCheck() && check.getHeader() != null) {
-                    if (check.getProcessOnError()) {
-                        check.errorStream.println(check.getHeader());
-                    }
-                    if (check.getProcessOnSuccess()) {
-                        check.successStream.println(check.getHeader());
-                    }
+            }
+            if (check.getInvertCheck() && check.getNote() != null) {
+                if (check.getProcessOnError()) {
+                    check.errorStream.println(check.getNote());
                 }
-                if (!check.getInvertCheck() && check.getHeader() != null) {
-                    if (check.getProcessOnError()) {
-                        check.errorStream.println(check.getHeader());
-                    }
-                    if (check.getProcessOnSuccess()) {
-                        check.successStream.println(check.getHeader());
-                    }
+                if (check.getProcessOnSuccess()) {
+                    check.successStream.println(check.getNote());
+                }
+            }
+            if (check.getInvertCheck() && check.getHeader() != null) {
+                if (check.getProcessOnError()) {
+                    check.errorStream.println(check.getHeader());
+                }
+                if (check.getProcessOnSuccess()) {
+                    check.successStream.println(check.getHeader());
                 }
             }
 
-//        }
+            // TODO: Validate inversion.
+            if (!check.getInvertCheck() && check.getName() != null) {
+                if (check.getProcessOnError()) {
+                    check.errorStream.println(ReportingConf.substituteVariables(check.getName()));
+                }
+                if (check.getProcessOnSuccess()) {
+                    check.successStream.println(ReportingConf.substituteVariables(check.getName()));
+                }
+            }
+            if (!check.getInvertCheck() && check.getNote() != null) {
+                if (check.getProcessOnError()) {
+                    check.errorStream.println(check.getNote());
+                }
+                if (check.getProcessOnSuccess()) {
+                    check.successStream.println(check.getNote());
+                }
+            }
+            if (!check.getInvertCheck() && check.getHeader() != null) {
+                if (check.getProcessOnError()) {
+                    check.errorStream.println(check.getHeader());
+                }
+                if (check.getProcessOnSuccess()) {
+                    check.successStream.println(check.getHeader());
+                }
+            }
+        }
+
+    }
+
+    @Override
+    public void setOutputDirectory(String outputDirectory) throws FileNotFoundException {
+        // Allow each Check to have its own output stream.
+        super.setOutputDirectory(outputDirectory);
+        for (CommandReturnCheck check : getChecks()) {
+            // If details for stream output are available in the check definition.
+            if (check.getErrorFilename() != null) {
+                check.errorStream = outputFile(outputDirectory + System.getProperty("file.separator") + check.getErrorFilename());
+            } else {
+                check.errorStream = this.error;
+            }
+            if (check.getSuccessFilename() != null) {
+                check.successStream = outputFile(outputDirectory + System.getProperty("file.separator") + check.getSuccessFilename());
+            } else {
+                check.successStream = this.success;
+            }
+        }
     }
 
     @Override
@@ -119,7 +160,7 @@ public class DbSetProcess extends SreProcessBase {
         }
 
         setOutputDirectory(outputDirectory);
-        this.success.println(getHeader());
+        initHeader();
 
         String[] dbs = null;
         if (getDbsOverride() != null && getDbsOverride().length > 0) {
@@ -184,7 +225,7 @@ public class DbSetProcess extends SreProcessBase {
         StringBuilder sb = new StringBuilder();
         if (defaultReturnInfo.length() > 0)
             sb.append(defaultReturnInfo).append("\n");
-        for (CommandReturnCheck check: getChecks()) {
+        for (CommandReturnCheck check : getChecks()) {
             if (check.getSuccessFilename() != null) {
                 sb.append("\t" + check.getSuccessDescription() + " -> " + getOutputDirectory() + System.getProperty("file.separator") +
                         check.getSuccessFilename()).append("\n");

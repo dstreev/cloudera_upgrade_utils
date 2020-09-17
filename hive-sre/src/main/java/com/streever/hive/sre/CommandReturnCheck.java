@@ -25,6 +25,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
 
     private String name;
     private String header;
+    private String note;
     private String pathCommand;
 
     private String errorDescription = null;
@@ -66,6 +67,14 @@ public class CommandReturnCheck implements Counter, Cloneable {
 
     public void setHeader(String header) {
         this.header = header;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
     }
 
     public PrintStream getSuccessStream() {

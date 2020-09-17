@@ -3,6 +3,7 @@ package com.streever.hive.sre;
 import com.streever.hive.config.Metastore;
 import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
+import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
@@ -24,7 +25,9 @@ public class MetastoreReportProcess extends MetastoreProcess {
     @Override
     public void run() {
         setStatus(PROCESSING);
-        success.println(this.getHeader());
+
+        success.println(ReportingConf.substituteVariables(getHeader()));
+
         this.setTotalCount(getMetastoreQueryDefinitions().size());
         for (MetastoreQuery metastoreQueryDefinition: getMetastoreQueryDefinitions()) {
             String[][] metastoreRecords = null;
