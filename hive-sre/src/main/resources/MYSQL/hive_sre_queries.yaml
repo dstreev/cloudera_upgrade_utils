@@ -260,6 +260,25 @@ query_definitions:
     statement: "
       SELECT COUNT(*) as count FROM FUNCS
     "
+  db_tbl_count:
+    statement: "SELECT
+                     name,
+                     COUNT(tbl_name) tbl_count
+                 FROM
+                     DBS dbs
+                 INNER JOIN
+                     TBLS tbls
+                 ON
+                     dbs.db_id = tbls.db_id
+                 WHERE
+                     dbs.name LIKE ?
+                 GROUP BY
+                     name"
+    parameters:
+      dbs:
+        initial: "%"
+        sqlType: 12
+        location: 1
   acid_table_list:
     statement: "
 SELECT
@@ -281,7 +300,13 @@ FROM
         ON
             T.TBL_ID = P.TBL_ID
 WHERE
-      T.TBL_TYPE = 'MANAGED_TABLE'
+      D.NAME = ?
+  AND T.TBL_TYPE = 'MANAGED_TABLE'
   AND PARAMS.PARAM_KEY = 'transactional'
   AND PARAMS.PARAM_VALUE in ('true','True','TRUE')
     "
+    parameters:
+      dbs:
+        initial:  "%"
+        sqlType:  12
+        location: 1

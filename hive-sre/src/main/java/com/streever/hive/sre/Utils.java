@@ -13,11 +13,16 @@ public class Utils {
         String[] directories = directoryPart.split("\\/");
         String[] partitionSpecs = new String[directories.length];
         int loc = 0;
-        for (String directory: directories) {
-            String[] specParts = directory.split("=");
-            String partDir = null;
-            partDir = URLDecoder.decode(specParts[1], StandardCharsets.UTF_8.toString());
-            partitionSpecs[loc++] = specParts[0] + "=\"" + partDir + "\"";
+        try {
+            for (String directory : directories) {
+                String[] specParts = directory.split("=");
+                String partDir = null;
+                partDir = URLDecoder.decode(specParts[1], StandardCharsets.UTF_8.toString());
+                partitionSpecs[loc++] = specParts[0] + "=\"" + partDir + "\"";
+            }
+        } catch (Throwable t) {
+            System.err.println("Issue with partition directory spec: " + directoryPart);
+//            throw t;
         }
         StringBuilder rtn = new StringBuilder();
         rtn.append(StringUtils.join(partitionSpecs, ","));

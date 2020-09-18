@@ -2,18 +2,19 @@ package com.streever.hive.sre;
 
 import com.streever.hadoop.HadoopSession;
 import com.streever.hadoop.shell.command.CommandReturn;
+import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 
 import static com.streever.hive.reporting.ReportCounter.*;
 
@@ -22,7 +23,9 @@ public class DbPaths extends SRERunnable {
     private DbSetProcess parent;
     private HadoopSession cliSession;
 
-    private List<CommandReturnCheck> checks = new ArrayList<CommandReturnCheck>();
+    private List<CommandReturnCheck> commandChecks = new ArrayList<CommandReturnCheck>();
+    private CheckCalculation calculationCheck = null;
+    private ScriptEngine scriptEngine = null;
 
     public DbSetProcess getParent() {
         return parent;
@@ -36,37 +39,61 @@ public class DbPaths extends SRERunnable {
         return cliSession;
     }
 
-    public List<CommandReturnCheck> getChecks() {
-        return checks;
+    public List<CommandReturnCheck> getCommandChecks() {
+        return commandChecks;
     }
 
-    public void setChecks(List<CommandReturnCheck> checks) {
-        this.checks = checks;
+    public void setCommandChecks(List<CommandReturnCheck> commandChecks) {
+        this.commandChecks = commandChecks;
+    }
+
+    public CheckCalculation getCalculationCheck() {
+        return calculationCheck;
+    }
+
+    public void setCalculationCheck(CheckCalculation calculationCheck) {
+        this.calculationCheck = calculationCheck;
     }
 
     public DbPaths(String name, DbSetProcess dbSet) {
         setDisplayName(name);
         setParent(dbSet);
+        if (scriptEngine == null) {
+            ScriptEngineManager sem = new ScriptEngineManager();
+            scriptEngine = sem.getEngineByName("nashorn");
+        }
+
     }
 
     @Override
     public Boolean init() {
         Boolean rtn = Boolean.FALSE;
-        for (CommandReturnCheck check : parent.getChecks()) {
+        if (parent.getCommandChecks() != null) {
+            for (CommandReturnCheck check : parent.getCommandChecks()) {
+                try {
+                    CommandReturnCheck newCheck = (CommandReturnCheck) check.clone();
+                    commandChecks.add(newCheck);
+                    // Connect CommandReturnCheck counter to this counter as a child.
+                    // TODO: Need to set Counters name from the 'check'
+                    getCounter().addChild(newCheck.getCounter());
+                    // Redirect Output.
+                    if (newCheck.getErrorFilename() == null) {
+                        newCheck.setErrorStream(this.error);
+                    }
+                    if (newCheck.getSuccessFilename() == null) {
+                        newCheck.setSuccessStream(this.success);
+                    }
+                    // TODO: Set success and error printstreams to output files.
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        if (parent.getCalculationCheck() != null) {
             try {
-                CommandReturnCheck newCheck = (CommandReturnCheck) check.clone();
-                checks.add(newCheck);
-                // Connect CommandReturnCheck counter to this counter as a child.
-                // TODO: Need to set Counters name from the 'check'
-                getCounter().addChild(newCheck.getCounter());
-                // Redirect Output.
-                if (newCheck.getErrorFilename() == null) {
-                    newCheck.setErrorStream(this.error);
-                }
-                if (newCheck.getSuccessFilename() == null) {
-                    newCheck.setSuccessStream(this.success);
-                }
-                // TODO: Set success and error printstreams to output files.
+                this.calculationCheck = (CheckCalculation) parent.getCalculationCheck().clone();
+                this.calculationCheck.setSuccessStream(this.success);
+                this.calculationCheck.setErrorStream(this.error);
             } catch (CloneNotSupportedException e) {
                 e.printStackTrace();
             }
@@ -90,6 +117,7 @@ public class DbPaths extends SRERunnable {
     public void run() {
         this.setStatus(STARTED);
         QueryDefinition queryDefinition = null;
+
         try (Connection conn = getParent().getParent().getConnectionPools().
                 getMetastoreDirectConnection()) {
 
@@ -117,38 +145,82 @@ public class DbPaths extends SRERunnable {
                     String[] args = new String[columnsArray.length];
                     for (int a = 0; a < columnsArray.length; a++) {
                         if (columnsArray[a][i] != null)
-                        args[a] = columnsArray[a][i];
+                            args[a] = columnsArray[a][i];
                         else
                             args[a] = " "; // Prevent null in array.  Messes up String.format when array has nulls.
                     }
-                    for (CommandReturnCheck lclCheck : getChecks()) {
+                    if (getCommandChecks() != null) {
+                        for (CommandReturnCheck lclCheck : getCommandChecks()) {
+                            try {
+                                String rcmd = lclCheck.getFullCommand(args);
+                                if (rcmd != null) {
+                                    CommandReturn cr = getCliSession().processInput(rcmd);
+                                    lclCheck.incProcessed(1);
+                                    if (!cr.isError() || (lclCheck.getInvertCheck() && cr.isError())) {
+                                        lclCheck.onSuccess(cr);
+                                        lclCheck.incSuccess(1);
+                                        this.incSuccess(1);
+                                    } else {
+                                        lclCheck.onError(cr);
+                                        lclCheck.incError(1);
+                                        this.incError(1);
+                                    }
+                                }
+                            } catch (RuntimeException t) {
+                                // Malformed cli request.  Input is missing an element required to complete call.
+                                // Unusual, but not an expection.
+                            }
+                        }
+                        incProcessed(1);
+                    }
+
+                    if (calculationCheck != null) {
+//                        for (int j = 0; j < metastoreQueryDefinition.getListingColumns().length; j++) {
+//                            record[j] = metastoreRecords[j][i];
+//                        }
+
+                        List combined = new LinkedList(Arrays.asList(args));
+
+                        // Configured Params
+//                        if (metastoreQueryDefinition.getCheck().getParams() != null)
+//                            combined.addAll(Arrays.asList(metastoreQueryDefinition.getCheck().getParams()));
                         try {
-                            String rcmd = lclCheck.getFullCommand(args);
-                            if (rcmd != null) {
-                                CommandReturn cr = getCliSession().processInput(rcmd);
-                                lclCheck.incProcessed(1);
-                                if (!cr.isError() || (lclCheck.getInvertCheck() && cr.isError())) {
-                                    lclCheck.onSuccess(cr);
-                                    lclCheck.incSuccess(1);
-                                    this.incSuccess(1);
-                                } else {
-                                    lclCheck.onError(cr);
-                                    lclCheck.incError(1);
-                                    this.incError(1);
+                            String testStr = String.format(calculationCheck.getTest(), combined.toArray());
+                            Boolean checkTest = null;
+                            checkTest = (Boolean) scriptEngine.eval(testStr);
+                            if (checkTest) {
+                                if (calculationCheck.getPass() != null) {
+                                    String passStr = String.format(calculationCheck.getPass(), combined.toArray());
+                                    String passResult = (String) scriptEngine.eval(passStr);
+                                    success.println(passResult);
+                                }
+
+                            } else {
+                                if (calculationCheck.getFail() != null) {
+                                    String failStr = String.format(calculationCheck.getFail(), combined.toArray());
+                                    String failResult = (String) scriptEngine.eval(failStr);
+                                    success.println(failResult);
                                 }
                             }
-                        } catch (RuntimeException t) {
-                            // Malformed cli request.  Input is missing an element required to complete call.
-                            // Unusual, but not an expection.
+                            incSuccess(1);
+
+                            incProcessed(1);
+                        } catch (ScriptException e) {
+                            e.printStackTrace();
+                            System.err.println("Issue with script eval: " + this.getDisplayName());
+                        } catch (MissingFormatArgumentException mfa) {
+                            mfa.printStackTrace();
+                            System.err.println("Bad Argument Match up for PATH check rule: " + this.getDisplayName());
                         }
+
+
                     }
-                    incProcessed(1);
                 }
             }
         } catch (SQLException e) {
-            if (getChecks().size() > 0) {
-                getChecks().get(0).errorStream.println((queryDefinition != null) ? queryDefinition.getStatement() : "Unknown");
-                getChecks().get(0).errorStream.println("Failure in DbPaths" + e.getMessage());
+            if (getCommandChecks().size() > 0) {
+                getCommandChecks().get(0).errorStream.println((queryDefinition != null) ? queryDefinition.getStatement() : "Unknown");
+                getCommandChecks().get(0).errorStream.println("Failure in DbPaths" + e.getMessage());
             } else {
                 error.println((queryDefinition != null) ? queryDefinition.getStatement() : "Unknown");
                 error.println("Failure in DbPaths" + e.getMessage());

@@ -7,7 +7,7 @@ processes:
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location" ]
     pathsListingQuery:        "tbl_part_locations"
-    checks:
+    commandChecks:
       - displayName:        "Hive 3 Upgrade Check - Missing Directory Locations Scan"
         title:              "#Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Missing Directory Locations Scan"
         note:               "
@@ -52,7 +52,7 @@ processes:
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check" ]
     pathsListingQuery:        "tbl_mngd_non_acid_locations"
-    checks:
+    commandChecks:
       - displayName:          "Hive 3 Upgrade Check - Bad Filename Format for ACID ORC Conversion"
         title:                "# Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Bad Filename Format for ACID ORC Conversion"
         header:               "| DB.Table:Partition | Path | Filename |\n|:---|:---|:---|"
@@ -61,7 +61,7 @@ processes:
         Tables that will be converted to ACID tables, require filenames to match a very specific pattern.  If files in the table(partition)
         directories do not meet this pattern, the conversion WILL fail.\n\n
         There are two options for handling this:\n
-        - Convert the table to 'EXTERNAL' so the will NOT be converted.  These tables are listed in the *Managed Non-ACID to ACID Table Migrations*
+        - Convert the table to 'EXTERNAL' so they will NOT be converted.  These tables are listed in the *Managed Non-ACID to ACID Table Migrations*
         report.\n
         - Perform a classic 'INSERT OVERWRITE TABLE <self> FROM <self>'.  This exercise will force 'Hive' to rewrite the table data
         back into the same directories.  The process of _rewriting_ will ensure the filenames match the expected patterns.\n
@@ -77,11 +77,6 @@ processes:
         reportOnPath:         true
         processOnError:       true
         processOnSuccess:     false
-  #        checkCalculations:
-  #          managedCheck:
-  #            RECORDS:
-  #              test: "if ( \"%3$s\".equals(\"MANAGED\\_TABLE\")) true; else false;"
-  #              pass: "\"| %1$s.%2$s:%4$s | %5$s | %7$s |\""
   - type:                     "dbSet"
     id:                       3
     active:                   true
@@ -94,7 +89,7 @@ processes:
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "db_name" ,"tbl_name" , "tbl_type" ,"tbl_location" ]
     pathsListingQuery:        "managed_2_acid"
-    checks:
+    commandChecks:
       - displayName:            "Hive 3 Upgrade Check - Potential ACID Conversions"
         title:                  "-- Managed Non - ACID to ACID Table Migrations  (v.${Implementation-Version})\n"
         note:                   "
@@ -142,7 +137,7 @@ processes:
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "name" ,"tbl_name" , "tbl_type" ,"part_name", "path_location" ]
     pathsListingQuery:        "managed_tbl_locations"
-    checks:
+    commandChecks:
       - displayName:      "-- Hive 3 Upgrade Checks -- Compaction Check"
         title:            "-- Hive 3 Upgrades - Compaction Check (v.${Implementation-Version})\n"
         note:             "
@@ -174,24 +169,6 @@ processes:
               pass: "\"ALTER TABLE %1$s.%2$s COMPACT 'MAJOR';\""
               fail: "\"ALTER TABLE %1$s.%2$s PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%4$s') + \") COMPACT \\\"MAJOR\\\"\\;\""
               params: [ "hive" ]
-
-  #  - type: "metastore.query"
-  #    id: 5
-  #    active: true
-  #    name: "Questionable Serde's Check"
-  #    queryDefinitionReference: "/hive_u3_queries.yaml"
-  #    errorDescription: "Issues"
-  #    successDescription: "Tables using non-standard SERDE's"
-  #    errorFilename: "hive_questionable_serde_issues.txt"
-  #    successFilename: "hive_questionable_serde.txt"
-  #    metastoreQueryDefinition:
-  #      query: "questionable_serdes"
-  #      listingColumns: ["db_name" ,"tbl_name", "tbl_serde_slib"]
-  #      resultMessageHeader: "***********************************************************\n
-  #                            Listed tables should be review to ensure the Serde is still available.\n
-  #                            Missing Serde's can disrupt a Hive Upgrade/Migration Process\n
-  #                            ***********************************************************"
-  #      resultMessageDetailTemplate: "%1$s.%2$s is using a non-base serde '%3$s'"
   - type:                     "metastore.report"
     id:                       5
     active:                   true
@@ -221,33 +198,3 @@ processes:
         resultMessageHeader:         "\n## Table Partition Count"
         resultMessageDetailHeader:   "| Database | Tables | Partitions |\n|:---|:---|:---|"
         resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
-#
-#
-#  - type: "metastore.query"
-#    id: 6
-#    active: true
-#    name: "Managed Table Shadows"
-#    queryDefinitionReference: "/hive_u3_queries.yaml"
-#    errorDescription: "Issues"
-#    successDescription: "Shadow Tables"
-#    errorFilename: "managed_tbl_shadows_issue.txt"
-#    successFilename: "managed_tbl_shadows.txt"
-#    metastoreQueryDefinition:
-#      query: "managed_tbl_shadows"
-#      listingColumns: ["db_name" ,"tbl_name", "tbl_location"]
-#      resultMessageHeader: "***********************************************************"
-#      resultMessageDetailTemplate: "Table %1$s.%2$s at location %3$s is sharing location with another managed table."
-#  - type: "metastore.query"
-#    id: 7
-#    active: true
-#    name: "Database / Table / Partition Count"
-#    queryDefinitionReference: "/hive_u3_queries.yaml"
-#    errorDescription: "Issues"
-#    successDescription: "Database / Table / Partition Counts"
-#    errorFilename: "db_counts_issue.txt"
-#    successFilename: "db_counts.txt"
-#    metastoreQueryDefinition:
-#      query: "db_tbl_part_count"
-#      listingColumns: ["name" ,"tbl_count", "part_count"]
-#      resultMessageHeader: "***********************************************************"
-#      resultMessageDetailTemplate: "%1$s\t%2$s\t%3$s"

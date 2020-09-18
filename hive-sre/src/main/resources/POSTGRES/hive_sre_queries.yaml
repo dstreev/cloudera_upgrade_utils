@@ -283,6 +283,21 @@ SELECT
 FROM
     \"FUNCS\"
     "
+  db_tbl_count:
+    statement: "SELECT
+                    \"DBS\".\"NAME\",
+                    COUNT(\"TBLS\".\"TBL_NAME\") AS \"TBL_COUNT\"
+                FROM
+                    \"DBS\" \"DBS\"
+                        INNER JOIN
+                        \"TBLS\" \"TBLS\"
+                        ON
+                            \"DBS\".\"DB_ID\" = \"TBLS\".\"DB_ID\"
+                WHERE
+                    \"DBS\".\"NAME\" LIKE ?
+                GROUP BY
+                    \"DBS\".\"NAME\"
+                 "
   acid_table_list:
     statement: "
 SELECT
@@ -304,7 +319,13 @@ SELECT
   ON
   \"T\".\"TBL_ID\" = \"P\".\"TBL_ID\"
   WHERE
-  \"T\".\"TBL_TYPE\" = 'MANAGED_TABLE'
+      \"D\".\"NAME\" = ?
+  AND \"T\".\"TBL_TYPE\" = 'MANAGED_TABLE'
   AND \"PARAMS\".\"PARAM_KEY\" = 'transactional'
   AND \"PARAMS\".\"PARAM_VALUE\" IN ('true', 'True', 'TRUE')
     "
+    parameters:
+      dbs:
+        initial: "%"
+        sqlType: 12
+        location: 1

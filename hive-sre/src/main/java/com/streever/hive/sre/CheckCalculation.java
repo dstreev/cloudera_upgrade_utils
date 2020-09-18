@@ -1,7 +1,13 @@
 package com.streever.hive.sre;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import java.io.PrintStream;
 import java.util.Arrays;
 
+@JsonIgnoreProperties({"scriptEngine"})
 public class CheckCalculation implements Cloneable {
 
     // Needs to return a boolean.
@@ -14,6 +20,15 @@ public class CheckCalculation implements Cloneable {
     // These parameters are added to the end of the record set
     //   passed to the engine.
     private String[] params;
+
+    /**
+     * allows stdout to be captured if necessary
+     */
+    public PrintStream successStream = System.out;
+    /**
+     * allows stderr to be captured if necessary
+     */
+    public PrintStream errorStream = System.err;
 
     public String getTest() {
         return test;
@@ -47,9 +62,25 @@ public class CheckCalculation implements Cloneable {
         this.params = params;
     }
 
+    public PrintStream getSuccessStream() {
+        return successStream;
+    }
+
+    public void setSuccessStream(PrintStream successStream) {
+        this.successStream = successStream;
+    }
+
+    public PrintStream getErrorStream() {
+        return errorStream;
+    }
+
+    public void setErrorStream(PrintStream errorStream) {
+        this.errorStream = errorStream;
+    }
+
     @Override
     protected Object clone() throws CloneNotSupportedException {
-        CheckCalculation rtn = (CheckCalculation)super.clone();
+        CheckCalculation rtn = (CheckCalculation) super.clone();
         rtn.setFail(this.fail);
         rtn.setTest(this.test);
         rtn.setPass(this.pass);
