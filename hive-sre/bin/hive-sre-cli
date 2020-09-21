@@ -43,7 +43,7 @@ CMD_DIRECTIVE=
 CMD_ARGS=
 VERBOSE=
 ENV_VAR_FILE=
-JAVA_OPTS=${JAVA_OPTS}
+APP_JAVA_OPTS=
 
 if [[ -f ${HOME}/.hadoop-cli/env-var.props || -L ${HOME}/.hadoop-cli/env-var.props ]]; then
     ENV_VAR_FILE=${HOME}/.hadoop-cli/env-var.props
@@ -56,7 +56,7 @@ fi
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -D*)
-      JAVA_OPTS="${JAVA_OPTS} ${1}"
+      APP_JAVA_OPTS="${APP_JAVA_OPTS} ${1}"
       shift
       ;;
     -i|--init)
@@ -154,14 +154,14 @@ if [[ "${SHOW_CP}x" != "x" ]]; then
     echo "Program args: ${PRG_ARGS}"
 fi
 
-if [[ "${JAVA_OPTS}x" != "x" ]]; then
-    echo "JAVA_OPTS=${JAVA_OPTS}"
+if [[ "${APP_JAVA_OPTS}x" != "x" ]]; then
+    echo "Application JAVA_OPTS=${APP_JAVA_OPTS}"
 fi
 
 if [[ "${PRG_ARGS}x" != "x" ]]; then
     echo "PRG_ARGS=${PRG_ARGS}"
 fi
 
-CLI_CMD="${CLI_CMD}java -cp ${CMD_CP} ${JAVA_OPTS} com.streever.hadoop.HadoopShell ${PRG_ARGS}"
+CLI_CMD="${CLI_CMD}java -cp ${CMD_CP} ${APP_JAVA_OPTS} com.streever.hadoop.HadoopShell ${PRG_ARGS}"
 
 eval "${CLI_CMD}"
