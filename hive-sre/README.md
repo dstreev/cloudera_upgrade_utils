@@ -365,4 +365,21 @@ The number of concurrent processes is controlled by the `parallelism` variable i
 sort -k 1 --field-separator="|" loc_scan_missing_dirs.md > loc_scan_missing_dirs_sorted.txt
 ```
 
+## Troubleshooting
+
+### Kerberos Connectivity Issues
+
+Add Kerberos Java debugging parameters to the commandline.
+
+```
+hive-sre -Dsun.security.krb5.debug=true u3 -o sre-out
+hive-sre -Dsun.security.krb5.debug=true sre -o sre-out
+```
+
+or
+
+```
+hive-sre-cli -Dsun.security.krb5.debug=true
+```
+
 
