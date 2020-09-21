@@ -108,6 +108,11 @@ if [[ "${JAVA_OPTS}x" != "x" ]]; then
     echo "JAVA_OPTS=${JAVA_OPTS}"
 fi
 
+if [[ "${PRG_ARGS}x" != "x" ]]; then
+    echo "PRG_ARGS=${PRG_ARGS}"
+fi
+
+
 CLI_CMD="${CLI_CMD}java -cp ${CMD_CP} ${JAVA_OPTS} com.streever.hive.Sre ${PRG_ARGS}"
 
 eval "${CLI_CMD}"
