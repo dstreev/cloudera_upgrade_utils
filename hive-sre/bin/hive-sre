@@ -53,6 +53,7 @@ CMD_DIRECTIVE=
 CMD_ARGS=
 VERBOSE=
 HADOOP_CLASSPATH=
+JAVA_OPTS=${JAVA_OPTS}
 
 if [[ ! -d ${AUX_LIBS_DIR} ]]; then
     mkdir -p ${AUX_LIBS_DIR}
@@ -60,6 +61,10 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -D*)
+      JAVA_OPTS="${JAVA_OPTS} ${1}"
+      shift
+      ;;
     --hadoop-classpath)
       shift
       HADOOP_CLASSPATH="true"
@@ -99,6 +104,10 @@ if [[ "${SHOW_CP}x" != "x" ]]; then
     echo "Classpath: ${CMD_CP}"
 fi
 
-CLI_CMD="${CLI_CMD}java -cp ${CMD_CP} com.streever.hive.Sre ${PRG_ARGS}"
+if [[ "${JAVA_OPTS}x" != "x" ]]; then
+    echo "JAVA_OPTS=${JAVA_OPTS}"
+fi
+
+CLI_CMD="${CLI_CMD}java -cp ${CMD_CP} ${JAVA_OPTS} com.streever.hive.Sre ${PRG_ARGS}"
 
 eval "${CLI_CMD}"
