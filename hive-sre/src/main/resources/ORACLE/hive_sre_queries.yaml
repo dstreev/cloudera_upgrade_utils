@@ -290,15 +290,21 @@ FROM
         INNER JOIN TBLS T ON D.DB_ID = T.DB_ID
         INNER JOIN TABLE_PARAMS TP ON T.TBL_ID = TP.TBL_ID
         LEFT OUTER JOIN PARTITION_KEYS P
-                   ON T.TBL_ID = P.TBL_ID
+                        ON T.TBL_ID = P.TBL_ID
 WHERE
       D.NAME LIKE ?
   AND T.TBL_TYPE = 'MANAGED_TABLE'
   AND TP.PARAM_KEY = 'transactional'
-  AND (TP.PARAM_VALUE = 'true' OR TP.PARAM_VALUE = 'TRUE' OR TP.PARAM_VALUE = 'True')
+  AND (
+              dbms_lob.compare(TP.PARAM_VALUE, 'true') = 0
+              OR
+              dbms_lob.compare(TP.PARAM_VALUE, 'TRUE') = 0
+              OR
+              dbms_lob.compare(TP.PARAM_VALUE, 'True') = 0
+          )
 GROUP BY
     D.NAME, T.TBL_NAME
-    "
+"
     parameters:
       dbs:
         initial:  "%"
@@ -315,14 +321,18 @@ FROM
         INNER JOIN TBLS T ON D.DB_ID = T.DB_ID
         INNER JOIN TABLE_PARAMS TP ON T.TBL_ID = TP.TBL_ID
         INNER JOIN PARTITIONS P
-                        ON T.TBL_ID = P.TBL_ID
+                   ON T.TBL_ID = P.TBL_ID
 WHERE
-        D.NAME LIKE ?
+      D.NAME LIKE ?
   AND T.TBL_TYPE = 'MANAGED_TABLE'
   AND TP.PARAM_KEY = 'transactional'
-  AND (TP.PARAM_VALUE = 'true' OR TP.PARAM_VALUE = 'TRUE' OR TP.PARAM_VALUE = 'True')
-GROUP BY
-    D.NAME, T.TBL_NAME
+  AND (
+              dbms_lob.compare(TP.PARAM_VALUE, 'true') = 0
+              OR
+              dbms_lob.compare(TP.PARAM_VALUE, 'TRUE') = 0
+              OR
+              dbms_lob.compare(TP.PARAM_VALUE, 'True') = 0
+          )
 "
     parameters:
       dbs:
