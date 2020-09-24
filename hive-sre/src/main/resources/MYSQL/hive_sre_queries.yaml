@@ -282,29 +282,48 @@ query_definitions:
   acid_table_list:
     statement: "
 SELECT
-    D.NAME             AS NAME,
-    T.TBL_NAME         AS TBL_NAME,
-    P.PART_NAME        AS PART_NAME
+    D.NAME,
+    T.TBL_NAME,
+    GROUP_CONCAT(P.PKEY_NAME ORDER BY P.INTEGER_IDX ASC) AS PARTITION_KEYS
 FROM
     DBS D
-        INNER JOIN
-        TBLS T
-        ON
-            D.DB_ID = T.DB_ID
-        LEFT OUTER JOIN
-        TABLE_PARAMS PARAMS
-        ON
-            T.TBL_ID = PARAMS.TBL_ID
-        LEFT OUTER JOIN
-        PARTITIONS P
-        ON
-            T.TBL_ID = P.TBL_ID
+        INNER JOIN TBLS T ON D.DB_ID = T.DB_ID
+        INNER JOIN TABLE_PARAMS TP ON T.TBL_ID = TP.TBL_ID
+        LEFT OUTER JOIN PARTITION_KEYS P
+                   ON T.TBL_ID = P.TBL_ID
 WHERE
-      D.NAME = ?
+      D.NAME LIKE ?
   AND T.TBL_TYPE = 'MANAGED_TABLE'
-  AND PARAMS.PARAM_KEY = 'transactional'
-  AND PARAMS.PARAM_VALUE in ('true','True','TRUE')
+  AND TP.PARAM_KEY = 'transactional'
+  AND (TP.PARAM_VALUE = 'true' OR TP.PARAM_VALUE = 'TRUE' OR TP.PARAM_VALUE = 'True')
+GROUP BY
+    D.NAME, T.TBL_NAME
     "
+    parameters:
+      dbs:
+        initial:  "%"
+        sqlType:  12
+        location: 1
+  acid_table_list_detail:
+    statement: "
+SELECT
+    D.NAME,
+    T.TBL_NAME,
+    P.PART_NAME
+FROM
+    DBS D
+        INNER JOIN TBLS T ON D.DB_ID = T.DB_ID
+        INNER JOIN TABLE_PARAMS TP ON T.TBL_ID = TP.TBL_ID
+        INNER JOIN PARTITIONS P
+                        ON T.TBL_ID = P.TBL_ID
+WHERE
+        D.NAME LIKE ?
+  AND T.TBL_TYPE = 'MANAGED_TABLE'
+  AND TP.PARAM_KEY = 'transactional'
+  AND (TP.PARAM_VALUE = 'true' OR TP.PARAM_VALUE = 'TRUE' OR TP.PARAM_VALUE = 'True')
+GROUP BY
+    D.NAME, T.TBL_NAME
+"
     parameters:
       dbs:
         initial:  "%"

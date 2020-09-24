@@ -238,12 +238,14 @@ processes:
   - type:                     "dbSet"
     id:                       8
     active:                   false
-    displayName:              "Hive ACID Tables"
-    title:                    "# Hive ACID Tables (v.${Implementation-Version})\n"
+    displayName:              "Analyze Hive ACID Tables"
+    title:                    "# Analyze Hive ACID Tables (v.${Implementation-Version})\n"
     note:                     "Post Upgrade from Hive 1/2 to Hive 3 may result in statistics that are wrong.  Actually, the statistics were
     wrong in Hive 1/2, but the CBO wasn't using them as it should and recalculating plans.  In Hive 3, these statistics when
     wrong and picked up by the CBO, could cause datasets to be disregarded.  If you are experience data issues with any
-    tables that were ACID tables BEFORE the upgrade, you should run 'ANALYZE' on them to fix those statistics.\n
+    tables that were ACID tables BEFORE the upgrade, you should run 'ANALYZE' on them to fix those statistics.\n\n
+    *NOTE*: Markdown Renders WILL distort the commands listed.  Copy from the source file to ensure the commands are
+    correct.\n
     "
     header:  "| DB | Table | Partitions | Hive SQL |\n|:---|:---|:---|:---|"
     queryDefinitionReference: "/hive_sre_queries.yaml"
@@ -252,9 +254,34 @@ processes:
     errorFilename:            "acid_analyze_tables_err.txt"
     successFilename:          "acid_analyze_tables.md"
     dbListingQuery:           "db_tbl_count"
-    listingColumns: [ "name" ,"tbl_name", "part_name" ]
+    listingColumns: [ "name" ,"tbl_name", "partition_keys" ]
     pathsListingQuery:        "acid_table_list"
     calculationCheck:
       test: "if (\"%3$s\" == null || \"%3$s\".trim().length() == 0) true; else false;"
-      pass: "\"| %1$s | %2$s | %3$s | ALTER TABLE `%1$s`.`%2$s` COMPUTE STATISTICS FOR COLUMNS;|\""
-      fail: "\"| %1$s | %2$s | %3$s | ALTER TABLE `%1$s`.`%2$s` PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%3$s') + \") COMPUTE STATISTICS FOR COLUMNS;\""
+      pass: "\"| %1$s | %2$s | %3$s | ANALYZE TABLE `%1$s`.`%2$s` COMPUTE STATISTICS;|\""
+      fail: "\"| %1$s | %2$s | %3$s | ANALYZE TABLE `%1$s`.`%2$s` PARTITION (%3$s) COMPUTE STATISTICS;\""
+  - type:                     "dbSet"
+    id:                       9
+    active:                   false
+    displayName:              "Analyze Hive ACID Tables - Detailed"
+    title:                    "# Analyze Hive ACID Tables - Detailed (v.${Implementation-Version})\n"
+    note:                     "Post Upgrade from Hive 1/2 to Hive 3 may result in statistics that are wrong.  Actually, the statistics were
+    wrong in Hive 1/2, but the CBO wasn't using them as it should and recalculating plans.  In Hive 3, these statistics when
+    wrong and picked up by the CBO, could cause datasets to be disregarded.  If you are experience data issues with any
+    tables that were ACID tables BEFORE the upgrade, you should run 'ANALYZE' on them to fix those statistics.\n\n
+    *NOTE*: Markdown Renders WILL distort the commands listed.  Copy from the source file to ensure the commands are
+    correct.\n
+    "
+    header:  "| DB | Table | Partitions | Hive SQL |\n|:---|:---|:---|:---|"
+    queryDefinitionReference: "/hive_sre_queries.yaml"
+    errorDescription:         "Processing Issues"
+    successDescription:       "Hive Metastore"
+    errorFilename:            "acid_analyze_tables_detailed_err.txt"
+    successFilename:          "acid_analyze_tables_detailed.md"
+    dbListingQuery:           "db_tbl_count"
+    listingColumns: [ "name" ,"tbl_name", "part_name" ]
+    pathsListingQuery:        "acid_table_list_detail"
+    calculationCheck:
+      test: "if (\"%3$s\" == null || \"%3$s\".trim().length() == 0) true; else false;"
+      pass: "\"| %1$s | %2$s | %3$s | ANALYZE TABLE `%1$s`.`%2$s` COMPUTE STATISTICS;|\""
+      fail: "\"| %1$s | %2$s | %3$s | ANALYZE TABLE `%1$s`.`%2$s` PARTITION (\" + com.streever.hive.sre.Utils.dirToPartitionSpec('%3$s') + \") COMPUTE STATISTICS;\""
