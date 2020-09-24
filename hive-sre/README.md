@@ -197,6 +197,8 @@ To limit which process runs, use the `-i` (include) option at the command line w
 | [4](./sample_reports/sre/table_volume.md) | Table and Partition Scan - Volume Report |
 | [5](./sample_reports/sre/empty_datasets.md) | Table and Partition Scan - Empty Datasets |
 | [6](./sample_reports/u3/managed_compactions.sql) | Table and Partition Compactions |
+| [8](./sample_reports/sre/acid_analyze_tables.md) | Analyze Tables (beta - use `-i 8` to activate) |
+| [9](./sample_reports/sre/acid_analyze_tables_detailed.md) | Analyze Tables - Detailed (beta - use `-i 9` to activate) |
 
 Sre needs to be run by a user with READ access to all the potential HDFS locations presented by the database/table/partition defined locations.
  
