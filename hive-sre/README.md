@@ -64,6 +64,14 @@ Try it out on a host with default configs (if kerberized, get a ticket first):
 OR
     
     hive-sre
+
+### Default or Alt JDK Usage
+
+The startup script `hive-sre|hive-sre-cli` will use `$JAVA_HOME` if defined.  When it is not available, the default `java` implementation will be used.
+
+JDK's below 1.8.0_100 are not recommended for Kerberos environments and may have issues connecting to secure clusters.  Those JDK's require additional `unlimited jce` configurations.
+
+If kerberos connections aren't working, use a more recent JDK by setting the `$JAVA_HOME` variable.
     
 
 ### AUX_LIBS - CLASSPATH Additions
