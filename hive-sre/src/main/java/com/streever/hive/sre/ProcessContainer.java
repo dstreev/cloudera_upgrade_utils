@@ -188,8 +188,10 @@ public class ProcessContainer {
                     if (getConfig().getMetastoreDirect().getType() != null) {
                         switch (getConfig().getMetastoreDirect().getType()) {
                             case MYSQL:
-                            case ORACLE:
                                 process.setDbType(Metastore.DB_TYPE.MYSQL);
+                                break;
+                            case ORACLE:
+                                process.setDbType(Metastore.DB_TYPE.ORACLE);
                                 break;
                             case POSTGRES:
                                 process.setDbType(Metastore.DB_TYPE.POSTGRES);

@@ -120,7 +120,8 @@ public class Reporter implements Runnable {
         }
 
         resetLines();
-        String version = ReportingConf.substituteVariables("v.${Implementation-Version}");
+        String version = ReportingConf.substituteVariables("v.${Implementation-Version}") + " - DB Mapping for: " +
+                this.getProcessContainer().getConfig().getMetastoreDirect().getType().toString();
         if (tictoc) {
             pushLine(version);
         } else {

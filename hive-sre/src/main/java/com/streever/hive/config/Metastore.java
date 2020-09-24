@@ -11,7 +11,7 @@ public class Metastore {
     @NotNull(message = "Missing Metastore JDBC URI")
     private String uri;
     @NotNull(message = "Need to specify one of: MYSQL, ORACLE, POSTGRES, MSSQL")
-    private DB_TYPE type;
+    private DB_TYPE type = DB_TYPE.MYSQL; // Default
     // Run for each fetch connection.  Mainly used to help set the DB/Schema for Oracle
     private String initSql;
     @NotNull
