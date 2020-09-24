@@ -12,6 +12,11 @@ if [[ ! -d ${HOME}/.hive-sre/cust ]]; then
   mkdir -p ${HOME}/.hive-sre/cust
 fi
 
+if [ ! -z ${JAVA_HOME} ]; then
+  JAVA="${JAVA_HOME}/bin/java"
+else
+  JAVA=java
+fi
 
 if [[ -f ./hive-sre && "${APP_DIR}" != "${CURR_DIR}" && "${APP_DIR}" != "." ]]; then
   echo "Appears you are referencing a previously installed 'hive-sre' while "
@@ -112,7 +117,8 @@ if [[ "${PRG_ARGS}x" != "x" ]]; then
     echo "PRG_ARGS=${PRG_ARGS}"
 fi
 
+$(${JAVA} -version)
 
-CLI_CMD="${CLI_CMD}java -cp ${CMD_CP} ${APP_JAVA_OPTS} com.streever.hive.Sre ${PRG_ARGS}"
+CLI_CMD="${JAVA} -cp ${CMD_CP} ${APP_JAVA_OPTS} com.streever.hive.Sre ${PRG_ARGS}"
 
 eval "${CLI_CMD}"
