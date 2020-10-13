@@ -1,4 +1,4 @@
-- hosts: sdlc
+- hosts: edge
   become: true
 
   vars:
