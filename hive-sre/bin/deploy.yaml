@@ -38,9 +38,11 @@
         src: /usr/local/hive-sre/bin/hive-sre
         dest: /usr/local/bin/hive-sre
         mode: 0755
+        state: link
 
     - name: Link executable
       file:
         src: /usr/local/hive-sre/bin/hive-sre-cli
         dest: /usr/local/bin/hive-sre-cli
         mode: 0755
+        state: link
