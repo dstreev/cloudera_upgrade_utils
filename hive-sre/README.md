@@ -34,7 +34,7 @@ This application has 3 sub-programs:
 |  |  | 11 | No, but should work at 10 does |  |
 |  | Oracle | 12 | Yes | Field Tested, May still be a few rough edges |
 
-Ensure you have the database appropriate driver in the `${HOME}/.hive-sre/aux_lib` directory.
+Ensure you have the database appropriate driver in the `${HOME}/.hive-sre/aux_libs` directory.
 
 I've tried to match supported DB's for HDP 2.6.5 and 3.1.x as much as I could.
 
