@@ -30,7 +30,7 @@ public class Sre {
         // tc - transaction cleanup
         String subApp = null;
         if (args.length > 0 && args[0].matches("perf|sre|u3|cust")) {
-            System.out.println("Launching: " + args[0]);
+            System.err.println("Launching: " + args[0]);
             subApp = args[0];
         } else {
             System.out.println("First element must be one of: perf,sre,u3,cust");

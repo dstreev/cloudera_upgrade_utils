@@ -113,7 +113,7 @@ query_definitions:
         db_name,
         tbl_name,
         tbl_type,
-        COUNT(part_id) AS num_of_partitions
+        COUNT(DISTINCT part_id) AS num_of_partitions
     FROM
         (SELECT
              D.NAME             AS DB_NAME,

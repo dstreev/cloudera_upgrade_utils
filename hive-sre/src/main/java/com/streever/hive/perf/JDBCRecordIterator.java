@@ -2,7 +2,6 @@ package com.streever.hive.perf;
 
 import com.streever.hive.reporting.ReportingConf;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.hadoop.util.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,20 +16,30 @@ import static java.sql.Types.*;
 
 public class JDBCRecordIterator implements Runnable {
 
+    public enum ProcessingState {
+        FETCHING, PROCESSING;
+    }
     private String jdbcUrl;
     private String username;
     private String password;
     private String query;
     private String pingHost;
     private Integer batchSize = 5000;
-    private Integer delayWarning = 1000;
+    private Integer lastBatchSize = 0;
+    private ProcessingState processingState = ProcessingState.FETCHING;
+    private Integer delayWarning = 2000;
     private Boolean lite = Boolean.FALSE;
     private StringBuilder connectionDetails = new StringBuilder();
     private AtomicLong count = new AtomicLong(0);
     private AtomicLong size = new AtomicLong(0);
     private Date start;
+    private Boolean completed = Boolean.FALSE;
 
-    private Deque<Delay> delays = new ConcurrentLinkedDeque<Delay>();
+    private Statistic lastStat;
+    private FetchDelay lastDelay;
+
+    private Deque<FetchDelay> fetchDelays = new ConcurrentLinkedDeque<FetchDelay>();
+    private Deque<FetchDelay> excessDelays = new ConcurrentLinkedDeque<FetchDelay>();
 
     public AtomicLong getCount() {
         return count;
@@ -84,6 +93,10 @@ public class JDBCRecordIterator implements Runnable {
         return batchSize;
     }
 
+    public Integer getLastBatchSize() {
+        return lastBatchSize;
+    }
+
     public void setBatchSize(Integer batchSize) {
         this.batchSize = batchSize;
     }
@@ -104,6 +117,10 @@ public class JDBCRecordIterator implements Runnable {
         this.lite = lite;
     }
 
+    public Boolean getCompleted() {
+        return completed;
+    }
+
     public StringBuilder getConnectionDetails() {
         return connectionDetails;
     }
@@ -112,23 +129,66 @@ public class JDBCRecordIterator implements Runnable {
         return start;
     }
 
+    protected Long delaySinceLastStat() {
+        Long rtn = 0l;
+        if (lastStat != null) {
+            Iterator<FetchDelay> delayIterator = fetchDelays.descendingIterator();
+            while (delayIterator.hasNext()) {
+                FetchDelay ldelay = delayIterator.next();
+                if (ldelay.getTimestamp() > lastStat.getTimestamp().getTime()) {
+                    rtn += ldelay.getDelay();
+                }
+            }
+        }
+        return rtn;
+    }
+
     public Statistic getStat() {
-        Statistic stat = Statistic.build(count.get(), size.get());
+        Long delay = delaySinceLastStat();
+        Statistic stat = Statistic.build(count.get(), size.get(), delay);
+        lastStat = stat;
         return stat;
     }
 
-    public void pushDelay(Delay delay) {
-        delays.add(delay);
-        if (delays.size() > 10)
-            delays.removeFirst();
+    public void pushFetchDelay(FetchDelay delay) {
+//        lastDelay = delay;
+        fetchDelays.add(delay);
+        if (fetchDelays.size() > 500)
+            fetchDelays.removeFirst();
     }
 
-    public String getDelays() {
+    public void pushExcessiveDelay(FetchDelay delay) {
+//        lastDelay = delay;
+        excessDelays.add(delay);
+        if (excessDelays.size() > 10)
+            excessDelays.removeFirst();
+    }
+
+    public Deque<FetchDelay> getFetchDelays() {
+        return fetchDelays;
+    }
+
+    public String printLastFetchDelay() {
         StringBuilder sb = new StringBuilder();
-        if (delays.size() > 0) {
+        try {
+            FetchDelay fetchDelay = getFetchDelays().getLast();
+            if (fetchDelay != null) {
+                sb.append(ReportingConf.ANSI_GREEN + "-----------------------------------" + ReportingConf.ANSI_YELLOW).append("\n");
+                sb.append("\tLast fetch took ").append(fetchDelay.getDelay()).append("ms");
+                sb.append(", ").append(System.currentTimeMillis() - (fetchDelay.getTimestamp() + fetchDelay.getDelay())).append("ms ago\n");
+                sb.append("\tProcessing State: ").append(this.processingState.toString());
+            }
+        } catch (Throwable t) {
+            // nothing found;
+        }
+        return sb.toString();
+    }
+    public String printExcessiveFetchDelays() {
+        StringBuilder sb = new StringBuilder();
+        if (excessDelays.size() > 0) {
             sb.append(ReportingConf.ANSI_GREEN + "-----------------------------------" + ReportingConf.ANSI_RED).append("\n");
-            for (Iterator iter = delays.iterator(); iter.hasNext(); ) {
-                Delay delay = (Delay) iter.next();
+            for (Iterator iter = excessDelays.iterator(); iter.hasNext(); ) {
+                FetchDelay delay = (FetchDelay) iter.next();
                 sb.append(delay).append("\n");
             }
             sb.append(ReportingConf.ANSI_GREEN + "-----------------------------------" + ReportingConf.ANSI_RESET).append("\n");
@@ -211,14 +271,27 @@ public class JDBCRecordIterator implements Runnable {
             stopWatch.split();
             connectionDetails.append("Start Iterating Results   : " + stopWatch.getSplitTime()).append("ms\n");
             long marker = System.currentTimeMillis();
+            long inc = 0;
+            processingState = ProcessingState.FETCHING;
             while (rs.next()) {
-                if (System.currentTimeMillis() - marker > delayWarning) {
-                    Delay delay = new Delay(System.currentTimeMillis() - marker, count.get());//                    delays.addLast(delay);
-                    pushDelay(delay);
+                processingState = ProcessingState.PROCESSING;
+                long lDelay = System.currentTimeMillis() - marker;
+                if (lDelay > 10) { // 10 ms should mark a remote fetch
+                    FetchDelay delay = new FetchDelay(lDelay, count.get());
+                    // Setup the batch size in the last fetch.  Used to compare against the
+                    // configured batch size to validate.
+                    Long check = inc % this.batchSize;
+                    if (check.intValue() == 0) {
+                        this.lastBatchSize = this.batchSize;
+                    } else {
+                        this.lastBatchSize = check.intValue();
+                    }
+                    pushFetchDelay(delay);
+                    if (lDelay > delayWarning) {
+                        pushExcessiveDelay(delay);
+                    }
                 }
-                // reset marker
-                marker = System.currentTimeMillis();
-                long currentCount = count.getAndIncrement();
+                count.getAndAdd(1);//(inc++);
                 if (!lite) {
                     for (int i = 0; i < columnTypes.length; i++) {
                         switch (columnTypes[i]) {
@@ -265,6 +338,9 @@ public class JDBCRecordIterator implements Runnable {
                         }
                     }
                 }
+                // reset marker
+                marker = System.currentTimeMillis();
+                processingState = ProcessingState.FETCHING;
             }
             stopWatch.split();
             connectionDetails.append("Completed Iterating Results: " + stopWatch.getSplitTime()).append("ms\n");
@@ -301,7 +377,7 @@ public class JDBCRecordIterator implements Runnable {
             stopWatch.split();
             connectionDetails.append("Process Completed          : " + stopWatch.getSplitTime()).append("ms\n");
             stopWatch.stop();
-
+            completed = Boolean.TRUE;
         }
     }
 

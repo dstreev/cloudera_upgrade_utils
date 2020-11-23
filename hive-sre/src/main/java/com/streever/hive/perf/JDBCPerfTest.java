@@ -3,22 +3,16 @@ package com.streever.hive.perf;
 import com.streever.hive.SreSubApp;
 import org.apache.commons.cli.*;
 
-import java.sql.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class JDBCPerfTest implements SreSubApp {
 
-    public static final Integer STATUS_INTERVAL = 1000;
+    public static final Integer STATUS_INTERVAL_SECS = 1;
     public static final Integer REFRESH_INTERVAL = 1000;
-    public static final Integer DISPLAY_REFRESH = 3500;
+    public static final Integer DISPLAY_REFRESH_SECS = 1;
 
     private JDBCRecordIterator jri = new JDBCRecordIterator();
     private CollectStatistics stats = null;
@@ -72,6 +66,10 @@ public class JDBCPerfTest implements SreSubApp {
         Option lite = new Option("l", "lite", false, "Don't open record.  Reduce client overhead (loose some stats)");
         lite.setRequired(false);
         options.addOption(lite);
+
+        Option commment = new Option("c", "comment", true, "Comment");
+        commment.setRequired(false);
+        options.addOption(commment);
 
         Option batchsize = new Option("b", "batch-size", true, "Client Batch Fetch Size");
         batchsize.setArgs(1);
@@ -158,17 +156,21 @@ public class JDBCPerfTest implements SreSubApp {
             getJri().setDelayWarning(Integer.valueOf(value));
         }
 
+        stats = new CollectStatistics(getJri());
+        if (cmd.hasOption("c")) {
+            stats.setComment(cmd.getOptionValue("c"));
+        }
     }
 
     public void init(String[] args) {
         Options options = getOptions();
         setOptions(options, args);
-        stats = new CollectStatistics(getJri());
     }
 
     public void start() {
         getProcessThreads().add(getThreadPool().schedule(this.getJri(), 1, MILLISECONDS));
-        getStats().start();
+        getProcessThreads().add(getThreadPool().schedule(this.getStats(), 1000, MILLISECONDS));
+//        getStats().start();
 
         while (true) {
             boolean check = true;
@@ -181,14 +183,15 @@ public class JDBCPerfTest implements SreSubApp {
             if (check)
                 break;
             try {
-                Thread.sleep(DISPLAY_REFRESH);
+                TimeUnit.SECONDS.sleep(DISPLAY_REFRESH_SECS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            getStats().printStatus();
+            getStats().printStatus(Boolean.FALSE);
         }
+        getStats().printStatus(Boolean.TRUE);
         getThreadPool().shutdown();
-        getStats().interrupt();
+//        getStats().interrupt();
 
     }
 
