@@ -409,6 +409,7 @@ def rpt_mem_allocations(hostMatrix, control, output):
     output.write('\n<h2>Host Memory Allocations</h2>\n')
     fields = ['Hostname', 'Gb', 'Allocated', 'Components']
     mem_recs = []
+    cluster_total_mem = 0
     for hostKey in hostMatrix:
         mem_rec = {}
         host = hostMatrix[hostKey]
@@ -426,6 +427,7 @@ def rpt_mem_allocations(hostMatrix, control, output):
                                 mem['heap'] = host['components'][hostGroupKey][hostComponentKey]['heap']
                                 try:
                                     mem['off.heap'] = host['components'][hostGroupKey][hostComponentKey]['off.heap']
+                                    cluster_total_mem += mem['off.heap']
                                 except:
                                     # No off.heap information
                                     pass
@@ -449,6 +451,9 @@ def rpt_mem_allocations(hostMatrix, control, output):
         mem_rec['Allocated'] = total_mem / 1024
         mem_recs.append(mem_rec)
     writehtmltable(mem_recs, fields, output)
+    output.write("<br/>")
+    output.write("<br/>")
+    output.write("<h3>Total Memory Footprint: " + str(cluster_total_mem) + " GB </h3>")
 
 
 def rpt_services(layout, output):

@@ -84,8 +84,8 @@ while [[ $# -gt 0 ]]; do
       SHOW_CP="true"
       ;;
     *)
-      PRG_ARGS="${PRG_ARGS} $@"
-      break;
+      PRG_ARGS="${PRG_ARGS} \"$1\""
+      shift
   esac
 done
 
@@ -100,7 +100,7 @@ for jarFile in `ls -d ${AUX_LIBS_DIR}/*.jar 2> /dev/null`; do
 done
 
 if [[ "${HADOOP_CLASSPATH}x" != "x" ]]; then
-    CMD_CP=`hadoop classpath`:${CMD_CP}
+    CMD_CP=${CMD_CP}:`hadoop classpath`
 fi
 
 CLI_CMD=""
@@ -110,11 +110,11 @@ if [[ "${SHOW_CP}x" != "x" ]]; then
 fi
 
 if [[ "${APP_JAVA_OPTS}x" != "x" ]]; then
-    echo "Application JAVA_OPTS=${APP_JAVA_OPTS}"
+    echo "Application JAVA_OPTS=${APP_JAVA_OPTS}" 1>&2
 fi
 
 if [[ "${PRG_ARGS}x" != "x" ]]; then
-    echo "PRG_ARGS=${PRG_ARGS}"
+    echo "PRG_ARGS=${PRG_ARGS}" 1>&2
 fi
 
 $(${JAVA} -version)

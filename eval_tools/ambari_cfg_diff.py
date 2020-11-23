@@ -37,7 +37,7 @@ part_sep = '***\n'
 
 def fix(text):
     return str(text).replace('|', '\|<br>').replace(',', ',<br>').replace('_', '\_').replace('\n', '<br>').replace('*',
-                                                                                                          '\*').replace(
+                                                                                                                   '\*').replace(
         ';', ';<br>')
 
 
@@ -49,7 +49,7 @@ def write(key, added, removed, modified, env_dep, same, output):
     #     align='^',
     #     width=section_width,
     # ))## For Configuration Sections
-    output.write('## [' + key + '](#forconfigurationsections)\n')
+    output.write('## [' + key + '](#for-configuration-sections)\n')
     # output.write('## {message:{fill}{align}{width}}\n'.format(
     #     message=key,
     #     fill=' ',
@@ -66,7 +66,7 @@ def write(key, added, removed, modified, env_dep, same, output):
     output.write(part_sep)
     if len(added) > 0:
         output.write('{message:{fill}{align}{width}}\n'.format(
-            message='##### [ADDITIONAL ' + key + '](#forconfigurationsections)',
+            message='##### [ADDITIONAL ' + key + '](#for-configuration-sections)',
             fill=' ',
             align='<',
             width=section_width,
@@ -85,7 +85,7 @@ def write(key, added, removed, modified, env_dep, same, output):
     # output.write(part_sep)
     if len(removed) > 0:
         output.write('{message:{fill}{align}{width}}\n'.format(
-            message='##### [MISSING ' + key + '](#forconfigurationsections)',
+            message='##### [MISSING ' + key + '](#for-configuration-sections)',
             fill=' ',
             align='<',
             width=section_width,
@@ -103,7 +103,7 @@ def write(key, added, removed, modified, env_dep, same, output):
     # output.write(part_sep)
     if len(modified) > 0:
         output.write('{message:{fill}{align}{width}}\n'.format(
-            message='##### [DIFF ' + key + '](#forconfigurationsections)',
+            message='##### [DIFF ' + key + '](#for-configuration-sections)',
             fill=' ',
             align='<',
             width=section_width,
@@ -123,7 +123,7 @@ def write(key, added, removed, modified, env_dep, same, output):
     # output.write(part_sep)
     if len(env_dep) > 0:
         output.write('{message:{fill}{align}{width}}\n'.format(
-            message='##### [ENV. DIFF ' + key + '](#forconfigurationsections)',
+            message='##### [ENV. DIFF ' + key + '](#for-configuration-sections)',
             fill=' ',
             align='<',
             width=section_width,
@@ -139,7 +139,7 @@ def write(key, added, removed, modified, env_dep, same, output):
     # output.write(part_sep)
     if len(same) > 0:
         output.write('{message:{fill}{align}{width}}\n'.format(
-            message='##### [SAME ' + key + '](#forconfigurationsections)',
+            message='##### [SAME ' + key + '](#for-configuration-sections)',
             fill=' ',
             align='<',
             width=section_width,
@@ -152,7 +152,7 @@ def write(key, added, removed, modified, env_dep, same, output):
             if (len(same[ekey]) > 0):
                 output.write('| ' + ekey + ' | ' + fix(same[ekey]) + ' |\n')
             else:
-                output.write("| %s | |\n" % (ekey, ))
+                output.write("| %s | |\n" % (ekey,))
 
         # for item in sorted(same):
         #     output.write("| %s | %s |\n" % (item, fix(env_dep[ekey][0])))
@@ -161,7 +161,6 @@ def write(key, added, removed, modified, env_dep, same, output):
 
 
 def compare(referencebp, checkbp, output):
-
     output.write("# Ambari Configuration Diff Tool\n")
     output.write("## Configurations\n")
     output.write("\n")
@@ -196,17 +195,18 @@ def compare(referencebp, checkbp, output):
     output.write('| Section | Added | Missing | Diff | Env Diff | Same |\n')
     output.write('|:---|---|---|---|---|---|\n')
     cfg_list = map(lambda section: '| [' + section + '](#' + section.replace(' ', '-').lower() + ')' +
-                                   ' | [link](#additional' + section.replace(' ',
-                                                                             '-').lower() + ')' + ' | [link](#missing' + section.replace(
+                                   ' | [link](#additional-' + section.replace(' ',
+                                                                              '-').lower() + ')' + ' | [link](#missing-' + section.replace(
         ' ', '-').lower() + ')' +
-                                   ' | [link](#diff' + section.replace(' ',
-                                                                       '-').lower() + ')' + ' | [link](#envdiff' + section.replace(
+                                   ' | [link](#diff-' + section.replace(' ',
+                                                                        '-').lower() + ')' + ' | [link](#env-diff-' + section.replace(
         ' ', '-').lower() + ')' +
-                                   ' | [link](#same' + section.replace(' ', '-').lower() + ')' + ' |', eSections)
+                                   ' | [link](#same-' + section.replace(' ', '-').lower() + ')' + ' |', eSections)
     # output.write("\n- ".join('[' + eSections + '](' + eSections.replace(' ', '-').lower() + ')'))
     output.writelines(["%s\n" % item for item in cfg_list])
     # output.write(*cfg_list, sep='\n')
-    output.write('\n|---:|:---|\n')
+    output.write('\n| | |\n')
+    output.write('|---:|:---|\n')
     output.write('| Date | ' + str(date.today()) + ' |\n')
     # today = date.today()
     # tdy = '{message:{fill}{align}{width}}'.format(
