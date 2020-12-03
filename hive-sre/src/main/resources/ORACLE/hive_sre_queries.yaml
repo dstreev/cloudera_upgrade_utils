@@ -174,7 +174,7 @@ query_definitions:
     statement: "
       SELECT
         T.TBL_TYPE,
-        TP.PARAM_VALUE,
+        to_char(TP.PARAM_VALUE) as PARAM_VALUE,
         COUNT(*) as count
       FROM
         TBLS T
@@ -195,7 +195,7 @@ query_definitions:
       SELECT
         D.NAME,
         T.TBL_TYPE,
-        TP.PARAM_VALUE AS TRANSACTIONAL,
+        to_char(TP.PARAM_VALUE) AS TRANSACTIONAL,
         COUNT(*) as count
       FROM
         DBS D
