@@ -186,7 +186,7 @@ query_definitions:
         TP.PARAM_KEY = 'transactional'
       GROUP BY
         T.TBL_TYPE,
-        TP.PARAM_VALUE
+        to_char(TP.PARAM_VALUE)
       ORDER BY
         count DESC
     "
@@ -212,7 +212,7 @@ query_definitions:
       GROUP BY
         D.NAME,
         T.TBL_TYPE,
-        TP.PARAM_VALUE
+        to_char(TP.PARAM_VALUE)
     "
   serde_table_type_use_summary:
     statement: "
