@@ -187,7 +187,41 @@ processes:
                               Missing Serde's can disrupt a Hive Upgrade/Migration Process"
         resultMessageDetailHeader:   "| Database | Table | Serde |\n|:---|:---|:---|"
         resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
-
+      - query:                       "legacy_decimal_defs_orc"
+        listingColumns: [ "name" ,"tbl_name", "location", "column_name", "type_name", "integer_idx" ]
+        resultMessageHeader: "## Legacy DECIMAL Definitions in ORC Tables\n\n
+                              **EXPLANATION**\n
+                              Introduced with Hive 0.11.0 - Decimal Fields defined in Hive 0.11.0 -> 0.12.0 will NOT have ‘precision’ or ‘scale’ defined.\n\n
+                              Legacy Hive (0.11.0->0.12.0)\n\n
+                              Limited to 38 digits\n
+                              Post 0.12.0 Behavior with NO conversion\n\n
+                              Default precision is ‘10’\n
+                              Default Scale is ‘0’\n\n
+                              **IMPACT**\n\n
+                              For HIVE, this behavior, if not adjusted, will lead to changes in ‘results’ after upgrading to Hive 0.13.0 and above.\n
+                              For Spark, this behavior, if NOT corrected, will result in errors. These tables definitions need to be fixed in the metastore to match the data structure in the ORC file.\n
+                              This will affect many mature deployments where Hive and Spark have been in heavy usage for a long time. This has been observed in a HDP 2.6.5 to CDP 7.1.4 upgrade. Need confirmation from engineering about extent of impact across versions.\n\n
+                              **PRE-UPGRADE STEPS REQUIRED**\n\n
+                              For tables defined in Hive 0.11.0/0.12.0 with DECIMAL type\n\n
+                              First we need to see which columns differ on their type. To find out execute:\n\n
+                              `hive --orcfiledump /hdfsPathWhereTheORCFileOFTheTableSits/MyORCFile` \n\n
+                              There we will see the dump of the internal schema of the table:\n\n
+                              ```\n
+                              File Version: 0.12 with ORC_135\n
+                              Rows: 62079\n
+                              Compression: ZLIB\n
+                              Compression size: 262144\n
+                              Calendar: Julian/Gregorian\n
+                              Type: struct<jobno:double,articlenumber:decimal(20,0),jobdesc:string,businessunit:string,quantityordered:decimal(7,0),quantitydelivered:decimal(7,0),status:string,working:string,pages:int,impressions:decimal(7,0),jobtypedesc:string,type:string,orderdate:string,requiredtime:string,lastopdesc:string,load_date:date>\n
+                              ```\n\n
+                              Check the columns where the definition on ORC does not match the Hive definition, and alter these to match.\n\n
+                              In the table example we have from the ORC that was provided, we should do in beeline:\n\n
+                              ```\n
+                              alter table testorc change column articlenumber articlenumber decimal(20,0);\n
+                              ```\n\n
+                              Do this for EACH COLUMN affected\n\n"
+        resultMessageDetailHeader:   "| Database | Table | Location | Column | Type | Idx |\n|:---|:---|:---|:---|:---|:---|"
+        resultMessageDetailTemplate: "| %1$s | %2$s | %3$s | %4$s | %5$s | %6$s |"
       - query:                       "managed_tbl_shadows"
         listingColumns: [ "db_name" ,"tbl_name", "tbl_location" ]
         resultMessageHeader:         "\n## Managed Shadow Tables"
