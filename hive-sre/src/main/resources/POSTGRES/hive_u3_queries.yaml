@@ -738,7 +738,7 @@ ORDER BY
                WHERE
                \"D\".\"NAME\" LIKE ?
                AND \"SER\".\"SLIB\" LIKE '%OrcSerde'
-               AND \"C\".\"TYPE_NAME\" LIKE 'decimal%'"
+               AND \"C\".\"TYPE_NAME\" = 'decimal'"
     parameters:
       dbs:
         initial: "%"
