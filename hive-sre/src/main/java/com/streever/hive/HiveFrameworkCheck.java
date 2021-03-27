@@ -4,13 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.streever.hive.config.HiveStrictManagedMigrationWhiteListConfig;
 import com.streever.hive.reporting.ReportingConf;
+import com.streever.hive.sre.DbSetProcess;
 import com.streever.hive.sre.ProcessContainer;
 import com.streever.hive.sre.SreProcessBase;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
@@ -23,6 +26,7 @@ public class HiveFrameworkCheck implements SreSubApp {
     private String stackResource;
     private ProcessContainer processContainer;
     private String[] dbsOverride;
+    private String outputDirectory;
 
     public String[] getDbsOverride() {
         return dbsOverride;
@@ -69,6 +73,33 @@ public class HiveFrameworkCheck implements SreSubApp {
 
     public void start() {
         getProcessContainer().start();
+        // Check the Hsmm object for content.  Save to file.
+        HiveStrictManagedMigrationWhiteListConfig hsmm = HiveStrictManagedMigrationWhiteListConfig.getInstance();
+        ObjectMapper mapper;
+        mapper = new ObjectMapper(new YAMLFactory());
+        mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        String hsmmStr = null;
+        File hsmmFile = null;
+        FileWriter hsmmFileWriter = null;
+        try {
+            hsmmStr = mapper.writeValueAsString(hsmm);
+            hsmmFile = new File(outputDirectory + System.getProperty("file.separator") + "hsmm_whitelist.yaml");
+            hsmmFileWriter = new FileWriter(hsmmFile);
+            hsmmFileWriter.write(hsmmStr);
+            System.out.println("HSMM Whitelist File 'saved' to: " + hsmmFile.getPath());
+        } catch (JsonProcessingException jpe) {
+            jpe.printStackTrace();
+            System.err.println("Problem 'reading' HSMM Whitelist object");
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.err.println("Problem 'writing' HSMM Whitelist File");
+        } finally {
+            try {
+                hsmmFileWriter.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void init(String[] args) {
@@ -149,6 +180,16 @@ public class HiveFrameworkCheck implements SreSubApp {
             }
         }
         setProcessContainer(procContainer);
+
+        // If specified, skip command checks.
+        if (cmd.hasOption("scc")) {
+            for (SreProcessBase processBase: procContainer.getProcesses()) {
+                if (processBase instanceof DbSetProcess) {
+                    ((DbSetProcess)processBase).setCommandChecks(null);
+                }
+            }
+        }
+
         // Initialize with config and output directory.
         String configFile = null;
         if (cmd.hasOption("cfg")) {
@@ -156,7 +197,9 @@ public class HiveFrameworkCheck implements SreSubApp {
         } else {
             configFile = System.getProperty("user.home") + System.getProperty("file.separator") + ".hive-sre/cfg/default.yaml";
         }
-        getProcessContainer().init(configFile, cmd.getOptionValue("o"), getDbsOverride());
+        outputDirectory = cmd.getOptionValue("o");
+        // HERE: determine output dir and setup a place to write out the hsmm whitelist config.
+        outputDirectory = getProcessContainer().init(configFile, outputDirectory, getDbsOverride());
 
     }
 
@@ -198,6 +241,11 @@ public class HiveFrameworkCheck implements SreSubApp {
                 "The custom HiveFramework check configuration. Needs to be in the 'Classpath'.");
         hfwOption.setRequired(false);
         options.addOption(hfwOption);
+
+        Option sccOption = new Option("scc", "skip-command-checks", false,
+                "Don't process the command checks for the process.");
+        sccOption.setRequired(false);
+        options.addOption(sccOption);
 
         return options;
 

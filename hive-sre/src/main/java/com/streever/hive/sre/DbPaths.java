@@ -2,6 +2,8 @@ package com.streever.hive.sre;
 
 import com.streever.hadoop.HadoopSession;
 import com.streever.hadoop.shell.command.CommandReturn;
+import com.streever.hive.config.HiveStrictManagedMigrationElements;
+import com.streever.hive.config.HiveStrictManagedMigrationWhiteListConfig;
 import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
@@ -136,6 +138,27 @@ public class DbPaths extends SRERunnable {
             String[] columns = getParent().getListingColumns();
 
             String[][] columnsArray = rarray.getColumns(columns);
+            Integer[] hsmmElementLoc = null;
+            HiveStrictManagedMigrationElements hsmmElements = getParent().getHsmmElements();
+            // If we found an hsmmelement attribute, populate the location parts
+            // so we can add the reference for the hsmm processing config.
+            if (hsmmElements != null) {
+                hsmmElementLoc = new Integer[2];
+                // Align the locations in the array with the names
+                for (int i = 0;i < columns.length;i++) {
+                    if (columns[i].equals(hsmmElements.getDatabaseField())) {
+                        hsmmElementLoc[0] = i;
+                    }
+                    if (columns[i].equals(hsmmElements.getTableField())) {
+                        hsmmElementLoc[1] = i;
+                    }
+                }
+                // If we didn't find both, then set to null.
+                if (hsmmElementLoc[0] == null || hsmmElementLoc[1] == null) {
+                    // TODO: Need to throw config exception in this condition.
+                    hsmmElementLoc = null;
+                }
+            }
             this.setTotalCount(rarray.getCount() * this.getCounterChildren().size());
             // Loop through the paths
             if (columnsArray[0] != null && columnsArray[0].length > 0) {
@@ -148,6 +171,12 @@ public class DbPaths extends SRERunnable {
                             args[a] = columnsArray[a][i];
                         else
                             args[a] = " "; // Prevent null in array.  Messes up String.format when array has nulls.
+                    }
+                    if (hsmmElementLoc != null) {
+                        // When defined, add elements to hsmm.
+                        HiveStrictManagedMigrationWhiteListConfig hsmmwcfg =
+                                HiveStrictManagedMigrationWhiteListConfig.getInstance();
+                        hsmmwcfg.addTable(args[hsmmElementLoc[0]], args[hsmmElementLoc[1]]);
                     }
                     if (getCommandChecks() != null) {
                         for (CommandReturnCheck lclCheck : getCommandChecks()) {

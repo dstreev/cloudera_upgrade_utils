@@ -47,7 +47,7 @@ processes:
   - type:                     "dbSet"
     id:                       2
     active:                   true
-    displayName:              "Bad ACID ORC Filenames)"
+    displayName:              "Bad ACID ORC Filenames"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "db_name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_check" ]
@@ -89,6 +89,9 @@ processes:
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "db_name" ,"tbl_name" , "tbl_type" ,"tbl_location" ]
     pathsListingQuery:        "managed_2_acid"
+    hsmmElements:
+      databaseField:          "db_name"
+      tableField:             "tbl_name"
     commandChecks:
       - displayName:            "Hive 3 Upgrade Check - Potential ACID Conversions"
         title:                  "-- Managed Non - ACID to ACID Table Migrations  (v.${Implementation-Version})\n"

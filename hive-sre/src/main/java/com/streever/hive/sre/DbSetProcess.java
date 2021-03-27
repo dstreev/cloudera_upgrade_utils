@@ -1,6 +1,7 @@
 package com.streever.hive.sre;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.streever.hive.config.HiveStrictManagedMigrationElements;
 import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
@@ -26,7 +27,8 @@ public class DbSetProcess extends SreProcessBase {
     //    private List<DbPaths> dbPaths;
     private List<CommandReturnCheck> commandChecks;
     private CheckCalculation calculationCheck;
-
+    // HiveStrictManagedMigration Output Config
+    private HiveStrictManagedMigrationElements hsmmElements;
     private String dbListingQuery;
     private String[] listingColumns;
     private String pathsListingQuery;
@@ -78,6 +80,15 @@ public class DbSetProcess extends SreProcessBase {
 //    public void setDbPaths(List<DbPaths> dbPaths) {
 //        this.dbPaths = dbPaths;
 //    }
+
+
+    public HiveStrictManagedMigrationElements getHsmmElements() {
+        return hsmmElements;
+    }
+
+    public void setHsmmElements(HiveStrictManagedMigrationElements hsmmElements) {
+        this.hsmmElements = hsmmElements;
+    }
 
     protected void initHeader() {
         if (getTitle() != null)
@@ -234,6 +245,9 @@ public class DbSetProcess extends SreProcessBase {
                         "Can you run an 'hdfs' cli command successfully?");
 //                return; // Go no further with processing.
             }
+        }
+        if (getCommandChecks() == null) {
+            this.success.println("Command Checks Skipped.  Rules Processing Skipped.");
         }
 
         for (SRERunnable sre : sres) {

@@ -10,7 +10,7 @@ import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
 import com.streever.hive.reporting.Reporter;
 import org.apache.commons.io.FileUtils;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -146,7 +146,8 @@ public class ProcessContainer {
         }
     }
 
-    public void init(String config, String outputDirectory, String[] dbsOverride) {
+    public String init(String config, String outputDirectory, String[] dbsOverride) {
+//        String realizedOutputDir = null;
         String job_run_dir = null;
         if (config == null || outputDirectory == null) {
             throw new RuntimeException("Config File and Output Directory must be set before init.");
@@ -228,6 +229,8 @@ public class ProcessContainer {
         }
 
         initializing = Boolean.FALSE;
+
+        return job_run_dir;
     }
 
     @Override
