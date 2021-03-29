@@ -49,7 +49,7 @@ _**Don't Build, Download the LATEST binary here!!!**_
 * Download the release 'tar.gz' file to a temp location.
 * Untar the file (tar.gz).
 ```
-tar xzvf <release>.tar.gz
+tar xzvf hive-sre-dist.tar.gz
 cd hive-sre
 ```  
 * As a root user, chmod +x the 3 shell script files.
