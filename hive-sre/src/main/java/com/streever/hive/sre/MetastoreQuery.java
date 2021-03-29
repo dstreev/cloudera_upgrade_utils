@@ -1,5 +1,7 @@
 package com.streever.hive.sre;
 
+import com.streever.hive.config.HiveStrictManagedMigrationElements;
+
 public class MetastoreQuery {
 
     private String query;
@@ -8,6 +10,9 @@ public class MetastoreQuery {
     private String resultMessageDetailHeader;
     private String resultMessageDetailTemplate;
     private CheckCalculation check;
+    // HiveStrictManagedMigration Output Config
+    private HiveStrictManagedMigrationElements hsmmElements;
+
 
     public String getQuery() {
         return query;
@@ -57,4 +62,11 @@ public class MetastoreQuery {
         this.resultMessageDetailTemplate = resultMessageDetailTemplate;
     }
 
+    public HiveStrictManagedMigrationElements getHsmmElements() {
+        return hsmmElements;
+    }
+
+    public void setHsmmElements(HiveStrictManagedMigrationElements hsmmElements) {
+        this.hsmmElements = hsmmElements;
+    }
 }

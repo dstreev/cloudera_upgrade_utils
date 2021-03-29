@@ -1,5 +1,7 @@
 package com.streever.hive.sre;
 
+import com.streever.hive.config.HiveStrictManagedMigrationElements;
+import com.streever.hive.config.HiveStrictManagedMigrationWhiteListConfig;
 import com.streever.hive.config.Metastore;
 import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.ReportCounter;
@@ -58,6 +60,8 @@ public class MetastoreReportProcess extends MetastoreProcess {
                 // Close ResultSet
                 rCheck.close();
                 // build array of columns
+                String[] columns = metastoreQueryDefinition.getListingColumns();
+
                 metastoreRecords = rarray.getColumns(metastoreQueryDefinition.getListingColumns());
 
                 if (metastoreRecords[0] != null && metastoreRecords[0].length > 0) {
@@ -67,6 +71,29 @@ public class MetastoreReportProcess extends MetastoreProcess {
                     if (metastoreQueryDefinition.getResultMessageDetailHeader() != null) {
                         success.println(metastoreQueryDefinition.getResultMessageDetailHeader());
                     }
+
+                    Integer[] hsmmElementLoc = null;
+                    HiveStrictManagedMigrationElements hsmmElements = metastoreQueryDefinition.getHsmmElements();
+                    // If we found an hsmmelement attribute, populate the location parts
+                    // so we can add the reference for the hsmm processing config.
+                    if (hsmmElements != null) {
+                        hsmmElementLoc = new Integer[2];
+                        // Align the locations in the array with the names
+                        for (int i = 0;i < columns.length;i++) {
+                            if (columns[i].equals(hsmmElements.getDatabaseField())) {
+                                hsmmElementLoc[0] = i;
+                            }
+                            if (columns[i].equals(hsmmElements.getTableField())) {
+                                hsmmElementLoc[1] = i;
+                            }
+                        }
+                        // If we didn't find both, then set to null.
+                        if (hsmmElementLoc[0] == null || hsmmElementLoc[1] == null) {
+                            // TODO: Need to throw config exception in this condition.
+                            hsmmElementLoc = null;
+                        }
+                    }
+
                     setTotalCount(metastoreRecords[0].length);
                     for (int i = 0; i < metastoreRecords[0].length; i++) {
                     incSuccess(1);
@@ -74,6 +101,13 @@ public class MetastoreReportProcess extends MetastoreProcess {
                         for (int j = 0; j < metastoreQueryDefinition.getListingColumns().length; j++) {
                             record[j] = metastoreRecords[j][i];
 //                        serdeRecords[0][i], serdeRecords[1][i], serdeRecords[2][i]
+                        }
+
+                        if (hsmmElementLoc != null) {
+                            // When defined, add elements to hsmm.
+                            HiveStrictManagedMigrationWhiteListConfig hsmmwcfg =
+                                    HiveStrictManagedMigrationWhiteListConfig.getInstance();
+                            hsmmwcfg.addTable(record[hsmmElementLoc[0]], record[hsmmElementLoc[1]]);
                         }
 
                         // Use the Check OR the Result Message Template

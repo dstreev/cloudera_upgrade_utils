@@ -87,7 +87,7 @@ processes:
     errorFilename:            "managed_upgrade_2_acid_issues.txt"
     successFilename:          "managed_upgrade_2_acid.sql"
     dbListingQuery:           "db_tbl_count"
-    listingColumns: [ "db_name" ,"tbl_name" , "tbl_type" ,"tbl_location" ]
+    listingColumns:           [ "db_name" ,"tbl_name" , "tbl_type" ,"tbl_location" ]
     pathsListingQuery:        "managed_2_acid"
     hsmmElements:
       databaseField:          "db_name"
@@ -190,6 +190,16 @@ processes:
                               Missing Serde's can disrupt a Hive Upgrade/Migration Process"
         resultMessageDetailHeader:   "| Database | Table | Serde |\n|:---|:---|:---|"
         resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
+      - query:                       "legacy_kudu_storage_handle_class"
+        listingColumns: [ "db_name" ,"tbl_name"]
+        resultMessageHeader:         "## Legacy Kudu Serde's\n
+                              > Listed tables need the Kudu Serde Class upgraded.\n
+                              "
+        resultMessageDetailHeader:   "| Database | Table |\n|:---|:---|"
+        resultMessageDetailTemplate: "| %1$s | %2$s |"
+        hsmmElements:
+          databaseField: "db_name"
+          tableField:    "tbl_name"
       - query:                       "legacy_decimal_defs_orc"
         listingColumns: [ "name" ,"tbl_name", "location", "column_name", "type_name", "integer_idx" ]
         resultMessageHeader: "## Legacy DECIMAL Definitions in ORC Tables\n\n
