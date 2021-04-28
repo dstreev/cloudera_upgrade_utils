@@ -3,8 +3,7 @@ package com.streever.hive.sre;
 import com.streever.hadoop.HadoopSession;
 import com.streever.hadoop.shell.command.CommandReturn;
 import com.streever.hive.config.HiveStrictManagedMigrationElements;
-import com.streever.hive.config.HiveStrictManagedMigrationWhiteListConfig;
-import com.streever.hive.reporting.ReportingConf;
+import com.streever.hive.config.HiveStrictManagedMigrationIncludeListConfig;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
@@ -174,8 +173,8 @@ public class DbPaths extends SRERunnable {
                     }
                     if (hsmmElementLoc != null) {
                         // When defined, add elements to hsmm.
-                        HiveStrictManagedMigrationWhiteListConfig hsmmwcfg =
-                                HiveStrictManagedMigrationWhiteListConfig.getInstance();
+                        HiveStrictManagedMigrationIncludeListConfig hsmmwcfg =
+                                HiveStrictManagedMigrationIncludeListConfig.getInstance();
                         hsmmwcfg.addTable(args[hsmmElementLoc[0]], args[hsmmElementLoc[1]]);
                     }
                     if (getCommandChecks() != null) {

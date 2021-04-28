@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.streever.hive.sre.ProcessContainer;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,9 +13,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
-
-public class HiveStrictManagedMigrationWhiteListConfigTest {
+public class HiveStrictManagedMigrationIncludeListConfigTest {
 
     private ObjectMapper mapper;
 
@@ -28,11 +25,11 @@ public class HiveStrictManagedMigrationWhiteListConfigTest {
 
     @Test
     public void test01() {
-        HiveStrictManagedMigrationWhiteListConfig hsmmCfg = HiveStrictManagedMigrationWhiteListConfig.getInstance();
+        HiveStrictManagedMigrationIncludeListConfig hsmmCfg = HiveStrictManagedMigrationIncludeListConfig.getInstance();
         List<String> tables = new ArrayList<String>();
         tables.add("call_center");
         tables.add("customer");
-        hsmmCfg.getDatabaseWhitelists().put("tpcds_bin_partitioned_x", tables);
+        hsmmCfg.getDatabaseIncludeLists().put("tpcds_bin_partitioned_x", tables);
         String hsmmStr = null;
         try {
             hsmmStr = mapper.writeValueAsString(hsmmCfg);
@@ -47,16 +44,16 @@ public class HiveStrictManagedMigrationWhiteListConfigTest {
         String cfgResource = "/hsmm_cfg_01.yaml";
         URL configURL = this.getClass().getResource(cfgResource);
         String yamlConfig = null;
-        HiveStrictManagedMigrationWhiteListConfig hsmmCfg = null;
+        HiveStrictManagedMigrationIncludeListConfig hsmmCfg = null;
         try {
             yamlConfig = IOUtils.toString(configURL);
         } catch (IOException e) {
             throw new RuntimeException("Issue converting config: " + cfgResource, e);
         }
         try {
-            hsmmCfg = mapper.readerFor(HiveStrictManagedMigrationWhiteListConfig.class).readValue(yamlConfig);
-            List<String> whitelist = hsmmCfg.getDatabaseWhitelists().get("tpcds_bin_partitioned_orc_10");
-            assert(whitelist != null);
+            hsmmCfg = mapper.readerFor(HiveStrictManagedMigrationIncludeListConfig.class).readValue(yamlConfig);
+            List<String> includelist = hsmmCfg.getDatabaseIncludeLists().get("tpcds_bin_partitioned_orc_10");
+            assert(includelist != null);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Issue deserializing config: " + cfgResource, e);
         }

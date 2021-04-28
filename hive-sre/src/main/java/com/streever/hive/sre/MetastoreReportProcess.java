@@ -1,10 +1,7 @@
 package com.streever.hive.sre;
 
 import com.streever.hive.config.HiveStrictManagedMigrationElements;
-import com.streever.hive.config.HiveStrictManagedMigrationWhiteListConfig;
-import com.streever.hive.config.Metastore;
-import com.streever.hive.reporting.Counter;
-import com.streever.hive.reporting.ReportCounter;
+import com.streever.hive.config.HiveStrictManagedMigrationIncludeListConfig;
 import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
@@ -13,7 +10,6 @@ import com.streever.sql.ResultArray;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -105,8 +101,8 @@ public class MetastoreReportProcess extends MetastoreProcess {
 
                         if (hsmmElementLoc != null) {
                             // When defined, add elements to hsmm.
-                            HiveStrictManagedMigrationWhiteListConfig hsmmwcfg =
-                                    HiveStrictManagedMigrationWhiteListConfig.getInstance();
+                            HiveStrictManagedMigrationIncludeListConfig hsmmwcfg =
+                                    HiveStrictManagedMigrationIncludeListConfig.getInstance();
                             hsmmwcfg.addTable(record[hsmmElementLoc[0]], record[hsmmElementLoc[1]]);
                         }
 

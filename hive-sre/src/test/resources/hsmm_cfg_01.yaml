@@ -1,5 +1,5 @@
 ---
-databaseWhitelists:
+databaseIncludeLists:
   tpcds_bin_partitioned_orc_10:
   - "call_center"
   - "catalog_page"

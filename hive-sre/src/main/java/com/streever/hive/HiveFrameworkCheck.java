@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.streever.hive.config.HiveStrictManagedMigrationWhiteListConfig;
+import com.streever.hive.config.HiveStrictManagedMigrationIncludeListConfig;
 import com.streever.hive.reporting.ReportingConf;
 import com.streever.hive.sre.DbSetProcess;
 import com.streever.hive.sre.ProcessContainer;
@@ -74,7 +74,7 @@ public class HiveFrameworkCheck implements SreSubApp {
     public void start() {
         getProcessContainer().start();
         // Check the Hsmm object for content.  Save to file.
-        HiveStrictManagedMigrationWhiteListConfig hsmm = HiveStrictManagedMigrationWhiteListConfig.getInstance();
+        HiveStrictManagedMigrationIncludeListConfig hsmm = HiveStrictManagedMigrationIncludeListConfig.getInstance();
         ObjectMapper mapper;
         mapper = new ObjectMapper(new YAMLFactory());
         mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -83,16 +83,16 @@ public class HiveFrameworkCheck implements SreSubApp {
         FileWriter hsmmFileWriter = null;
         try {
             hsmmStr = mapper.writeValueAsString(hsmm);
-            hsmmFile = new File(outputDirectory + System.getProperty("file.separator") + "hsmm_whitelist.yaml");
+            hsmmFile = new File(outputDirectory + System.getProperty("file.separator") + "hsmm_includelist.yaml");
             hsmmFileWriter = new FileWriter(hsmmFile);
             hsmmFileWriter.write(hsmmStr);
-            System.out.println("HSMM Whitelist File 'saved' to: " + hsmmFile.getPath());
+            System.out.println("HSMM IncludeList File 'saved' to: " + hsmmFile.getPath());
         } catch (JsonProcessingException jpe) {
             jpe.printStackTrace();
-            System.err.println("Problem 'reading' HSMM Whitelist object");
+            System.err.println("Problem 'reading' HSMM IncludeList object");
         } catch (IOException ioe) {
             ioe.printStackTrace();
-            System.err.println("Problem 'writing' HSMM Whitelist File");
+            System.err.println("Problem 'writing' HSMM IncludeList File");
         } finally {
             try {
                 hsmmFileWriter.close();
@@ -198,7 +198,7 @@ public class HiveFrameworkCheck implements SreSubApp {
             configFile = System.getProperty("user.home") + System.getProperty("file.separator") + ".hive-sre/cfg/default.yaml";
         }
         outputDirectory = cmd.getOptionValue("o");
-        // HERE: determine output dir and setup a place to write out the hsmm whitelist config.
+        // HERE: determine output dir and setup a place to write out the hsmm includelist config.
         outputDirectory = getProcessContainer().init(configFile, outputDirectory, getDbsOverride());
 
     }
