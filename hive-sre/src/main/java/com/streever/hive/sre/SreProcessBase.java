@@ -23,7 +23,7 @@ import java.net.URL;
         @JsonSubTypes.Type(value = DbSetProcess.class, name = "dbSet"),
         @JsonSubTypes.Type(value = MetastoreQueryProcess.class, name = "metastore.query"),
         @JsonSubTypes.Type(value = MetastoreReportProcess.class, name = "metastore.report")})
-public abstract class SreProcessBase {
+public abstract class SreProcessBase implements Runnable {
     private String displayName = "not set";
     private String title = null;
     private String note = null;

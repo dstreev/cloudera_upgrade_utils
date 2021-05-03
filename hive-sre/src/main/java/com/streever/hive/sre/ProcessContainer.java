@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -128,14 +129,24 @@ public class ProcessContainer {
     public void start() {
         while (true) {
             boolean check = true;
-            for (ScheduledFuture sf : getProcessThreads()) {
-                if (!sf.isDone()) {
-                    check = false;
+            try {
+                for (ScheduledFuture sf : getProcessThreads()) {
+                    if (!sf.isDone()) {
+                        check = false;
+                        break;
+                    }
+                }
+                if (check)
                     break;
+            } catch (ConcurrentModificationException cme) {
+                // Try again. This happens because we are editing the
+                // list in the background.
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
-            if (check)
-                break;
         }
         getThreadPool().shutdown();
         for (SreProcessBase process : getProcesses()) {
@@ -202,7 +213,7 @@ public class ProcessContainer {
                                 throw new NotImplementedException();
                         }
                     }
-                    process.init(this, job_run_dir);
+
                     // Check that it's still active after init.
                     // When there's nothing to process, it won't be active.
                     int delay = 100;
@@ -219,6 +230,16 @@ public class ProcessContainer {
                             getProcessThreads().add(getThreadPool().schedule((Runnable) process, delay, MILLISECONDS));
                         }
                     }
+                    process.setParent(this);
+                    process.setOutputDirectory(job_run_dir);
+                    Thread thread = new Thread(process);
+                    thread.start();
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+//                    process.init(this, job_run_dir);
 
                 }
             }

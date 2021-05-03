@@ -218,12 +218,21 @@ public class HiveFrameworkCheck implements SreSubApp {
         outputOption.setRequired(false);
         options.addOption(outputOption);
 
+        OptionGroup dbOptionGroup = new OptionGroup();
         Option dbOption = new Option("db", "database", true,
                 "Comma separated list of Databases.  Will override config. (upto 100)");
         dbOption.setValueSeparator(',');
         dbOption.setArgs(100);
         dbOption.setRequired(false);
-        options.addOption(dbOption);
+        dbOptionGroup.addOption(dbOption);
+
+        Option dbRegExOption = new Option("dbRegEx", "database-regex", true,
+                "A RegEx to match databases to process");
+        dbRegExOption.setRequired(false);
+        dbOptionGroup.setRequired(false);
+        dbOptionGroup.addOption(dbRegExOption);
+
+        options.addOptionGroup(dbOptionGroup);
 
         Option includeOption = new Option("i", "include", true,
                 "Comma separated list of process id's to run.  When not specified, ALL processes are run.");

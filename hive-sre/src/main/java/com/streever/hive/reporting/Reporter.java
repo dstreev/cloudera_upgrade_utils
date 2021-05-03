@@ -106,6 +106,17 @@ public class Reporter implements Runnable {
         linePos = 0;
     }
 
+    private Boolean isProcessing(List<ReportCounter> reportCounters) {
+        Boolean rtn = Boolean.FALSE;
+        for (ReportCounter cntr : reportCounters) {
+            if (cntr.getStatus() == PROCESSING) {
+                rtn = Boolean.TRUE;
+                break;
+            }
+        }
+        return rtn;
+    }
+
     // Return true when not completed.
     public boolean refresh() {
         boolean rtn = false;
@@ -129,11 +140,11 @@ public class Reporter implements Runnable {
         }
         for (String groupName : this.counterGroups.keySet()) {
             List<ReportCounter> counters = counterGroups.get(groupName);
-
+            boolean doWrite = isProcessing(counters);
             List<String> currentProcessing = new ArrayList<String>();
-            pushLine(StringUtils.rightPad("=", WIDTH, "="));
+            if (doWrite) pushLine(StringUtils.rightPad("=", WIDTH, "="));
             pushLine(StringUtils.center(groupName, WIDTH));
-            pushLine(StringUtils.rightPad("=", WIDTH, "="));
+            if (doWrite) pushLine(StringUtils.rightPad("=", WIDTH, "="));
 
             Map<Integer, AtomicLong> totals = new TreeMap<Integer, AtomicLong>();
             totals.put(ERROR_POS, new AtomicLong(0));
@@ -163,30 +174,6 @@ public class Reporter implements Runnable {
                     Wrap cd = getCounterDisplay(INDENT, ctr);
                     currentProcessing.addAll(cd.details);
                 }
-
-//                switch (ctr.getStatus()) {
-//                    case ReportCounter.CONSTRUCTED:
-//                    case ReportCounter.WAITING:
-//                    case ReportCounter.STARTED:
-//                    case ReportCounter.PROCESSING:
-//                        if (progress.containsKey(ctr.getStatus())) {
-//                            progress.get(ctr.getStatus()).addAndGet(1);
-//                        } else {
-//                            progress.put(ctr.getStatus(), new AtomicLong(1));
-//                        }
-//                        if (ctr.getStatus() == PROCESSING) {
-//                                Wrap cd = getCounterDisplay(INDENT, ctr);
-//                                currentProcessing.addAll(cd.details);
-//                        }
-//                        for (ReportCounter child : ctr.getChildren()) {
-//                            totals.get(ERROR_POS).addAndGet(child.getError());
-//                            totals.get(SUCCESS_POS).addAndGet(child.getSuccess());
-//                        }
-//                        break;
-//                    case ReportCounter.ERROR:
-//                    case ReportCounter.COMPLETED:
-//                        break;
-//                }
             }
             for (String line : currentProcessing) {
                 pushLine(line);
@@ -224,7 +211,7 @@ public class Reporter implements Runnable {
             String totalsSummary = overallTotalsSb.toString();
             totalsSummary = StringUtils.leftPad(totalsSummary, WIDTH - (summary.length() + 1) + (20 * 5), " ");
 //        summary = StringUtils.leftPad(summary, WIDTH + (8 * 5), " ");
-            pushLine(StringUtils.leftPad(" ", WIDTH, "="));
+            if (doWrite) pushLine(StringUtils.leftPad(" ", WIDTH, "="));
             pushLine(summary + totalsSummary);
         }
         tictoc = !tictoc;

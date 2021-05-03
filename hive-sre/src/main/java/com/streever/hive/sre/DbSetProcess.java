@@ -6,6 +6,8 @@ import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.io.FileNotFoundException;
 import java.sql.Connection;
@@ -15,6 +17,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.streever.hive.reporting.ReportCounter.*;
+
 import static com.streever.hive.reporting.ReportCounter.CONSTRUCTED;
 import static com.streever.hive.reporting.ReportCounter.WAITING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -23,6 +27,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @JsonIgnoreProperties({"parent", "config", "metastoreDirectDataSource", "h2DataSource",
         "outputDirectory", "dbPaths", "cliSession", "success", "error"})
 public class DbSetProcess extends SreProcessBase {
+    private static Logger LOG = LogManager.getLogger(DbSetProcess.class);
+
+    private ProcessContainer parent;
+//    private String outputDirectory;
 
     //    private List<DbPaths> dbPaths;
     private List<CommandReturnCheck> commandChecks;
@@ -32,6 +40,21 @@ public class DbSetProcess extends SreProcessBase {
     private String dbListingQuery;
     private String[] listingColumns;
     private String pathsListingQuery;
+
+    @Override
+    public ProcessContainer getParent() {
+        return parent;
+    }
+
+    @Override
+    public void setParent(ProcessContainer parent) {
+        this.parent = parent;
+    }
+
+//    @Override
+//    public String getOutputDirectory() {
+//        return outputDirectory;
+//    }
 
     public List<CommandReturnCheck> getCommandChecks() {
         return commandChecks;
@@ -223,7 +246,7 @@ public class DbSetProcess extends SreProcessBase {
                 check.close();
                 // build array of tables.
                 dbs = rarray.getColumn("name");
-                System.out.println("Found " + dbs.length + " databases to process.");
+                System.out.println(getDisplayName() + " - found " + dbs.length + " databases to process.");
             } catch (SQLException e) {
                 throw new RuntimeException("Issue getting 'databases' to process.", e);
             }
@@ -231,6 +254,8 @@ public class DbSetProcess extends SreProcessBase {
 
         // Build an Element Path for each database.  This will be use to divide the work.
         List<SRERunnable> sres = new ArrayList<SRERunnable>();//[dbs.length];
+        int threadCount =  getParent().getConfig().getParallelism();
+
         for (String database : dbs) {
             DbPaths paths = new DbPaths(database, this);
             paths.error = this.error;
@@ -245,18 +270,52 @@ public class DbSetProcess extends SreProcessBase {
                         "Can you run an 'hdfs' cli command successfully?");
 //                return; // Go no further with processing.
             }
+
+            paths.setStatus(WAITING);
+            LOG.info("Adding paths for db: " + database);
+            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), paths.getCounter());
+            // Add Runnable to Main ThreadPool
+            getParent().getProcessThreads().add(getParent().getThreadPool().schedule(paths, 1, MILLISECONDS));
+
+            // Pause the addition of processes until some complete.
+            // The goal is to reduce the paths.init() call which is creating an hdfs client session
+            // and blowing up the process for LARGE installations.
+            int i = 0;
+            for (SRERunnable sRun: sres) {
+                if (sRun.getStatus() < ERROR) {
+                    i++;
+                }
+            }
+            while (i >= (threadCount * 2)) {
+                try {
+//                    LOG.info("Reached max threads, pausing for 1 sec");
+                    Thread.sleep(500);
+                    i = 0;
+                    for (SRERunnable sRun: sres) {
+                        if (sRun.getStatus() < ERROR) {
+                            i++;
+                        }
+                    }
+
+                } catch (InterruptedException ie) {
+
+                }
+            }
+
         }
+
         if (getCommandChecks() == null) {
             this.success.println("Command Checks Skipped.  Rules Processing Skipped.");
         }
 
-        for (SRERunnable sre : sres) {
-            sre.setStatus(WAITING);
-            // Add Counter to Main Reporter
-            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), sre.getCounter());
-            // Add Runnable to Main ThreadPool
-            getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
-        }
+//        for (SRERunnable sre : sres) {
+//            sre.setStatus(WAITING);
+//            // Add Counter to Main Reporter
+//            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), sre.getCounter());
+//            // Add Runnable to Main ThreadPool
+//            getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
+//        }
+
         // When nothing is found.
         if (sres.size() == 0) {
             this.setActive(false);
@@ -289,5 +348,14 @@ public class DbSetProcess extends SreProcessBase {
         return "DbSet{" +
 //                "dbPaths=" + dbPaths +
                 '}';
+    }
+
+    @Override
+    public void run() {
+        try {
+            init(this.getParent(), this.getOutputDirectory());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 }
