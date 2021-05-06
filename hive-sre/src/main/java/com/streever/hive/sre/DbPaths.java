@@ -22,8 +22,8 @@ import static com.streever.hive.reporting.ReportCounter.*;
 public class DbPaths extends SRERunnable {
 
     private DbSetProcess parent;
-    private String sessionId;
-    private HadoopSession cliSession;
+//    private String sessionId;
+//    private HadoopSession cliSession;
 
     private List<CommandReturnCheck> commandChecks = new ArrayList<CommandReturnCheck>();
     private CheckCalculation calculationCheck = null;
@@ -37,9 +37,9 @@ public class DbPaths extends SRERunnable {
         this.parent = parent;
     }
 
-    public HadoopSession getCliSession() {
-        return cliSession;
-    }
+//    public HadoopSession getCliSession() {
+//        return cliSession;
+//    }
 
     public List<CommandReturnCheck> getCommandChecks() {
         return commandChecks;
@@ -100,25 +100,20 @@ public class DbPaths extends SRERunnable {
                 e.printStackTrace();
             }
         }
-        sessionId = "DB Paths for: " + getDisplayName() + UUID.randomUUID();
-        this.cliSession = HadoopSession.get(sessionId);
-        String[] api = {"-api"};
-        try {
-            // TODO: Need to promote failure when keytab doesn't exist.
-//            System.out.println("Start CLI Session");
-            rtn = this.cliSession.start(api);
-//            System.out.println("CLI Session Started");
-        } catch (Exception e) {
-            System.err.println("Issue starting CLI Session:" + e.getMessage());
-            e.printStackTrace();
-        }
-        return rtn;
+        return Boolean.TRUE;
     }
 
-    @Override
-    public void run() {
+//    @Override
+//    public void run() {
+//        doIt();
+//    }
+
+    protected void doIt() {
         this.setStatus(STARTED);
+//        sessionId = "DB Paths for: " + getDisplayName() + UUID.randomUUID();
+
         QueryDefinition queryDefinition = null;
+        HadoopSession cli = null;
 
         try (Connection conn = getParent().getParent().getConnectionPools().
                 getMetastoreDirectConnection()) {
@@ -138,6 +133,18 @@ public class DbPaths extends SRERunnable {
             String[] columns = getParent().getListingColumns();
 
             String[][] columnsArray = rarray.getColumns(columns);
+
+            cli = getParent().getParent().getCliPool().borrow();
+
+//            this.cliSession = HadoopSession.get(sessionId);
+//            String[] api = {"-api"};
+//            try {
+//                this.cliSession.start(api);
+//            } catch (Exception e) {
+////            System.err.println("Issue starting CLI Session:" + e.getMessage());
+//                e.printStackTrace(error);
+//            }
+
             Integer[] hsmmElementLoc = null;
             HiveStrictManagedMigrationElements hsmmElements = getParent().getHsmmElements();
             // If we found an hsmmelement attribute, populate the location parts
@@ -183,7 +190,7 @@ public class DbPaths extends SRERunnable {
                             try {
                                 String rcmd = lclCheck.getFullCommand(args);
                                 if (rcmd != null) {
-                                    CommandReturn cr = getCliSession().processInput(rcmd);
+                                    CommandReturn cr = cli.processInput(rcmd);
                                     lclCheck.incProcessed(1);
                                     if (!cr.isError() || (lclCheck.getInvertCheck() && cr.isError())) {
                                         lclCheck.onSuccess(cr);
@@ -235,14 +242,12 @@ public class DbPaths extends SRERunnable {
 
                             incProcessed(1);
                         } catch (ScriptException e) {
-                            e.printStackTrace();
+                            e.printStackTrace(error);
                             System.err.println("Issue with script eval: " + this.getDisplayName());
                         } catch (MissingFormatArgumentException mfa) {
-                            mfa.printStackTrace();
+                            mfa.printStackTrace(error);
                             System.err.println("Bad Argument Match up for PATH check rule: " + this.getDisplayName());
                         }
-
-
                     }
                 }
             }
@@ -254,19 +259,22 @@ public class DbPaths extends SRERunnable {
                 error.println((queryDefinition != null) ? queryDefinition.getStatement() : "Unknown");
                 error.println("Failure in DbPaths" + e.getMessage());
             }
-            e.printStackTrace();
+            e.printStackTrace(error);
             setStatus(ERROR);
         } catch (Throwable t) {
             System.err.println("Failure in DbPaths");
-            t.printStackTrace();
+            t.printStackTrace(error);
+//            t.printStackTrace();
         } finally {
-            HadoopSession.freeSession(sessionId);
+            getParent().getParent().getCliPool().returnSession(cli);
+//            HadoopSession.freeSession(sessionId);
         }
         setStatus(COMPLETED);
     }
 
     @Override
-    public String toString() {
-        return "DbPathsProcess{}";
+    public String call() throws Exception {
+        doIt();
+        return "done";
     }
 }

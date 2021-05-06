@@ -9,7 +9,7 @@ processes:
     pathsListingQuery:        "tbl_part_locations"
     commandChecks:
       - displayName:        "Hive 3 Upgrade Check - Missing Directory Locations Scan"
-        title:              "#Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Missing Directory Locations Scan"
+        title:              "# Hive 3 Upgrade Check - Missing Direcotories (v.${Implementation-Version})\n\n## Missing Directory Locations Scan"
         note:               "
          *Remediation Options*\n
                 _NOTE:_ Beware of \"Smart Quote\" AND other conversions via Markdown Renderers. Copy/paste from 'raw' text to ensure compatibility.\n\n
@@ -54,7 +54,7 @@ processes:
     pathsListingQuery:        "tbl_mngd_non_acid_locations"
     commandChecks:
       - displayName:          "Hive 3 Upgrade Check - Bad Filename Format for ACID ORC Conversion"
-        title:                "# Hive 3 Upgrade Check (v.${Implementation-Version})\n\n## Bad Filename Format for ACID ORC Conversion"
+        title:                "# Hive 3 Upgrade Check - Bad ORC Filenames (v.${Implementation-Version})\n\n## Bad Filename Format for ACID ORC Conversion"
         header:               "| DB.Table:Partition | Path | Filename |\n|:---|:---|:---|"
         note:                 "
         > File naming conventions that could prevent a 'managed' ORC table from transitioning to an 'ACID' table\n\n

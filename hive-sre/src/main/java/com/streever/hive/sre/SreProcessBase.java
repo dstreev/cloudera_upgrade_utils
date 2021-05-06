@@ -14,6 +14,9 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.net.URL;
+import java.util.concurrent.Callable;
+
+import static com.streever.hive.reporting.ReportCounter.WAITING;
 
 @JsonIgnoreProperties({"parent", "config", "queryDefinitions", "dbsOverride", "dbType", "outputDirectory", "success", "error"})
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
@@ -23,13 +26,15 @@ import java.net.URL;
         @JsonSubTypes.Type(value = DbSetProcess.class, name = "dbSet"),
         @JsonSubTypes.Type(value = MetastoreQueryProcess.class, name = "metastore.query"),
         @JsonSubTypes.Type(value = MetastoreReportProcess.class, name = "metastore.report")})
-public abstract class SreProcessBase implements Runnable {
+public abstract class SreProcessBase implements Callable<String> {
     private String displayName = "not set";
     private String title = null;
     private String note = null;
     private String id = null;
     private Boolean skip = Boolean.FALSE;
     private Boolean active = Boolean.TRUE;
+    protected Boolean initializing = Boolean.TRUE;
+
     private Metastore.DB_TYPE dbType = Metastore.DB_TYPE.MYSQL;
 
     private ProcessContainer parent;
@@ -81,6 +86,14 @@ public abstract class SreProcessBase implements Runnable {
 
     public void setHeader(String header) {
         this.header = header;
+    }
+
+    public Boolean isInitializing() {
+        return initializing;
+    }
+
+    public void setInitializing(Boolean initializing) {
+        this.initializing = initializing;
     }
 
     public String getUniqueName() {
@@ -240,7 +253,10 @@ public abstract class SreProcessBase implements Runnable {
         return sb.toString();
     }
 
-    public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
+    public void init(ProcessContainer parent) throws FileNotFoundException {
+        setParent(parent);
+        setInitializing(Boolean.TRUE);
+
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         mapper.enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 

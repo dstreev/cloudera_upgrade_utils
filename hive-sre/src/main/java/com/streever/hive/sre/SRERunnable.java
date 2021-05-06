@@ -5,8 +5,9 @@ import com.streever.hive.reporting.ReportCounter;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.concurrent.Callable;
 
-public abstract class SRERunnable implements Counter, Runnable {
+public abstract class SRERunnable implements Counter, Callable<String> {
 
     private String displayName;
     private ReportCounter counter = new ReportCounter();

@@ -2,10 +2,12 @@ package com.streever.hive.sre;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.streever.hive.config.HiveStrictManagedMigrationElements;
+import com.streever.hive.reporting.ReportCounter;
 import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
+import org.apache.commons.collections.ArrayStack;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -16,6 +18,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import static com.streever.hive.reporting.ReportCounter.*;
 
@@ -41,6 +44,8 @@ public class DbSetProcess extends SreProcessBase {
     private String[] listingColumns;
     private String pathsListingQuery;
 
+    private List<DbPaths> pathsList = new ArrayList<DbPaths>();
+
     @Override
     public ProcessContainer getParent() {
         return parent;
@@ -50,11 +55,6 @@ public class DbSetProcess extends SreProcessBase {
     public void setParent(ProcessContainer parent) {
         this.parent = parent;
     }
-
-//    @Override
-//    public String getOutputDirectory() {
-//        return outputDirectory;
-//    }
 
     public List<CommandReturnCheck> getCommandChecks() {
         return commandChecks;
@@ -95,15 +95,6 @@ public class DbSetProcess extends SreProcessBase {
     public void setPathsListingQuery(String pathsListingQuery) {
         this.pathsListingQuery = pathsListingQuery;
     }
-
-//    public List<DbPaths> getDbPaths() {
-//        return dbPaths;
-//    }
-//
-//    public void setDbPaths(List<DbPaths> dbPaths) {
-//        this.dbPaths = dbPaths;
-//    }
-
 
     public HiveStrictManagedMigrationElements getHsmmElements() {
         return hsmmElements;
@@ -215,17 +206,12 @@ public class DbSetProcess extends SreProcessBase {
     }
 
     @Override
-    public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
-        super.init(parent, outputDirectory);
-        setParent(parent);
-
-        if (outputDirectory == null) {
-            throw new RuntimeException("Config File and Output Directory must be set before init.");
-        }
-
-        setOutputDirectory(outputDirectory);
+    public void init(ProcessContainer parent) throws FileNotFoundException {
+        super.init(parent);
         initHeader();
+    }
 
+    protected void doIt() {
         String[] dbs = null;
         if (getDbsOverride() != null && getDbsOverride().length > 0) {
             dbs = getDbsOverride();
@@ -253,73 +239,70 @@ public class DbSetProcess extends SreProcessBase {
         }
 
         // Build an Element Path for each database.  This will be use to divide the work.
-        List<SRERunnable> sres = new ArrayList<SRERunnable>();//[dbs.length];
         int threadCount = getParent().getConfig().getParallelism();
 
+
+        List<ReportCounter> counters = new ArrayList<ReportCounter>();
+        int i = 0;
         for (String database : dbs) {
             DbPaths paths = new DbPaths(database, this);
             paths.error = this.error;
             paths.success = this.success;
             if (paths.init()) {
                 paths.setStatus(CONSTRUCTED);
-                sres.add(paths);
+                pathsList.add(paths);
             } else {
                 throw new RuntimeException("Issue establishing a connection to HDFS.  " +
                         "Check credentials(kerberos), configs(/etc/hadoop/conf), " +
                         "and/or availability of the HDFS service. " +
                         "Can you run an 'hdfs' cli command successfully?");
-//                return; // Go no further with processing.
             }
 
             paths.setStatus(WAITING);
+            counters.add(paths.getCounter());
+            i++;
             LOG.info("Adding paths for db: " + database);
-            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), paths.getCounter());
+//            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), paths.getCounter());
             // Add Runnable to Main ThreadPool
-            getParent().getProcessThreads().add(getParent().getThreadPool().schedule(paths, 1, MILLISECONDS));
+            getParent().getProcessThreads().add(getParent().getThreadPool().schedule(paths, 10, MILLISECONDS));
 
-            // Pause the addition of processes until some complete.
-            // The goal is to reduce the paths.init() call which is creating an hdfs client session
-            // and blowing up the process for LARGE installations.
-            int i = 0;
-            for (SRERunnable sRun : sres) {
-                if (sRun.getStatus() < ERROR) {
-                    i++;
-                }
-            }
-            while (i >= (threadCount * 3)) {
-//                try {
-//                    LOG.info("Reached max threads, pausing for 1 sec");
-//                    Thread.sleep(500);
+            // Flush Counters to Reporter
+            if (i >= 100) {
+                getParent().getReporter().addCounters(getId() + ":" + getDisplayName(), counters);
                 i = 0;
-                for (SRERunnable sRun : sres) {
-                    if (sRun.getStatus() < ERROR) {
-                        i++;
-                    }
-                }
-
-//                } catch (InterruptedException ie) {
-//
-//                }
+                counters.clear();
             }
-
         }
+
+        // Flush Remaining Counters.
+        getParent().getReporter().addCounters(getId() + ":" + getDisplayName(), counters);
 
         if (getCommandChecks() == null) {
             this.success.println("Command Checks Skipped.  Rules Processing Skipped.");
         }
 
-//        for (SRERunnable sre : sres) {
-//            sre.setStatus(WAITING);
-//            // Add Counter to Main Reporter
-//            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), sre.getCounter());
-//            // Add Runnable to Main ThreadPool
-//            getParent().getProcessThreads().add(getParent().getThreadPool().schedule(sre, 1, MILLISECONDS));
-//        }
+        setInitializing(Boolean.FALSE);
 
-        // When nothing is found.
-//        if (sres.size() == 0) {
-        this.setActive(false);
-//        }
+    }
+
+    @Override
+    public Boolean isActive() {
+        Boolean rtn = super.isActive();
+        if (rtn) {
+            // check the paths list.
+            if (!isInitializing()) {
+                Boolean justOne = Boolean.FALSE;
+                for (DbPaths dbPaths : pathsList) {
+                    if (dbPaths.getStatus() < ERROR) {
+                        // If one is active, break;
+                        justOne = Boolean.TRUE;
+                        break;
+                    }
+                }
+                rtn = justOne;
+            }
+        }
+        return rtn;
     }
 
     @Override
@@ -344,18 +327,10 @@ public class DbSetProcess extends SreProcessBase {
     }
 
     @Override
-    public String toString() {
-        return "DbSet{" +
-//                "dbPaths=" + dbPaths +
-                '}';
+    public String call() throws Exception {
+        doIt();
+        return "done";
     }
 
-    @Override
-    public void run() {
-        try {
-            init(this.getParent(), this.getOutputDirectory());
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
+
 }

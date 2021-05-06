@@ -4,13 +4,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.streever.hadoop.HadoopSession;
+import com.streever.hadoop.HadoopSessionFactory;
+import com.streever.hadoop.HadoopSessionPool;
 import com.streever.hive.config.Metastore;
 import com.streever.hive.config.SreProcessesConfig;
 import com.streever.hive.reporting.Counter;
-import com.streever.hive.reporting.ReportCounter;
 import com.streever.hive.reporting.Reporter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -23,9 +27,7 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -33,21 +35,31 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 The 'ProcessContainer' is the definition and runtime structure
  */
 @JsonIgnoreProperties({"config", "reporter", "threadPool", "processThreads", "connectionPools", "outputDirectory"})
-public class ProcessContainer {
+public class ProcessContainer implements Runnable {
     private static Logger LOG = LogManager.getLogger(ProcessContainer.class);
 
     private boolean initializing = Boolean.TRUE;
     private SreProcessesConfig config;
     private Reporter reporter;
     private ScheduledExecutorService threadPool;
-    private List<ScheduledFuture> processThreads;
+    private List<Future> processThreads;
     private ConnectionPools connectionPools;
     private String outputDirectory;
     private List<Integer> includes = new ArrayList<Integer>();
 
+    private HadoopSessionPool cliPool;
+
+    public HadoopSessionPool getCliPool() {
+        return cliPool;
+    }
+
+    public void setCliPool(HadoopSessionPool cliPool) {
+        this.cliPool = cliPool;
+    }
+
     /*
-    The list of @link SreProcessBase instances to run in this container.
-     */
+        The list of @link SreProcessBase instances to run in this container.
+         */
     private List<SreProcessBase> processes = new ArrayList<SreProcessBase>();
     private int parallelism = 3;
 
@@ -74,18 +86,19 @@ public class ProcessContainer {
     public ScheduledExecutorService getThreadPool() {
         if (threadPool == null) {
             threadPool = Executors.newScheduledThreadPool(getConfig().getParallelism());
+//            threadPool = Executors.newFixedThreadPool(getConfig().getParallelism());
         }
         return threadPool;
     }
 
-    public List<ScheduledFuture> getProcessThreads() {
+    public List<Future> getProcessThreads() {
         if (processThreads == null) {
-            processThreads = new ArrayList<ScheduledFuture>();
+            processThreads = new ArrayList<Future>();
         }
         return processThreads;
     }
 
-    public void setProcessThreads(List<ScheduledFuture> processThreads) {
+    public void setProcessThreads(List<Future> processThreads) {
         this.processThreads = processThreads;
     }
 
@@ -132,7 +145,7 @@ public class ProcessContainer {
 
     public Boolean isActive() {
         Boolean rtn = Boolean.FALSE;
-        for (SreProcessBase proc: getProcesses()) {
+        for (SreProcessBase proc : getProcesses()) {
             if (proc.isActive()) {
                 rtn = Boolean.TRUE;
             }
@@ -140,7 +153,7 @@ public class ProcessContainer {
         return rtn;
     }
 
-    public void start() {
+    public void run() {
         while (true) {
             boolean check = true;
             try {
@@ -152,7 +165,7 @@ public class ProcessContainer {
             if (!procActive) {
                 LOG.info("No procs active. Checking Threads.");
                 try {
-                    for (ScheduledFuture sf : getProcessThreads()) {
+                    for (Future sf : getProcessThreads()) {
                         if (!sf.isDone()) {
                             check = false;
                             break;
@@ -173,6 +186,7 @@ public class ProcessContainer {
                 LOG.info("Procs active.");
             }
         }
+        LOG.info("Shutting down Thread Pool.");
         getThreadPool().shutdown();
         for (SreProcessBase process : getProcesses()) {
             if (!process.isSkip()) {
@@ -184,6 +198,7 @@ public class ProcessContainer {
 
     public String init(String config, String outputDirectory, String[] dbsOverride) {
 //        String realizedOutputDir = null;
+        initializing = Boolean.TRUE;
         String job_run_dir = null;
         if (config == null || outputDirectory == null) {
             throw new RuntimeException("Config File and Output Directory must be set before init.");
@@ -215,8 +230,14 @@ public class ProcessContainer {
             this.connectionPools = new ConnectionPools(getConfig());
             this.connectionPools.init();
 
+            GenericObjectPoolConfig<HadoopSession> hspCfg = new GenericObjectPoolConfig<HadoopSession>();
+            hspCfg.setMaxTotal(sreConfig.getParallelism());
+            this.cliPool = new HadoopSessionPool(new GenericObjectPool<HadoopSession>(new HadoopSessionFactory(), hspCfg ));
+
             // Needs to be added first, so it runs the reporter thread.
-            getProcessThreads().add(getThreadPool().schedule(getReporter(), 100, MILLISECONDS));
+            Thread reporterThread = new Thread(getReporter());
+
+//            getProcessThreads().add(getThreadPool().schedule(getReporter(), 1, MILLISECONDS));
 
             for (SreProcessBase process : getProcesses()) {
                 if (process.isActive()) {
@@ -242,32 +263,24 @@ public class ProcessContainer {
                     // Check that it's still active after init.
                     // When there's nothing to process, it won't be active.
                     int delay = 100;
-                    if (process instanceof Runnable && process instanceof Counter) {
+                    process.setParent(this);
+                    process.setOutputDirectory(job_run_dir);
+                    process.init(this);
+                    if (process instanceof Callable && process instanceof Counter) {
                         getReporter().addCounter(process.getUniqueName(), ((Counter) process).getCounter());
                         if (process instanceof MetastoreProcess) {
                             delay = 3000;
                         } else {
                             delay = 100;
                         }
-                        delay = 100;
-
-                        if (process.isActive()) {
-                            getProcessThreads().add(getThreadPool().schedule((Runnable) process, delay, MILLISECONDS));
-                        }
+                        getProcessThreads().add(getThreadPool().schedule(process, delay, MILLISECONDS));
+                    } else if (process instanceof Callable) {
+                        getProcessThreads().add(getThreadPool().schedule(process, 100, MILLISECONDS));
                     }
-                    process.setParent(this);
-                    process.setOutputDirectory(job_run_dir);
-                    Thread thread = new Thread(process);
-                    thread.start();
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-//                    process.init(this, job_run_dir);
-
                 }
             }
+
+            reporterThread.start();
 
         } catch (
                 IOException e) {

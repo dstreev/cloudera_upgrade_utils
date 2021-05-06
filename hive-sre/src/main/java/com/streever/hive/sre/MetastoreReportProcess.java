@@ -6,6 +6,8 @@ import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -19,12 +21,23 @@ import java.util.*;
 import static com.streever.hive.reporting.ReportCounter.*;
 
 public class MetastoreReportProcess extends MetastoreProcess {
+    private static Logger LOG = LogManager.getLogger(MetastoreReportProcess.class);
 
     private List<MetastoreQuery> metastoreQueryDefinitions = new ArrayList<MetastoreQuery>();
     private ScriptEngine scriptEngine = null;
 
+//    @Override
+//    public void run() {
+//        doIt();
+//    }
+
     @Override
-    public void run() {
+    public String call() throws Exception {
+        doIt();
+        return "done";
+    }
+
+    public void doIt() {
         setStatus(PROCESSING);
 
         ScriptEngineManager sem = new ScriptEngineManager();
@@ -43,6 +56,7 @@ public class MetastoreReportProcess extends MetastoreProcess {
             String[][] metastoreRecords = null;
             try (Connection conn = getParent().getConnectionPools().getMetastoreDirectConnection()) {
                 String targetQueryDef = metastoreQueryDefinition.getQuery();
+                LOG.info("TargetQuery Definition: " + targetQueryDef);
                 // build prepared statement for targetQueryDef
                 QueryDefinition queryDefinition = getQueryDefinitions().getQueryDefinition(targetQueryDef);
                 PreparedStatement preparedStatement = JDBCUtils.getPreparedStatement(conn, queryDefinition);
@@ -158,12 +172,14 @@ public class MetastoreReportProcess extends MetastoreProcess {
                 incError(1);
                 error.println(metastoreQueryDefinition.getQuery());
                 error.println("> Processing Issue: " + e.getMessage());
+                e.printStackTrace(error);
 //                setStatus(ERROR);
 //                throw new RuntimeException("Issue getting 'databases' to process.", e);
             } catch (RuntimeException rte) {
                 incError(1);
                 error.println(metastoreQueryDefinition.getQuery());
                 error.println("> Processing Issue: " + rte.getMessage());
+                rte.printStackTrace(error);
             }
             incProcessed(1);
         }

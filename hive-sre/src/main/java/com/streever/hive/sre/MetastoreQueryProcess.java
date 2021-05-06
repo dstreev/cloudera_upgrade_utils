@@ -1,26 +1,33 @@
 package com.streever.hive.sre;
 
-import com.streever.hive.reporting.Counter;
-import com.streever.hive.reporting.ReportCounter;
 import com.streever.hive.reporting.ReportingConf;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
 
-import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
+
 import static com.streever.hive.reporting.ReportCounter.*;
 
 public class MetastoreQueryProcess extends MetastoreProcess {
 
     private MetastoreQuery metastoreQueryDefinition;
 
+//    @Override
+//    public void run() {
+//        doIt();
+//    }
+
     @Override
-    public void run() {
+    public String call() throws Exception {
+        doIt();
+        return "done";
+    }
+
+    public void doIt() {
         setStatus(PROCESSING);
         String[][] metastoreRecords = null;
         this.setTotalCount(1);

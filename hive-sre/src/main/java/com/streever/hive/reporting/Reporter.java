@@ -4,6 +4,8 @@ import com.streever.hive.sre.ProcessContainer;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.streever.hive.reporting.ReportCounter.*;
@@ -35,8 +37,18 @@ public class Reporter implements Runnable {
         if (counterGroups.containsKey(groupName)) {
             counterGroups.get(groupName).add(counter);
         } else {
-            List<ReportCounter> counters = new ArrayList<ReportCounter>();
+            List<ReportCounter> counters = new CopyOnWriteArrayList<ReportCounter>();
             counters.add(counter);
+            counterGroups.put(groupName, counters);
+        }
+    }
+
+    public void addCounters(String groupName, List<ReportCounter> reportCounters) {
+        if (counterGroups.containsKey(groupName)) {
+            counterGroups.get(groupName).addAll(reportCounters);
+        } else {
+            List<ReportCounter> counters = new CopyOnWriteArrayList<ReportCounter>();
+            counters.addAll(reportCounters);
             counterGroups.put(groupName, counters);
         }
     }
@@ -108,7 +120,10 @@ public class Reporter implements Runnable {
 
     private Boolean isProcessing(List<ReportCounter> reportCounters) {
         Boolean rtn = Boolean.FALSE;
-        for (ReportCounter cntr : reportCounters) {
+        ListIterator<ReportCounter> cntrList = reportCounters.listIterator();
+        while (cntrList.hasNext()) {
+//        for (ReportCounter cntr : cntrList) {
+            ReportCounter cntr = cntrList.next();
             if (cntr.getStatus() == PROCESSING) {
                 rtn = Boolean.TRUE;
                 break;
@@ -125,9 +140,9 @@ public class Reporter implements Runnable {
         // Prevent the Reporter Thread from terminating too quickly
         if (processContainer.isInitializing()) {
             return true;
-        } else if (counterGroups.size() == 0) {
-            // Done initializing and nothing to do.
-            return false;
+//        } else if (counterGroups.size() == 0) {
+//            // Done initializing and nothing to do.
+//            return false;
         }
 
         resetLines();
@@ -156,7 +171,10 @@ public class Reporter implements Runnable {
             progress.put(PROCESSING, new AtomicLong(0));
             progress.put(ERROR, new AtomicLong(0));
             progress.put(COMPLETED, new AtomicLong(0));
-            for (ReportCounter ctr : counters) {
+            ListIterator<ReportCounter> cntrList = counters.listIterator();
+            while (cntrList.hasNext()) {
+                ReportCounter ctr = cntrList.next();
+//            for (ReportCounter ctr : counters) {
                 progress.get(ctr.getStatus()).addAndGet(1);
 
                 // If there aren't children counters, use the parent values
@@ -220,6 +238,10 @@ public class Reporter implements Runnable {
 
     @Override
     public void run() {
+        doIt();
+    }
+
+    public void doIt() {
         while (refresh()) {
             try {
                 Thread.sleep(200);
@@ -231,10 +253,4 @@ public class Reporter implements Runnable {
         refresh();
     }
 
-    @Override
-    public String toString() {
-        return "Reporter{" +
-                "name='" + name + '\'' +
-                '}';
-    }
 }

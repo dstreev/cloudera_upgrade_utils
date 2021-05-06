@@ -72,7 +72,7 @@ public class HiveFrameworkCheck implements SreSubApp {
 //    }
 
     public void start() {
-        getProcessContainer().start();
+        getProcessContainer().run();
         // Check the Hsmm object for content.  Save to file.
         HiveStrictManagedMigrationIncludeListConfig hsmm = HiveStrictManagedMigrationIncludeListConfig.getInstance();
         ObjectMapper mapper;

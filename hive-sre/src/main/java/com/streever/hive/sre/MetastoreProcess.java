@@ -8,18 +8,13 @@ import java.util.List;
 
 import static com.streever.hive.reporting.ReportCounter.*;
 
-public abstract class MetastoreProcess extends SreProcessBase implements Counter, Runnable {
+public abstract class MetastoreProcess extends SreProcessBase implements Counter {
 
     private ReportCounter counter = new ReportCounter();
 
     @Override
-    public void init(ProcessContainer parent, String outputDirectory) throws FileNotFoundException {
-        super.init(parent, outputDirectory);
-        setParent(parent);
-        if (outputDirectory == null) {
-            throw new RuntimeException("Config File and Output Directory must be set before init.");
-        }
-        setOutputDirectory(outputDirectory);
+    public void init(ProcessContainer parent) throws FileNotFoundException {
+        super.init(parent);
         setStatus(WAITING);
     }
 
@@ -62,21 +57,6 @@ public abstract class MetastoreProcess extends SreProcessBase implements Counter
         counter.incProcessed(increment);
     }
 
-//    @Override
-//    public long getProcessed() {
-//        return counter.getProcessed();
-//    }
-//
-//    @Override
-//    public void setProcessed(long processed) {
-//        counter.setProcessed(processed);
-//    }
-//
-//    @Override
-//    public long getTotalCount() {
-//        return counter.getTotalCount();
-//    }
-
     @Override
     public void setTotalCount(long totalCount) {
         counter.setTotalCount(totalCount);
@@ -87,30 +67,10 @@ public abstract class MetastoreProcess extends SreProcessBase implements Counter
         counter.incSuccess(increment);
     }
 
-//    @Override
-//    public long getSuccessStream() {
-//        return counter.getSuccess();
-//    }
-//
-//    @Override
-//    public void setSuccessStream(long successStream) {
-//        counter.setSuccess(successStream);
-//    }
-
     @Override
     public void incError(int increment) {
         counter.incError(increment);
     }
-
-//    @Override
-//    public long getErrorStream() {
-//        return counter.getError();
-//    }
-//
-//    @Override
-//    public void setErrorStream(long errorStream) {
-//        counter.setError(errorStream);
-//    }
 
     @Override
     public String toString() {

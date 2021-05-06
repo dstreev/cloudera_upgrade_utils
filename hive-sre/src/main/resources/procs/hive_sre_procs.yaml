@@ -85,8 +85,8 @@ processes:
   - type:                     "dbSet"
     id:                       3
     active:                   true
-    displayName:              "Table and Partition Scan for Small Files"
-    title:                    "# Hive Table and Partition Scan (v.${Implementation-Version})\n"
+    displayName:              "Table and Partition Scan - Small Files"
+    title:                    "# Table and Partition Scan - Small Files (v.${Implementation-Version})\n"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location" ]
@@ -120,7 +120,7 @@ processes:
     id:                       4
     active:                   true
     displayName:              "Table and Partition Scan - Volume Report"
-    title:                    "# Table and Partition Scan (v.${Implementation-Version})\n"
+    title:                    "# Table and Partition Scan - Volume Report (v.${Implementation-Version})\n"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location" ]
@@ -150,7 +150,7 @@ processes:
     id:                       5
     active:                   true
     displayName:              "Table and Partition Scan - Empty Datasets"
-    title:                    "# Table and Partition Scan (v.${Implementation-Version})"
+    title:                    "# Table and Partition Scan - Empty Datasets (v.${Implementation-Version})"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
     listingColumns: [ "name" ,"tbl_name" , "tbl_type" ,"part_name" , "path_location" ]
