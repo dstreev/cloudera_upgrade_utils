@@ -22,6 +22,7 @@ import static com.streever.hive.reporting.ReportCounter.*;
 public class DbPaths extends SRERunnable {
 
     private DbSetProcess parent;
+    private String sessionId;
     private HadoopSession cliSession;
 
     private List<CommandReturnCheck> commandChecks = new ArrayList<CommandReturnCheck>();
@@ -99,8 +100,8 @@ public class DbPaths extends SRERunnable {
                 e.printStackTrace();
             }
         }
-
-        this.cliSession = HadoopSession.get("DB Paths for: " + getDisplayName() + UUID.randomUUID());
+        sessionId = "DB Paths for: " + getDisplayName() + UUID.randomUUID();
+        this.cliSession = HadoopSession.get(sessionId);
         String[] api = {"-api"};
         try {
             // TODO: Need to promote failure when keytab doesn't exist.
@@ -258,6 +259,8 @@ public class DbPaths extends SRERunnable {
         } catch (Throwable t) {
             System.err.println("Failure in DbPaths");
             t.printStackTrace();
+        } finally {
+            HadoopSession.freeSession(sessionId);
         }
         setStatus(COMPLETED);
     }

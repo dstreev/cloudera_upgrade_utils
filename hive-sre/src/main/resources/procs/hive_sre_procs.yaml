@@ -119,7 +119,7 @@ processes:
   - type:                     "dbSet"
     id:                       4
     active:                   true
-    displayName:              "Table and Partition Scan"
+    displayName:              "Table and Partition Scan - Volume Report"
     title:                    "# Table and Partition Scan (v.${Implementation-Version})\n"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"

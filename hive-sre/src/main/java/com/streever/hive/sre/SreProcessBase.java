@@ -28,6 +28,7 @@ public abstract class SreProcessBase implements Runnable {
     private String title = null;
     private String note = null;
     private String id = null;
+    private Boolean skip = Boolean.FALSE;
     private Boolean active = Boolean.TRUE;
     private Metastore.DB_TYPE dbType = Metastore.DB_TYPE.MYSQL;
 
@@ -112,6 +113,14 @@ public abstract class SreProcessBase implements Runnable {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public Boolean isSkip() {
+        return skip;
+    }
+
+    public void setSkip(Boolean skip) {
+        this.skip = skip;
     }
 
     public Metastore.DB_TYPE getDbType() {

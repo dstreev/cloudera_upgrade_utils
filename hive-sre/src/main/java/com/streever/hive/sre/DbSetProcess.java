@@ -254,7 +254,7 @@ public class DbSetProcess extends SreProcessBase {
 
         // Build an Element Path for each database.  This will be use to divide the work.
         List<SRERunnable> sres = new ArrayList<SRERunnable>();//[dbs.length];
-        int threadCount =  getParent().getConfig().getParallelism();
+        int threadCount = getParent().getConfig().getParallelism();
 
         for (String database : dbs) {
             DbPaths paths = new DbPaths(database, this);
@@ -281,25 +281,25 @@ public class DbSetProcess extends SreProcessBase {
             // The goal is to reduce the paths.init() call which is creating an hdfs client session
             // and blowing up the process for LARGE installations.
             int i = 0;
-            for (SRERunnable sRun: sres) {
+            for (SRERunnable sRun : sres) {
                 if (sRun.getStatus() < ERROR) {
                     i++;
                 }
             }
-            while (i >= (threadCount * 2)) {
-                try {
+            while (i >= (threadCount * 3)) {
+//                try {
 //                    LOG.info("Reached max threads, pausing for 1 sec");
-                    Thread.sleep(500);
-                    i = 0;
-                    for (SRERunnable sRun: sres) {
-                        if (sRun.getStatus() < ERROR) {
-                            i++;
-                        }
+//                    Thread.sleep(500);
+                i = 0;
+                for (SRERunnable sRun : sres) {
+                    if (sRun.getStatus() < ERROR) {
+                        i++;
                     }
-
-                } catch (InterruptedException ie) {
-
                 }
+
+//                } catch (InterruptedException ie) {
+//
+//                }
             }
 
         }
@@ -317,9 +317,9 @@ public class DbSetProcess extends SreProcessBase {
 //        }
 
         // When nothing is found.
-        if (sres.size() == 0) {
-            this.setActive(false);
-        }
+//        if (sres.size() == 0) {
+        this.setActive(false);
+//        }
     }
 
     @Override

@@ -168,6 +168,7 @@ public class MetastoreReportProcess extends MetastoreProcess {
             incProcessed(1);
         }
         setStatus(COMPLETED);
+        setActive(false);
     }
 
 

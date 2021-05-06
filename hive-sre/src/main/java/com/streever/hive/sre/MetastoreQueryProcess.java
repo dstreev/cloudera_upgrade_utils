@@ -79,6 +79,7 @@ public class MetastoreQueryProcess extends MetastoreProcess {
             success.println("\n > **Results empty**\n");
         }
         setStatus(COMPLETED);
+        setActive(false);
     }
 
     public MetastoreQuery getMetastoreQueryDefinition() {

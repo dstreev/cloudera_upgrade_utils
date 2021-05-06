@@ -119,7 +119,7 @@ public class Reporter implements Runnable {
 
     // Return true when not completed.
     public boolean refresh() {
-        boolean rtn = false;
+        boolean rtn = getProcessContainer().isActive();
         String INDENT = "    ";
 
         // Prevent the Reporter Thread from terminating too quickly

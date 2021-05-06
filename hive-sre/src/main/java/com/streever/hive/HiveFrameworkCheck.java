@@ -170,12 +170,14 @@ public class HiveFrameworkCheck implements SreSubApp {
             List<String> includes = Arrays.asList(includeIds);
             // Disable all procs
             for (SreProcessBase proc : procContainer.getProcesses()) {
+                proc.setSkip(true);
                 proc.setActive(false);
             }
             // Enable procs in 'include'
             for (SreProcessBase proc : procContainer.getProcesses()) {
                 if (includes.contains(proc.getId())) {
                     proc.setActive(true);
+                    proc.setSkip(false);
                 }
             }
         }

@@ -11,6 +11,8 @@ import com.streever.hive.reporting.ReportCounter;
 import com.streever.hive.reporting.Reporter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +34,8 @@ The 'ProcessContainer' is the definition and runtime structure
  */
 @JsonIgnoreProperties({"config", "reporter", "threadPool", "processThreads", "connectionPools", "outputDirectory"})
 public class ProcessContainer {
+    private static Logger LOG = LogManager.getLogger(ProcessContainer.class);
+
     private boolean initializing = Boolean.TRUE;
     private SreProcessesConfig config;
     private Reporter reporter;
@@ -126,31 +130,52 @@ public class ProcessContainer {
         this.reporter.setProcessContainer(this);
     }
 
+    public Boolean isActive() {
+        Boolean rtn = Boolean.FALSE;
+        for (SreProcessBase proc: getProcesses()) {
+            if (proc.isActive()) {
+                rtn = Boolean.TRUE;
+            }
+        }
+        return rtn;
+    }
+
     public void start() {
         while (true) {
             boolean check = true;
             try {
-                for (ScheduledFuture sf : getProcessThreads()) {
-                    if (!sf.isDone()) {
-                        check = false;
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            boolean procActive = isActive();
+            if (!procActive) {
+                LOG.info("No procs active. Checking Threads.");
+                try {
+                    for (ScheduledFuture sf : getProcessThreads()) {
+                        if (!sf.isDone()) {
+                            check = false;
+                            break;
+                        }
+                    }
+                    if (check)
                         break;
+                } catch (ConcurrentModificationException cme) {
+                    // Try again. This happens because we are editing the
+                    // list in the background.
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
-                if (check)
-                    break;
-            } catch (ConcurrentModificationException cme) {
-                // Try again. This happens because we are editing the
-                // list in the background.
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            } else {
+                LOG.info("Procs active.");
             }
         }
         getThreadPool().shutdown();
         for (SreProcessBase process : getProcesses()) {
-            if (process.isActive()) {
+            if (!process.isSkip()) {
                 System.out.println(process.getUniqueName());
                 System.out.println(process.getOutputDetails());
             }
