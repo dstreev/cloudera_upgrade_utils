@@ -16,7 +16,7 @@ Review the table below for details on what 'should' be converted to what.
 
 ## General Recommendation
 
-**Do NOT migrate "Legacy Managed" tables to "Managed Transactional" tables.**
+**Do NOT migrate "Legacy Managed" tables to "Managed Transactional" tables.**  This is not meant to dissuade you away from using ACID/Transactional table in anyway.  It has been our experience that ACID tables support certain access methods which isn't compatible  
 
 ### For CDH (5 and 6) and HDP 2 Clusters
 

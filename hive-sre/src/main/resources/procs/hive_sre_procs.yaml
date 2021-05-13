@@ -214,6 +214,7 @@ processes:
   - type:                     "metastore.report"
     id:                       7
     active:                   false
+    skip:                     true
     displayName:              "Hive ACID Tables"
     title:                    "# Hive ACID Tables (v.${Implementation-Version})"
     note:                     "Post Upgrade from Hive 1/2 to Hive 3 may result in statistics that are wrong.  Actually, the statistics were
@@ -238,6 +239,7 @@ processes:
   - type:                     "dbSet"
     id:                       8
     active:                   false
+    skip:                     true
     displayName:              "Analyze Hive ACID Tables"
     title:                    "# Analyze Hive ACID Tables (v.${Implementation-Version})\n"
     note:                     "Post Upgrade from Hive 1/2 to Hive 3 may result in statistics that are wrong.  Actually, the statistics were
@@ -263,6 +265,7 @@ processes:
   - type:                     "dbSet"
     id:                       9
     active:                   false
+    skip:                     true
     displayName:              "Analyze Hive ACID Tables - Detailed"
     title:                    "# Analyze Hive ACID Tables - Detailed (v.${Implementation-Version})\n"
     note:                     "Post Upgrade from Hive 1/2 to Hive 3 may result in statistics that are wrong.  Actually, the statistics were
