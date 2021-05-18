@@ -8,7 +8,6 @@ import com.streever.hive.reporting.TaskState;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
-import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -18,11 +17,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 
 @JsonIgnoreProperties({"parent", "counterGroup", "config", "metastoreDirectDataSource", "h2DataSource",
@@ -272,20 +269,20 @@ public class DbSetProcess extends SreProcessBase {
             LOG.info("Adding paths for db: " + database);
 //            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), paths.getCounter());
             // Add Runnable to Main ThreadPool
-//            Future<String> sf = getParent().getThreadPool().submit(paths);
-            ScheduledFuture<String> sf = getParent().getThreadPool().schedule(paths, 10, MILLISECONDS);
-            getParent().addProcess(sf);
-            try {
-                while (getParent().getProcessThreads().size() > 100) {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ie) {
-                        //
-                    }
-                }
-            } catch (ConcurrentModificationException cme) {
-                //
-            }
+            Future<String> sf = getParent().getTaskThreadPool().submit(paths);
+//            ScheduledFuture<String> sf = getParent().getThreadPool().schedule(paths, 10, MILLISECONDS);
+//            getParent().addProcess(sf);
+//            try {s
+//                while (getParent().getProcessThreads().size() > 100) {
+//                    try {
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException ie) {
+//                        //
+//                    }
+//                }
+//            } catch (ConcurrentModificationException cme) {
+//                //
+//            }
         }
 
         if (getCommandChecks() == null) {

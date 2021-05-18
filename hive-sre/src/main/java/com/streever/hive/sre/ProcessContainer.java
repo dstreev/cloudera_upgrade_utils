@@ -9,7 +9,6 @@ import com.streever.hadoop.HadoopSessionFactory;
 import com.streever.hadoop.HadoopSessionPool;
 import com.streever.hive.config.Metastore;
 import com.streever.hive.config.SreProcessesConfig;
-import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.Reporter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -24,17 +23,14 @@ import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 /*
 The 'ProcessContainer' is the definition and runtime structure
  */
-@JsonIgnoreProperties({"config", "reporter", "threadPool", "processThreads", "connectionPools", "outputDirectory"})
+@JsonIgnoreProperties({"config", "reporter", "taskThreadPool", "procThreadPool", "processThreads", "connectionPools", "outputDirectory"})
 public class ProcessContainer implements Runnable {
     private static Logger LOG = LogManager.getLogger(ProcessContainer.class);
 
@@ -42,7 +38,10 @@ public class ProcessContainer implements Runnable {
     private boolean initializing = Boolean.TRUE;
     private SreProcessesConfig config;
     private Reporter reporter;
-    private ScheduledExecutorService threadPool;
+    //    private ScheduledExecutorService threadPool;
+    private ThreadPoolExecutor taskThreadPool;
+    private ThreadPoolExecutor procThreadPool;
+
     private List<Future<String>> processThreads;
     private ConnectionPools connectionPools;
     private String outputDirectory;
@@ -85,30 +84,42 @@ public class ProcessContainer implements Runnable {
         includes.add(include);
     }
 
-//    public ExecutorService getThreadPool() {
-//        if (threadPool == null) {
+    public ThreadPoolExecutor getTaskThreadPool() {
+        if (taskThreadPool == null) {
 //            threadPool = Executors.newFixedThreadPool(getConfig().getParallelism());
+            taskThreadPool = new ThreadPoolExecutor(getConfig().getParallelism(), getConfig().getParallelism(),
+                    5000l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+        }
+        return taskThreadPool;
+    }
+
+    public ThreadPoolExecutor getProcThreadPool() {
+        if (procThreadPool == null) {
+//            threadPool = Executors.newFixedThreadPool(getConfig().getParallelism());
+            procThreadPool = new ThreadPoolExecutor(getConfig().getParallelism(), getConfig().getParallelism(),
+                    5000l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+        }
+        return procThreadPool;
+    }
+
+
+//    public ScheduledExecutorService getThreadPool() {
+//        if (threadPool == null) {
+//            threadPool = Executors.newScheduledThreadPool(getConfig().getParallelism());
 //        }
 //        return threadPool;
 //    }
 
-    public ScheduledExecutorService getThreadPool() {
-        if (threadPool == null) {
-            threadPool = Executors.newScheduledThreadPool(getConfig().getParallelism());
-        }
-        return threadPool;
-    }
+//    public List<Future<String>> getProcessThreads() {
+//        if (processThreads == null) {
+//            processThreads = new ArrayList<Future<String>>();
+//        }
+//        return processThreads;
+//    }
 
-    public List<Future<String>> getProcessThreads() {
-        if (processThreads == null) {
-            processThreads = new ArrayList<Future<String>>();
-        }
-        return processThreads;
-    }
-
-    public void addProcess(Future<String> future) {
-        getProcessThreads().add(future);
-    }
+//    public void addProcess(Future<String> future) {
+//        getProcessThreads().add(future);
+//    }
 
     public ConnectionPools getConnectionPools() {
         return connectionPools;
@@ -160,31 +171,34 @@ public class ProcessContainer implements Runnable {
                 break;
             }
         }
-        // Cleanup the done threads.
-//        if (activeCounter > 100) {
-            List<Future<String>> rList = new ArrayList<Future<String>>();
-            for (Future<String> chSf: processThreads) {
-                if (chSf.isDone()) {
-                    rList.add(chSf);
-                }
-            }
-            if (rList.size() > 0) {
-                LOG.info("Cleaning Up 'done' process threads: " + rList.size());
-                processThreads.removeAll(rList);
-            }
-            // reset counter.
-//            activeCounter = 0l;
-//        }
-        try {
-            for (Future<String> sf : processThreads) {
-                if (!sf.isDone()) {
-                    rtn = Boolean.TRUE;
-                    break;
-                }
-            }
-        } catch (ConcurrentModificationException cme) {
+        if (this.getProcThreadPool().getActiveCount() > 0) {
             rtn = Boolean.TRUE;
         }
+        if (this.getTaskThreadPool().getActiveCount() > 0) {
+            rtn = Boolean.TRUE;
+        }
+
+        // Cleanup the done threads.
+//        List<Future<String>> rList = new ArrayList<Future<String>>();
+//        for (Future<String> chSf : processThreads) {
+//            if (chSf.isDone()) {
+//                rList.add(chSf);
+//            }
+//        }
+//        if (rList.size() > 0) {
+//            LOG.info("Cleaning Up 'done' process threads: " + rList.size());
+//            processThreads.removeAll(rList);
+//        }
+//        try {
+//            for (Future<String> sf : processThreads) {
+//                if (!sf.isDone()) {
+//                    rtn = Boolean.TRUE;
+//                    break;
+//                }
+//            }
+//        } catch (ConcurrentModificationException cme) {
+//            rtn = Boolean.TRUE;
+//        }
         return rtn;
     }
 
@@ -216,7 +230,7 @@ public class ProcessContainer implements Runnable {
             }
         }
         LOG.info("Shutting down Thread Pool.");
-        getThreadPool().shutdown();
+        getTaskThreadPool().shutdown();
         for (SreProcessBase process : getProcesses()) {
             if (!process.isSkip()) {
                 System.out.println(process.getUniqueName());
@@ -260,13 +274,11 @@ public class ProcessContainer implements Runnable {
             this.connectionPools.init();
 
             GenericObjectPoolConfig<HadoopSession> hspCfg = new GenericObjectPoolConfig<HadoopSession>();
-            hspCfg.setMaxTotal(sreConfig.getParallelism());
+            hspCfg.setMaxTotal(sreConfig.getParallelism() * 2);
             this.cliPool = new HadoopSessionPool(new GenericObjectPool<HadoopSession>(new HadoopSessionFactory(), hspCfg));
 
             // Needs to be added first, so it runs the reporter thread.
             Thread reporterThread = new Thread(getReporter());
-
-//            getProcessThreads().add(getThreadPool().schedule(getReporter(), 1, MILLISECONDS));
 
             for (SreProcessBase process : getProcesses()) {
                 if (process.isActive()) {
@@ -295,17 +307,10 @@ public class ProcessContainer implements Runnable {
                     process.setParent(this);
                     process.setOutputDirectory(job_run_dir);
                     process.init(this);
-//                    if (process instanceof Callable && process instanceof Counter) {
-//                        getReporter().addCounter(process.getUniqueName(), ((Counter) process).getCounter());
-//                        if (process instanceof MetastoreProcess) {
-//                            delay = 3000;
-//                        } else {
-//                            delay = 100;
-//                        }
-//                        getProcessThreads().add(getThreadPool().schedule(process, delay, MILLISECONDS));
-//                    } else if (process instanceof Callable) {
-                    getProcessThreads().add(getThreadPool().schedule(process, 100, MILLISECONDS));
-//                    }
+//                    getProcessThreads().add(
+                    getProcThreadPool().submit(process);
+//                    getProcessThreads().add(getThreadPool().schedule(process, 100, MILLISECONDS));
+
                 }
             }
 

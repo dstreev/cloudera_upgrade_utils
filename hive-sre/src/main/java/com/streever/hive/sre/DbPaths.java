@@ -255,4 +255,28 @@ public class DbPaths extends SRERunnable {
         doIt();
         return "done";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DbPaths dbPaths = (DbPaths) o;
+
+        if (parent != null ? !parent.equals(dbPaths.parent) : dbPaths.parent != null) return false;
+        if (counterGroup != null ? !counterGroup.equals(dbPaths.counterGroup) : dbPaths.counterGroup != null)
+            return false;
+        if (commandChecks != null ? !commandChecks.equals(dbPaths.commandChecks) : dbPaths.commandChecks != null)
+            return false;
+        return calculationCheck != null ? calculationCheck.equals(dbPaths.calculationCheck) : dbPaths.calculationCheck == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = parent != null ? parent.hashCode() : 0;
+        result = 31 * result + (counterGroup != null ? counterGroup.hashCode() : 0);
+        result = 31 * result + (commandChecks != null ? commandChecks.hashCode() : 0);
+        result = 31 * result + (calculationCheck != null ? calculationCheck.hashCode() : 0);
+        return result;
+    }
 }

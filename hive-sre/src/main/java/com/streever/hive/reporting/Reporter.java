@@ -4,6 +4,7 @@ import com.streever.hive.sre.ProcessContainer;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Reporter implements Runnable {
@@ -91,7 +92,11 @@ public class Reporter implements Runnable {
             if (!tictoc) {
                 version.append(" *");
             }
+            version.append("\t");
+            String threadStatus = processThreadStatus(getProcessContainer().getTaskThreadPool());
+            version.append(threadStatus);
 
+//            version.append(getProcessContainer().getThreadPool().getActiveCount());
             pushLine(version.toString());
 
             Deque<String> lines = new LinkedList<>();
@@ -151,19 +156,35 @@ public class Reporter implements Runnable {
 
             Long elapsedSec = (now.getTime() - startTime.getTime()) / 1000;
 
-            StringBuilder jobTotalsSb = new StringBuilder("Velocity:");
-            jobTotalsSb.append(ReportingConf.ANSI_BLUE).append("   (").append(elapsedSec).append("/")
-                    .append(totalTaskCount / elapsedSec).append(")").append(ReportingConf.ANSI_RESET);
+            try {
+                StringBuilder jobTotalsSb = new StringBuilder("Velocity:");
+                jobTotalsSb.append(ReportingConf.ANSI_BLUE).append("   (").append(elapsedSec).append("/")
+                        .append(totalTaskCount / elapsedSec).append(")").append(ReportingConf.ANSI_RESET);
 
-            String jobSummary = jobTotalsSb.toString();
-            jobSummary = StringUtils.leftPad(jobSummary, WIDTH - (jobSummary.length() + 1) , " ");
-            pushLine(jobSummary);
+                String jobSummary = jobTotalsSb.toString();
+                jobSummary = StringUtils.leftPad(jobSummary, WIDTH - (jobSummary.length() + 1), " ");
+                pushLine(jobSummary);
+            } catch (ArithmeticException ae) {
+
+            }
         } catch (Throwable t) {
             pushLine("Calculating Tasks");
             t.printStackTrace();
         }
         tictoc = !tictoc;
         return rtn;
+    }
+
+    protected String processThreadStatus(ThreadPoolExecutor threadPool) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(threadPool.getCorePoolSize()).append(",");
+        sb.append(threadPool.getLargestPoolSize()).append(",");
+        sb.append(threadPool.getMaximumPoolSize()).append(" - ");
+        sb.append(threadPool.getActiveCount()).append(",");
+        sb.append(threadPool.getCompletedTaskCount()).append(",");
+        sb.append(threadPool.getQueue().size()).append(",");
+        sb.append(threadPool.getTaskCount());
+        return sb.toString();
     }
 
     protected String progressCount(int indent, String name, String filler, Map<TaskState, AtomicLong> counts) {
