@@ -43,7 +43,7 @@ public class ProcessContainer implements Runnable {
     private SreProcessesConfig config;
     private Reporter reporter;
     private ScheduledExecutorService threadPool;
-    private List<ScheduledFuture<String>> processThreads;
+    private List<Future<String>> processThreads;
     private ConnectionPools connectionPools;
     private String outputDirectory;
     private List<Integer> includes = new ArrayList<Integer>();
@@ -99,14 +99,14 @@ public class ProcessContainer implements Runnable {
         return threadPool;
     }
 
-    public List<ScheduledFuture<String>> getProcessThreads() {
+    public List<Future<String>> getProcessThreads() {
         if (processThreads == null) {
-            processThreads = new ArrayList<ScheduledFuture<String>>();
+            processThreads = new ArrayList<Future<String>>();
         }
         return processThreads;
     }
 
-    public void addProcess(ScheduledFuture<String> future) {
+    public void addProcess(Future<String> future) {
         getProcessThreads().add(future);
     }
 
@@ -162,8 +162,8 @@ public class ProcessContainer implements Runnable {
         }
         // Cleanup the done threads.
 //        if (activeCounter > 100) {
-            List<ScheduledFuture<String>> rList = new ArrayList<ScheduledFuture<String>>();
-            for (ScheduledFuture<String> chSf: processThreads) {
+            List<Future<String>> rList = new ArrayList<Future<String>>();
+            for (Future<String> chSf: processThreads) {
                 if (chSf.isDone()) {
                     rList.add(chSf);
                 }
@@ -176,7 +176,7 @@ public class ProcessContainer implements Runnable {
 //            activeCounter = 0l;
 //        }
         try {
-            for (ScheduledFuture<String> sf : processThreads) {
+            for (Future<String> sf : processThreads) {
                 if (!sf.isDone()) {
                     rtn = Boolean.TRUE;
                     break;

@@ -272,6 +272,7 @@ public class DbSetProcess extends SreProcessBase {
             LOG.info("Adding paths for db: " + database);
 //            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), paths.getCounter());
             // Add Runnable to Main ThreadPool
+//            Future<String> sf = getParent().getThreadPool().submit(paths);
             ScheduledFuture<String> sf = getParent().getThreadPool().schedule(paths, 10, MILLISECONDS);
             getParent().addProcess(sf);
             try {
