@@ -2,7 +2,9 @@ package com.streever.hive.sre;
 
 import com.streever.hive.config.HiveStrictManagedMigrationElements;
 import com.streever.hive.config.HiveStrictManagedMigrationIncludeListConfig;
+import com.streever.hive.reporting.CounterGroup;
 import com.streever.hive.reporting.ReportingConf;
+import com.streever.hive.reporting.TaskState;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
@@ -12,6 +14,7 @@ import org.apache.log4j.Logger;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,10 +29,20 @@ public class MetastoreReportProcess extends MetastoreProcess {
     private List<MetastoreQuery> metastoreQueryDefinitions = new ArrayList<MetastoreQuery>();
     private ScriptEngine scriptEngine = null;
 
-//    @Override
-//    public void run() {
-//        doIt();
-//    }
+    @Override
+    public void init(ProcessContainer parent) throws FileNotFoundException {
+        super.init(parent);
+
+        counterGroup = new CounterGroup(getUniqueName());
+
+        counterGroup.addAndGetTaskState(TaskState.CONSTRUCTED, getMetastoreQueryDefinitions().size());
+        getParent().getReporter().addCounter(counterGroup, null);
+        // Add Report Counters.
+//        for (MetastoreQuery mq : getMetastoreQueryDefinitions()) {
+//            getParent().getReporter().addCounter(counterGroup, crr.getCounter());
+//        }
+
+    }
 
     @Override
     public String call() throws Exception {
@@ -38,7 +51,7 @@ public class MetastoreReportProcess extends MetastoreProcess {
     }
 
     public void doIt() {
-        setStatus(PROCESSING);
+//        setStatus(PROCESSING);
 
         ScriptEngineManager sem = new ScriptEngineManager();
         scriptEngine = sem.getEngineByName("nashorn");
@@ -51,7 +64,7 @@ public class MetastoreReportProcess extends MetastoreProcess {
         if (getHeader() != null)
             success.println(getHeader());
 
-        this.setTotalCount(getMetastoreQueryDefinitions().size());
+//        this.setTotalCount(getMetastoreQueryDefinitions().size());
         for (MetastoreQuery metastoreQueryDefinition: getMetastoreQueryDefinitions()) {
             String[][] metastoreRecords = null;
             try (Connection conn = getParent().getConnectionPools().getMetastoreDirectConnection()) {
@@ -104,9 +117,9 @@ public class MetastoreReportProcess extends MetastoreProcess {
                         }
                     }
 
-                    setTotalCount(metastoreRecords[0].length);
+//                    setTotalCount(metastoreRecords[0].length);
                     for (int i = 0; i < metastoreRecords[0].length; i++) {
-                    incSuccess(1);
+//                    incSuccess(1);
                         String[] record = new String[metastoreQueryDefinition.getListingColumns().length];
                         for (int j = 0; j < metastoreQueryDefinition.getListingColumns().length; j++) {
                             record[j] = metastoreRecords[j][i];
@@ -167,24 +180,20 @@ public class MetastoreReportProcess extends MetastoreProcess {
                     }
                     success.println("\n> **Results empty**\n");
                 }
-                incSuccess(1);
+                counterGroup.addAndGetTaskState(TaskState.PROCESSED, 1);
             } catch (SQLException e) {
-                incError(1);
+                counterGroup.addAndGetTaskState(TaskState.ERROR, 1);
                 error.println(metastoreQueryDefinition.getQuery());
                 error.println("> Processing Issue: " + e.getMessage());
                 e.printStackTrace(error);
-//                setStatus(ERROR);
-//                throw new RuntimeException("Issue getting 'databases' to process.", e);
             } catch (RuntimeException rte) {
-                incError(1);
+                counterGroup.addAndGetTaskState(TaskState.ERROR, 1);
                 error.println(metastoreQueryDefinition.getQuery());
                 error.println("> Processing Issue: " + rte.getMessage());
                 rte.printStackTrace(error);
             }
-            incProcessed(1);
         }
-        setStatus(COMPLETED);
-        setActive(false);
+        setInitializing(Boolean.FALSE);
     }
 
 

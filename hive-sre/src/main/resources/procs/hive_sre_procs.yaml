@@ -85,7 +85,7 @@ processes:
   - type:                     "dbSet"
     id:                       3
     active:                   true
-    displayName:              "Table and Partition Scan - Small Files"
+    displayName:              "Table and Partition Scan"
     title:                    "# Table and Partition Scan - Small Files (v.${Implementation-Version})\n"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
@@ -114,12 +114,12 @@ processes:
             RECORDS:
               test: "if ((%6$s > 0) && (%8$s / %7$s < %10$s)) false; else true;"
               #              fail: "\"SMALLFILES: %1$s\t%2$s\t[:%4$s]\t%5$s\t%6$s\t%7$s\t%8$s\t\" + java.math.BigDecimal.valueOf((%8$s / %7$s)).divide(new java.math.BigDecimal(1024*1024), 3) + \"Mb\""
-              fail: "\"| %1$s | %2$s | %4$s | %5$s | %6$s | %7$s | %8$s | \" + java.math.BigDecimal.valueOf((%8$s / %7$s)).divide(new java.math.BigDecimal(1024*1024), 3) "
+              fail: "\"| %1$s | %2$s | %4$s | %5$s | %6$s | %7$s | %8$s | \" + java.math.BigDecimal.valueOf((%8$s / %7$s)).divide(new java.math.BigDecimal(1024*1024), 3) + \"|\""
               params: [ "67108864" ]
   - type:                     "dbSet"
     id:                       4
     active:                   true
-    displayName:              "Table and Partition Scan - Volume Report"
+    displayName:              "Table and Partition Scan"
     title:                    "# Table and Partition Scan - Volume Report (v.${Implementation-Version})\n"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"
@@ -149,7 +149,7 @@ processes:
   - type:                     "dbSet"
     id:                       5
     active:                   true
-    displayName:              "Table and Partition Scan - Empty Datasets"
+    displayName:              "Table and Partition Scan"
     title:                    "# Table and Partition Scan - Empty Datasets (v.${Implementation-Version})"
     queryDefinitionReference: "/hive_u3_queries.yaml"
     dbListingQuery:           "db_tbl_count"

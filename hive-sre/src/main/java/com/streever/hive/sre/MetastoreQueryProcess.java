@@ -28,9 +28,9 @@ public class MetastoreQueryProcess extends MetastoreProcess {
     }
 
     public void doIt() {
-        setStatus(PROCESSING);
+//        setStatus(PROCESSING);
         String[][] metastoreRecords = null;
-        this.setTotalCount(1);
+//        this.setTotalCount(1);
         try (Connection conn = getParent().getConnectionPools().getMetastoreDirectConnection()) {
             String targetQueryDef = this.getMetastoreQueryDefinition().getQuery();
             // build prepared statement for targetQueryDef
@@ -48,10 +48,10 @@ public class MetastoreQueryProcess extends MetastoreProcess {
             // build array of columns
             metastoreRecords = rarray.getColumns(getMetastoreQueryDefinition().getListingColumns());
         } catch (SQLException e) {
-            incError(1);
+//            incError(1);
             error.println(metastoreQueryDefinition.getQuery());
             error.println("> Processing Issue: " + e.getMessage());
-            setStatus(ERROR);
+//            setStatus(ERROR);
             return;
         }
 
@@ -70,22 +70,21 @@ public class MetastoreQueryProcess extends MetastoreProcess {
                 success.println(getMetastoreQueryDefinition().getResultMessageDetailHeader());
             }
             for (int i = 0; i < metastoreRecords[0].length; i++) {
-                incSuccess(1);
+//                incSuccess(1);
                 String[] record = new String[getMetastoreQueryDefinition().getListingColumns().length];
                 for (int j = 0; j< getMetastoreQueryDefinition().getListingColumns().length; j++) {
                     record[j] = metastoreRecords[j][i];
-//                        serdeRecords[0][i], serdeRecords[1][i], serdeRecords[2][i]
                 }
                 String message = String.format(getMetastoreQueryDefinition().getResultMessageDetailTemplate(), record);
                 success.println(message);
             }
-            incSuccess(1);
-            incProcessed(1);
+//            incSuccess(1);
+//            incProcessed(1);
         } else {
             success.println(getMetastoreQueryDefinition().getResultMessageHeader());
             success.println("\n > **Results empty**\n");
         }
-        setStatus(COMPLETED);
+//        setStatus(COMPLETED);
         setActive(false);
     }
 

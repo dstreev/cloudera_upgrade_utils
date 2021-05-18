@@ -38,11 +38,12 @@ The 'ProcessContainer' is the definition and runtime structure
 public class ProcessContainer implements Runnable {
     private static Logger LOG = LogManager.getLogger(ProcessContainer.class);
 
+    private long activeCounter = 0l;
     private boolean initializing = Boolean.TRUE;
     private SreProcessesConfig config;
     private Reporter reporter;
     private ScheduledExecutorService threadPool;
-    private List<Future> processThreads;
+    private List<ScheduledFuture<String>> processThreads;
     private ConnectionPools connectionPools;
     private String outputDirectory;
     private List<Integer> includes = new ArrayList<Integer>();
@@ -69,6 +70,7 @@ public class ProcessContainer implements Runnable {
 
     public void setConfig(SreProcessesConfig config) {
         this.config = config;
+        this.reporter.setRefreshInterval(this.config.getReportingInterval());
     }
 
     public Reporter getReporter() {
@@ -83,23 +85,29 @@ public class ProcessContainer implements Runnable {
         includes.add(include);
     }
 
+//    public ExecutorService getThreadPool() {
+//        if (threadPool == null) {
+//            threadPool = Executors.newFixedThreadPool(getConfig().getParallelism());
+//        }
+//        return threadPool;
+//    }
+
     public ScheduledExecutorService getThreadPool() {
         if (threadPool == null) {
             threadPool = Executors.newScheduledThreadPool(getConfig().getParallelism());
-//            threadPool = Executors.newFixedThreadPool(getConfig().getParallelism());
         }
         return threadPool;
     }
 
-    public List<Future> getProcessThreads() {
+    public List<ScheduledFuture<String>> getProcessThreads() {
         if (processThreads == null) {
-            processThreads = new ArrayList<Future>();
+            processThreads = new ArrayList<ScheduledFuture<String>>();
         }
         return processThreads;
     }
 
-    public void setProcessThreads(List<Future> processThreads) {
-        this.processThreads = processThreads;
+    public void addProcess(ScheduledFuture<String> future) {
+        getProcessThreads().add(future);
     }
 
     public ConnectionPools getConnectionPools() {
@@ -145,45 +153,66 @@ public class ProcessContainer implements Runnable {
 
     public Boolean isActive() {
         Boolean rtn = Boolean.FALSE;
+        activeCounter++;
         for (SreProcessBase proc : getProcesses()) {
-            if (proc.isActive()) {
+            if (proc.isActive() && proc.isInitializing()) {
                 rtn = Boolean.TRUE;
+                break;
             }
+        }
+        // Cleanup the done threads.
+//        if (activeCounter > 100) {
+            List<ScheduledFuture<String>> rList = new ArrayList<ScheduledFuture<String>>();
+            for (ScheduledFuture<String> chSf: processThreads) {
+                if (chSf.isDone()) {
+                    rList.add(chSf);
+                }
+            }
+            if (rList.size() > 0) {
+                LOG.info("Cleaning Up 'done' process threads: " + rList.size());
+                processThreads.removeAll(rList);
+            }
+            // reset counter.
+//            activeCounter = 0l;
+//        }
+        try {
+            for (ScheduledFuture<String> sf : processThreads) {
+                if (!sf.isDone()) {
+                    rtn = Boolean.TRUE;
+                    break;
+                }
+            }
+        } catch (ConcurrentModificationException cme) {
+            rtn = Boolean.TRUE;
         }
         return rtn;
     }
 
     public void run() {
+        int i = 0;
         while (true) {
             boolean check = true;
             try {
                 Thread.sleep(1000);
+                i++;
+                if (i > 100) {
+                    System.gc();
+                    i = 0;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             boolean procActive = isActive();
-            if (!procActive) {
-                LOG.info("No procs active. Checking Threads.");
+            if (procActive) {
+                // Try again. This happens because we are editing the
+                // list in the background.
                 try {
-                    for (Future sf : getProcessThreads()) {
-                        if (!sf.isDone()) {
-                            check = false;
-                            break;
-                        }
-                    }
-                    if (check)
-                        break;
-                } catch (ConcurrentModificationException cme) {
-                    // Try again. This happens because we are editing the
-                    // list in the background.
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             } else {
-                LOG.info("Procs active.");
+                break;
             }
         }
         LOG.info("Shutting down Thread Pool.");
@@ -232,7 +261,7 @@ public class ProcessContainer implements Runnable {
 
             GenericObjectPoolConfig<HadoopSession> hspCfg = new GenericObjectPoolConfig<HadoopSession>();
             hspCfg.setMaxTotal(sreConfig.getParallelism());
-            this.cliPool = new HadoopSessionPool(new GenericObjectPool<HadoopSession>(new HadoopSessionFactory(), hspCfg ));
+            this.cliPool = new HadoopSessionPool(new GenericObjectPool<HadoopSession>(new HadoopSessionFactory(), hspCfg));
 
             // Needs to be added first, so it runs the reporter thread.
             Thread reporterThread = new Thread(getReporter());
@@ -266,17 +295,17 @@ public class ProcessContainer implements Runnable {
                     process.setParent(this);
                     process.setOutputDirectory(job_run_dir);
                     process.init(this);
-                    if (process instanceof Callable && process instanceof Counter) {
-                        getReporter().addCounter(process.getUniqueName(), ((Counter) process).getCounter());
-                        if (process instanceof MetastoreProcess) {
-                            delay = 3000;
-                        } else {
-                            delay = 100;
-                        }
-                        getProcessThreads().add(getThreadPool().schedule(process, delay, MILLISECONDS));
-                    } else if (process instanceof Callable) {
-                        getProcessThreads().add(getThreadPool().schedule(process, 100, MILLISECONDS));
-                    }
+//                    if (process instanceof Callable && process instanceof Counter) {
+//                        getReporter().addCounter(process.getUniqueName(), ((Counter) process).getCounter());
+//                        if (process instanceof MetastoreProcess) {
+//                            delay = 3000;
+//                        } else {
+//                            delay = 100;
+//                        }
+//                        getProcessThreads().add(getThreadPool().schedule(process, delay, MILLISECONDS));
+//                    } else if (process instanceof Callable) {
+                    getProcessThreads().add(getThreadPool().schedule(process, 100, MILLISECONDS));
+//                    }
                 }
             }
 
