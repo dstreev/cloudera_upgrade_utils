@@ -116,7 +116,6 @@ public class DbPaths extends SRERunnable {
             }
             // Loop through the paths
             if (columnsArray[0] != null && columnsArray[0].length > 0) {
-
                 for (int i = 0; i < columnsArray[0].length; i++) { //String path : columnArray) {
                     String[] args = new String[columnsArray.length];
                     for (int a = 0; a < columnsArray.length; a++) {
@@ -134,6 +133,7 @@ public class DbPaths extends SRERunnable {
                     if (getCommandChecks() != null) {
                         for (CommandReturnCheck lclCheck : getCommandChecks()) {
                             try {
+                                LOG.info(getParent().getDisplayName() + ":" + lclCheck.getDisplayName() + " " + Arrays.toString(args));
                                 String rcmd = lclCheck.getFullCommand(args);
                                 if (rcmd != null) {
                                     CommandReturn cr = cli.processInput(rcmd);
