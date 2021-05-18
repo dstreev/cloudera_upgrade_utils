@@ -30,11 +30,11 @@ import java.util.concurrent.*;
 /*
 The 'ProcessContainer' is the definition and runtime structure
  */
-@JsonIgnoreProperties({"config", "reporter", "taskThreadPool", "procThreadPool", "processThreads", "connectionPools", "outputDirectory"})
+@JsonIgnoreProperties({"config", "reporter", "taskThreadPool", "procThreadPool", "processThreads", "cliPool",
+        "connectionPools", "outputDirectory"})
 public class ProcessContainer implements Runnable {
     private static Logger LOG = LogManager.getLogger(ProcessContainer.class);
 
-    private long activeCounter = 0l;
     private boolean initializing = Boolean.TRUE;
     private SreProcessesConfig config;
     private Reporter reporter;
@@ -86,7 +86,6 @@ public class ProcessContainer implements Runnable {
 
     public ThreadPoolExecutor getTaskThreadPool() {
         if (taskThreadPool == null) {
-//            threadPool = Executors.newFixedThreadPool(getConfig().getParallelism());
             taskThreadPool = new ThreadPoolExecutor(getConfig().getParallelism(), getConfig().getParallelism(),
                     5000l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
         }
@@ -95,31 +94,11 @@ public class ProcessContainer implements Runnable {
 
     public ThreadPoolExecutor getProcThreadPool() {
         if (procThreadPool == null) {
-//            threadPool = Executors.newFixedThreadPool(getConfig().getParallelism());
             procThreadPool = new ThreadPoolExecutor(getConfig().getParallelism(), getConfig().getParallelism(),
                     5000l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
         }
         return procThreadPool;
     }
-
-
-//    public ScheduledExecutorService getThreadPool() {
-//        if (threadPool == null) {
-//            threadPool = Executors.newScheduledThreadPool(getConfig().getParallelism());
-//        }
-//        return threadPool;
-//    }
-
-//    public List<Future<String>> getProcessThreads() {
-//        if (processThreads == null) {
-//            processThreads = new ArrayList<Future<String>>();
-//        }
-//        return processThreads;
-//    }
-
-//    public void addProcess(Future<String> future) {
-//        getProcessThreads().add(future);
-//    }
 
     public ConnectionPools getConnectionPools() {
         return connectionPools;
@@ -164,7 +143,6 @@ public class ProcessContainer implements Runnable {
 
     public Boolean isActive() {
         Boolean rtn = Boolean.FALSE;
-        activeCounter++;
         for (SreProcessBase proc : getProcesses()) {
             if (proc.isActive() && proc.isInitializing()) {
                 rtn = Boolean.TRUE;
@@ -177,28 +155,6 @@ public class ProcessContainer implements Runnable {
         if (this.getTaskThreadPool().getActiveCount() > 0) {
             rtn = Boolean.TRUE;
         }
-
-        // Cleanup the done threads.
-//        List<Future<String>> rList = new ArrayList<Future<String>>();
-//        for (Future<String> chSf : processThreads) {
-//            if (chSf.isDone()) {
-//                rList.add(chSf);
-//            }
-//        }
-//        if (rList.size() > 0) {
-//            LOG.info("Cleaning Up 'done' process threads: " + rList.size());
-//            processThreads.removeAll(rList);
-//        }
-//        try {
-//            for (Future<String> sf : processThreads) {
-//                if (!sf.isDone()) {
-//                    rtn = Boolean.TRUE;
-//                    break;
-//                }
-//            }
-//        } catch (ConcurrentModificationException cme) {
-//            rtn = Boolean.TRUE;
-//        }
         return rtn;
     }
 

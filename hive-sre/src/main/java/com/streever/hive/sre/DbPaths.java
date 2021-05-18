@@ -9,6 +9,8 @@ import com.streever.hive.reporting.TaskState;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,6 +19,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 public class DbPaths extends SRERunnable {
+    private static Logger LOG = LogManager.getLogger(DbPaths.class);
 
     private DbSetProcess parent;
     private CounterGroup counterGroup;
@@ -60,47 +63,11 @@ public class DbPaths extends SRERunnable {
     @Override
     public Boolean init() {
         Boolean rtn = Boolean.FALSE;
-//        if (parent.getCommandChecks() != null) {
-//            for (CommandReturnCheck check : parent.getCommandChecks()) {
-//                try {
-//                    CommandReturnCheck newCheck = (CommandReturnCheck) check.clone();
-//                    commandChecks.add(newCheck);
-//                    // Connect CommandReturnCheck counter to this counter as a child.
-//                    // TODO: Need to set Counters name from the 'check'
-//                    getCounter().addChild(newCheck.getCounter());
-//                    // Redirect Output.
-//                    if (newCheck.getErrorFilename() == null) {
-//                        newCheck.setErrorStream(this.error);
-//                    }
-//                    if (newCheck.getSuccessFilename() == null) {
-//                        newCheck.setSuccessStream(this.success);
-//                    }
-//                    // TODO: Set success and error printstreams to output files.
-//                } catch (CloneNotSupportedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
-//        if (parent.getCalculationCheck() != null) {
-//            try {
-//                this.calculationCheck = (CheckCalculation) parent.getCalculationCheck().clone();
-//                this.calculationCheck.setSuccessStream(this.success);
-//                this.calculationCheck.setErrorStream(this.error);
-//            } catch (CloneNotSupportedException e) {
-//                e.printStackTrace();
-//            }
-//        }
         return Boolean.TRUE;
     }
 
-//    @Override
-//    public void run() {
-//        doIt();
-//    }
 
     protected void doIt() {
-//        setState(TaskState.PROCESSED);
-//        sessionId = "DB Paths for: " + getDisplayName() + UUID.randomUUID();
 
         QueryDefinition queryDefinition = null;
         HadoopSession cli = null;
@@ -147,10 +114,8 @@ public class DbPaths extends SRERunnable {
                     hsmmElementLoc = null;
                 }
             }
-//            this.setTotalCount(rarray.getCount() * this.getCounterChildren().size());
             // Loop through the paths
             if (columnsArray[0] != null && columnsArray[0].length > 0) {
-//                this.setStatus(PROCESSING);
 
                 for (int i = 0; i < columnsArray[0].length; i++) { //String path : columnArray) {
                     String[] args = new String[columnsArray.length];
@@ -238,7 +203,6 @@ public class DbPaths extends SRERunnable {
                 error.println("Failure in DbPaths" + e.getMessage());
             }
             e.printStackTrace(error);
-            setState(TaskState.ERROR);
         } catch (Throwable t) {
             System.err.println("Failure in DbPaths");
             t.printStackTrace(error);
@@ -247,7 +211,6 @@ public class DbPaths extends SRERunnable {
             // When completed, increment the processed value.
             counterGroup.addAndGetTaskState(TaskState.PROCESSED, 1);
         }
-        setState(TaskState.SUCCESS);
     }
 
     @Override

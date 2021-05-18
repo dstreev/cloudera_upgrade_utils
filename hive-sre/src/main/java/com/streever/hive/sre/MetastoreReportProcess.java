@@ -51,8 +51,6 @@ public class MetastoreReportProcess extends MetastoreProcess {
     }
 
     public void doIt() {
-//        setStatus(PROCESSING);
-
         ScriptEngineManager sem = new ScriptEngineManager();
         scriptEngine = sem.getEngineByName("nashorn");
 
