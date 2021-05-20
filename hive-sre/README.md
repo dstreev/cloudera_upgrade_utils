@@ -109,6 +109,9 @@ The number of concurrent processes is controlled by the `parallelism` variable i
     - `Completed` is the number of tasks this procedure has completed.
 6. Procedure Check - Child of Procedure
 7. Procedure Check Counts - `errors/successes`
+8. Velocity - Total Time in Seconds process has been running.
+9. Velocity - The average number of Tasks completed per second since job started.
+   - Note that not all Tasks are equal.  Task times vary based on the content of the cluster and area being inspected.  And can largely be effected by Namenode performance.
 
 ![UI Details](images/hive-ui-details.png)
                          
