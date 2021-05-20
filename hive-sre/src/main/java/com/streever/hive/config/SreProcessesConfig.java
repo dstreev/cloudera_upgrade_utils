@@ -20,6 +20,7 @@ public class SreProcessesConfig {
     private Metastore metastoreDirect;
     private Metastore hs2;
     private int parallelism = 2;
+    private int reportingInterval = 500;
 
     @JsonProperty("queries")
     private Map<String, QueryDefinition> queries = new LinkedHashMap<String, QueryDefinition>();
@@ -50,6 +51,14 @@ public class SreProcessesConfig {
 
     public void setParallelism(int parallelism) {
         this.parallelism = parallelism;
+    }
+
+    public int getReportingInterval() {
+        return reportingInterval;
+    }
+
+    public void setReportingInterval(int reportingInterval) {
+        this.reportingInterval = reportingInterval;
     }
 
     public void validate() {

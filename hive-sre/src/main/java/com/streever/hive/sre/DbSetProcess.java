@@ -2,12 +2,12 @@ package com.streever.hive.sre;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.streever.hive.config.HiveStrictManagedMigrationElements;
-import com.streever.hive.reporting.ReportCounter;
+import com.streever.hive.reporting.CounterGroup;
 import com.streever.hive.reporting.ReportingConf;
+import com.streever.hive.reporting.TaskState;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
-import org.apache.commons.collections.ArrayStack;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -18,33 +18,28 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-
-import static com.streever.hive.reporting.ReportCounter.*;
-
-import static com.streever.hive.reporting.ReportCounter.CONSTRUCTED;
-import static com.streever.hive.reporting.ReportCounter.WAITING;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 
 
-@JsonIgnoreProperties({"parent", "config", "metastoreDirectDataSource", "h2DataSource",
+@JsonIgnoreProperties({"parent", "counterGroup", "config", "metastoreDirectDataSource", "h2DataSource",
         "outputDirectory", "dbPaths", "cliSession", "success", "error"})
 public class DbSetProcess extends SreProcessBase {
     private static Logger LOG = LogManager.getLogger(DbSetProcess.class);
 
     private ProcessContainer parent;
-//    private String outputDirectory;
 
     //    private List<DbPaths> dbPaths;
     private List<CommandReturnCheck> commandChecks;
     private CheckCalculation calculationCheck;
+
     // HiveStrictManagedMigration Output Config
     private HiveStrictManagedMigrationElements hsmmElements;
     private String dbListingQuery;
     private String[] listingColumns;
     private String pathsListingQuery;
 
-    private List<DbPaths> pathsList = new ArrayList<DbPaths>();
+    private List<ScheduledFuture<String>> pathsFutures = new ArrayList<ScheduledFuture<String>>();
 
     @Override
     public ProcessContainer getParent() {
@@ -209,6 +204,13 @@ public class DbSetProcess extends SreProcessBase {
     public void init(ProcessContainer parent) throws FileNotFoundException {
         super.init(parent);
         initHeader();
+
+        counterGroup = new CounterGroup(getUniqueName());
+
+        // Add Report Counters.
+        for (CommandReturnCheck crr : getCommandChecks()) {
+            getParent().getReporter().addCounter(counterGroup, crr.getCounter());
+        }
     }
 
     protected void doIt() {
@@ -239,18 +241,21 @@ public class DbSetProcess extends SreProcessBase {
         }
 
         // Build an Element Path for each database.  This will be use to divide the work.
-        int threadCount = getParent().getConfig().getParallelism();
+//        int threadCount = getParent().getConfig().getParallelism();
 
 
-        List<ReportCounter> counters = new ArrayList<ReportCounter>();
+//        List<ReportCounter> counters = new ArrayList<ReportCounter>();
         int i = 0;
+        counterGroup.addAndGetTaskState(TaskState.CONSTRUCTED, dbs.length);
         for (String database : dbs) {
             DbPaths paths = new DbPaths(database, this);
-            paths.error = this.error;
-            paths.success = this.success;
+            paths.setCommandChecks(this.getCommandChecks());
+            paths.setCounterGroup(counterGroup);
+//            paths.error = this.error;
+//            paths.success = this.success;
             if (paths.init()) {
-                paths.setStatus(CONSTRUCTED);
-                pathsList.add(paths);
+//                paths.setStatus(CONSTRUCTED);
+//                pathsList.add(paths);
             } else {
                 throw new RuntimeException("Issue establishing a connection to HDFS.  " +
                         "Check credentials(kerberos), configs(/etc/hadoop/conf), " +
@@ -258,24 +263,27 @@ public class DbSetProcess extends SreProcessBase {
                         "Can you run an 'hdfs' cli command successfully?");
             }
 
-            paths.setStatus(WAITING);
-            counters.add(paths.getCounter());
+//            paths.setStatus(WAITING);
+//            counters.add(paths.getCounter());
             i++;
             LOG.info("Adding paths for db: " + database);
 //            getParent().getReporter().addCounter(getId() + ":" + getDisplayName(), paths.getCounter());
             // Add Runnable to Main ThreadPool
-            getParent().getProcessThreads().add(getParent().getThreadPool().schedule(paths, 10, MILLISECONDS));
-
-            // Flush Counters to Reporter
-            if (i >= 100) {
-                getParent().getReporter().addCounters(getId() + ":" + getDisplayName(), counters);
-                i = 0;
-                counters.clear();
-            }
+            Future<String> sf = getParent().getTaskThreadPool().submit(paths);
+//            ScheduledFuture<String> sf = getParent().getThreadPool().schedule(paths, 10, MILLISECONDS);
+//            getParent().addProcess(sf);
+//            try {s
+//                while (getParent().getProcessThreads().size() > 100) {
+//                    try {
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException ie) {
+//                        //
+//                    }
+//                }
+//            } catch (ConcurrentModificationException cme) {
+//                //
+//            }
         }
-
-        // Flush Remaining Counters.
-        getParent().getReporter().addCounters(getId() + ":" + getDisplayName(), counters);
 
         if (getCommandChecks() == null) {
             this.success.println("Command Checks Skipped.  Rules Processing Skipped.");
@@ -283,26 +291,6 @@ public class DbSetProcess extends SreProcessBase {
 
         setInitializing(Boolean.FALSE);
 
-    }
-
-    @Override
-    public Boolean isActive() {
-        Boolean rtn = super.isActive();
-        if (rtn) {
-            // check the paths list.
-            if (!isInitializing()) {
-                Boolean justOne = Boolean.FALSE;
-                for (DbPaths dbPaths : pathsList) {
-                    if (dbPaths.getStatus() < ERROR) {
-                        // If one is active, break;
-                        justOne = Boolean.TRUE;
-                        break;
-                    }
-                }
-                rtn = justOne;
-            }
-        }
-        return rtn;
     }
 
     @Override

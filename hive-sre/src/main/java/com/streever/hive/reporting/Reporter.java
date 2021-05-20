@@ -4,26 +4,25 @@ import com.streever.hive.sre.ProcessContainer;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static com.streever.hive.reporting.ReportCounter.*;
 
 public class Reporter implements Runnable {
 
     private int WIDTH = 100;
     private int linePos = 0;
     private boolean tictoc = false;
+    private int refreshInterval = 500;
 
     private int ERROR_POS = 0;
     private int SUCCESS_POS = 1;
+    private int TOTAL_POS = 2;
 
     private String name;
     private Date startTime = new Date();
     private ProcessContainer processContainer;
 
-    private Map<String, List<ReportCounter>> counterGroups = new HashMap<String, List<ReportCounter>>();
+    private Map<String, CounterGroup> counterGroups = new TreeMap<String, CounterGroup>();
 
     public String getName() {
         return name;
@@ -33,23 +32,22 @@ public class Reporter implements Runnable {
         this.name = name;
     }
 
-    public void addCounter(String groupName, ReportCounter counter) {
-        if (counterGroups.containsKey(groupName)) {
-            counterGroups.get(groupName).add(counter);
-        } else {
-            List<ReportCounter> counters = new CopyOnWriteArrayList<ReportCounter>();
-            counters.add(counter);
-            counterGroups.put(groupName, counters);
-        }
+    public int getRefreshInterval() {
+        return refreshInterval;
     }
 
-    public void addCounters(String groupName, List<ReportCounter> reportCounters) {
-        if (counterGroups.containsKey(groupName)) {
-            counterGroups.get(groupName).addAll(reportCounters);
+    public void setRefreshInterval(int refreshInterval) {
+        this.refreshInterval = refreshInterval;
+    }
+
+    public void addCounter(CounterGroup counterGroup, ReportCounter counter) {
+        if (counterGroups.containsKey(counterGroup.getName())) {
+            if (counter != null)
+                counterGroups.get(counterGroup.getName()).getCounters().add(counter);
         } else {
-            List<ReportCounter> counters = new CopyOnWriteArrayList<ReportCounter>();
-            counters.addAll(reportCounters);
-            counterGroups.put(groupName, counters);
+            if (counter != null)
+                counterGroup.getCounters().add(counter);
+            counterGroups.put(counterGroup.getName(), counterGroup);
         }
     }
 
@@ -61,49 +59,6 @@ public class Reporter implements Runnable {
         this.processContainer = processContainer;
     }
 
-    private Wrap getCounterDisplay(String prefix, ReportCounter counter) {
-        List<String> displayLines = new LinkedList<String>();
-        long total = counter.getTotalCount();
-        long processed = counter.getProcessed();
-        double percentProcessed = (double) processed / (double) total;
-        int percentProcessWidth = (int) (percentProcessed * (WIDTH - (prefix.length())));
-
-        displayLines.add(prefix + ReportingConf.ANSI_YELLOW + counter.getName() + " : " + counter.getStatusStr() + ReportingConf.ANSI_RESET);
-        String processedStr = StringUtils.rightPad("|", percentProcessWidth, "=");
-        String remainingStr = StringUtils.leftPad("|", WIDTH - prefix.length() - percentProcessWidth, ".");
-        displayLines.add(prefix + ReportingConf.ANSI_GREEN + processedStr + ReportingConf.ANSI_RED + remainingStr + ReportingConf.ANSI_RESET);
-        displayLines.add(prefix + ReportingConf.ANSI_BLUE + "[" + ReportingConf.ANSI_GREEN + counter.getSuccess() + ReportingConf.ANSI_BLUE +
-                "/" + ReportingConf.ANSI_RED + counter.getError() + ReportingConf.ANSI_BLUE + "/" +
-                ReportingConf.ANSI_GREEN + total + ReportingConf.ANSI_BLUE + "]" + ReportingConf.ANSI_RESET);
-
-//        for (ReportCounter child : counter.getChildren()) {
-//            displayLines.addAll(Arrays.asList(getShortCounterDisplay(prefix, child)));
-//        }
-        Wrap rtn = new Wrap();
-        rtn.status = counter.getStatus();
-        rtn.details = displayLines;
-        return rtn;
-    }
-
-    private String[] getShortCounterDisplay(String prefix, ReportCounter counter) {
-        String[] cStatusOutput = new String[1];
-//        long total = counter.getTotalCount();
-        long processed = counter.getProcessed();
-        long errors = counter.getError();
-        long successes = counter.getSuccess();
-        String line = StringUtils.leftPad(prefix + counter.getName() + ReportingConf.ANSI_YELLOW + " -> " +
-                ReportingConf.ANSI_BLUE + "[" + ReportingConf.ANSI_GREEN + successes + ReportingConf.ANSI_BLUE + "/" +
-                ReportingConf.ANSI_RED + errors + ReportingConf.ANSI_BLUE + "/" + ReportingConf.ANSI_GREEN + processed +
-                ReportingConf.ANSI_BLUE + "]" + ReportingConf.ANSI_RESET, WIDTH + (9 * ReportingConf.ANSI_SIZE), " ");
-        cStatusOutput[0] = line;
-        return cStatusOutput;
-    }
-
-    class Wrap {
-        int status;
-        List<String> details;
-    }
-
     private void pushLine(String line) {
         linePos += 1;
         System.out.println(line);
@@ -111,25 +66,8 @@ public class Reporter implements Runnable {
     }
 
     private void resetLines() {
-//        for (int i = 0; i < linePos; i++) {
-//            System.out.print(ReportingConf.RESET_TO_PREVIOUS_LINE);
-//        }
         System.out.print(ReportingConf.CLEAR_CONSOLE);
         linePos = 0;
-    }
-
-    private Boolean isProcessing(List<ReportCounter> reportCounters) {
-        Boolean rtn = Boolean.FALSE;
-        ListIterator<ReportCounter> cntrList = reportCounters.listIterator();
-        while (cntrList.hasNext()) {
-//        for (ReportCounter cntr : cntrList) {
-            ReportCounter cntr = cntrList.next();
-            if (cntr.getStatus() == PROCESSING) {
-                rtn = Boolean.TRUE;
-                break;
-            }
-        }
-        return rtn;
     }
 
     // Return true when not completed.
@@ -140,101 +78,148 @@ public class Reporter implements Runnable {
         // Prevent the Reporter Thread from terminating too quickly
         if (processContainer.isInitializing()) {
             return true;
-//        } else if (counterGroups.size() == 0) {
-//            // Done initializing and nothing to do.
-//            return false;
         }
 
         resetLines();
-        String version = ReportingConf.substituteVariables("v.${Implementation-Version}") + " - DB Mapping for: " +
-                this.getProcessContainer().getConfig().getMetastoreDirect().getType().toString();
-        if (tictoc) {
-            pushLine(version);
-        } else {
-            pushLine(version + " *");
-        }
-        for (String groupName : this.counterGroups.keySet()) {
-            List<ReportCounter> counters = counterGroups.get(groupName);
-            boolean doWrite = isProcessing(counters);
-            List<String> currentProcessing = new ArrayList<String>();
-            if (doWrite) pushLine(StringUtils.rightPad("=", WIDTH, "="));
-            pushLine(StringUtils.center(groupName, WIDTH));
-            if (doWrite) pushLine(StringUtils.rightPad("=", WIDTH, "="));
+        long totalTaskCount = 0l;
+        try {
+            StringBuilder version = new StringBuilder();
+            version.append(ReportingConf.ANSI_YELLOW);
+            version.append(ReportingConf.substituteVariables("v.${Implementation-Version}") + " - DB Mapping for: " +
+                    this.getProcessContainer().getConfig().getMetastoreDirect().getType().toString());
+            version.append(ReportingConf.ANSI_RESET);
 
-            Map<Integer, AtomicLong> totals = new TreeMap<Integer, AtomicLong>();
-            totals.put(ERROR_POS, new AtomicLong(0));
-            totals.put(SUCCESS_POS, new AtomicLong(0));
-            Map<Integer, AtomicLong> progress = new TreeMap<Integer, AtomicLong>();
-            progress.put(CONSTRUCTED, new AtomicLong(0));
-            progress.put(WAITING, new AtomicLong(0));
-            progress.put(STARTED, new AtomicLong(0));
-            progress.put(PROCESSING, new AtomicLong(0));
-            progress.put(ERROR, new AtomicLong(0));
-            progress.put(COMPLETED, new AtomicLong(0));
-            ListIterator<ReportCounter> cntrList = counters.listIterator();
-            while (cntrList.hasNext()) {
-                ReportCounter ctr = cntrList.next();
-//            for (ReportCounter ctr : counters) {
-                progress.get(ctr.getStatus()).addAndGet(1);
-
-                // If there aren't children counters, use the parent values
-                if (ctr.getChildren().size() > 0) {
-                    for (ReportCounter child : ctr.getChildren()) {
-                        totals.get(ERROR_POS).addAndGet(child.getError());
-                        totals.get(SUCCESS_POS).addAndGet(child.getSuccess());
-                    }
-                } else {
-                    totals.get(ERROR_POS).addAndGet(ctr.getError());
-                    totals.get(SUCCESS_POS).addAndGet(ctr.getSuccess());
-                }
-
-                if (ctr.getStatus() == PROCESSING) {
-                    Wrap cd = getCounterDisplay(INDENT, ctr);
-                    currentProcessing.addAll(cd.details);
-                }
+            if (!tictoc) {
+                version.append(" *");
             }
-            for (String line : currentProcessing) {
-                pushLine(line);
-            }
-            StringBuilder overallStatusSb = new StringBuilder();
-            overallStatusSb.append(ReportingConf.ANSI_BLUE).append("[").append(ReportingConf.ANSI_GREEN);
-            if (counters.size() > 0) {
-                for (int i = 0; i <= COMPLETED; i++) {
-                    if (i > 0)
-                        overallStatusSb.append(ReportingConf.ANSI_BLUE).append("/").append(ReportingConf.ANSI_GREEN);
-                    AtomicLong value = progress.get(i);
-                    if (value != null) {
-                        overallStatusSb.append(value.toString());
-                        // Use this to flag that there are processed that
-                        // have not completed.
-                        if (i < ReportCounter.ERROR && value.get() > 0) {
-                            rtn = true;
+            version.append("\t");
+            String threadStatus = processThreadStatus(getProcessContainer().getTaskThreadPool());
+            version.append(threadStatus);
+
+//            version.append(getProcessContainer().getThreadPool().getActiveCount());
+            pushLine(version.toString());
+
+            Deque<String> lines = new LinkedList<>();
+            // For the proc id
+            for (String groupName : this.counterGroups.keySet()) {
+
+                CounterGroup counterGroup = counterGroups.get(groupName);
+
+
+                // The CommandChecks for the Proc
+                if (counterGroup.getCounters().size() > 0) {
+                    for (ReportCounter ctr : counterGroup.getCounters()) {
+
+                        Map<TaskState, AtomicLong> ccrProgress = new LinkedHashMap<TaskState, AtomicLong>();
+                        for (Map.Entry<TaskState, AtomicLong> entry: ctr.getCounts().entrySet()) {
+                            ccrProgress.put(entry.getKey(), entry.getValue());
+                            totalTaskCount += entry.getValue().get();
                         }
-                    } else
-                        overallStatusSb.append("0");
+//                        for (TaskState state : TaskState.values()) {
+//                            procProgress.get(state).addAndGet(ctr.getCount(state));
+//                            jobProgress.get(state).addAndGet(ctr.getCount(state));
+//                        }
+
+                        // TODO: Handle CheckCalc Reporting...  But we aren't reporting here yet..
+
+                        lines.offerFirst(progressCount(10, ctr.getName(), "", ccrProgress));
+//                        lines.offerFirst(progressCount(10, ctr.getName(), "", null));
+
+//                        StringBuilder ccrSb = new StringBuilder();
+//                        ccrSb.append(ctr.getName()).append(StringUtils.leftPad(progressCount(ccrProgress))
+//                        String ccrStr = ctr.getName();
+//
+//                        Wrap cd = getCounterDisplay(INDENT, ctr);
+//                        currentProcessing.addAll(cd.details);
+
+                    }
+                    lines.offerFirst(progressCount(counterGroup));
+                    lines.offerFirst(StringUtils.leftPad(ReportingConf.ANSI_CYAN, WIDTH, "-"));
+                } else {
+                    lines.offerFirst(progressCount(counterGroup));
+                    lines.offerFirst(StringUtils.leftPad(ReportingConf.ANSI_CYAN, WIDTH, "-"));
                 }
-            } else {
-                rtn = true;
+
+
             }
-            overallStatusSb.append(ReportingConf.ANSI_BLUE).append("]").append(ReportingConf.ANSI_RESET);
+            lines.add(StringUtils.leftPad(ReportingConf.ANSI_CYAN, WIDTH, "="));
+//            lines.add(progressCount(0, "Job Totals:", "", jobProgress));
 
-            String summary = overallStatusSb.toString();
+            Iterator<String> d = lines.iterator();
+            while (d.hasNext()) {
+                pushLine(d.next());
+            }
 
-            // TODO: Add duration output.
+//            pushLine(StringUtils.leftPad("=", WIDTH, "="));
 
-            StringBuilder overallTotalsSb = new StringBuilder();
-            overallTotalsSb.append(ReportingConf.ANSI_BLUE).append("[").append(ReportingConf.ANSI_GREEN);
-            overallTotalsSb.append(totals.get(ERROR_POS).get()).append(ReportingConf.ANSI_BLUE).append("/").append(ReportingConf.ANSI_GREEN);
-            overallTotalsSb.append(totals.get(SUCCESS_POS).get()).append(ReportingConf.ANSI_BLUE).append("]").append(ReportingConf.ANSI_RESET);
-            String totalsSummary = overallTotalsSb.toString();
-            totalsSummary = StringUtils.leftPad(totalsSummary, WIDTH - (summary.length() + 1) + (20 * 5), " ");
-//        summary = StringUtils.leftPad(summary, WIDTH + (8 * 5), " ");
-            if (doWrite) pushLine(StringUtils.leftPad(" ", WIDTH, "="));
-            pushLine(summary + totalsSummary);
+            Date now = new Date();
+
+            Long elapsedSec = (now.getTime() - startTime.getTime()) / 1000;
+
+            try {
+                StringBuilder jobTotalsSb = new StringBuilder("Velocity:");
+                jobTotalsSb.append(ReportingConf.ANSI_BLUE).append("   (").append(elapsedSec).append("/")
+                        .append(totalTaskCount / elapsedSec).append(")").append(ReportingConf.ANSI_RESET);
+
+                String jobSummary = jobTotalsSb.toString();
+                jobSummary = StringUtils.leftPad(jobSummary, WIDTH - (jobSummary.length() + 1), " ");
+                pushLine(jobSummary);
+            } catch (ArithmeticException ae) {
+
+            }
+        } catch (Throwable t) {
+            pushLine("Calculating Tasks");
+            t.printStackTrace();
         }
         tictoc = !tictoc;
         return rtn;
     }
+
+    protected String processThreadStatus(ThreadPoolExecutor threadPool) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(threadPool.getCorePoolSize()).append(",");
+        sb.append(threadPool.getLargestPoolSize()).append(",");
+        sb.append(threadPool.getMaximumPoolSize()).append(" - ");
+        sb.append(threadPool.getActiveCount()).append(",");
+        sb.append(threadPool.getCompletedTaskCount()).append(",");
+        sb.append(threadPool.getQueue().size()).append(",");
+        sb.append(threadPool.getTaskCount());
+        return sb.toString();
+    }
+
+    protected String progressCount(int indent, String name, String filler, Map<TaskState, AtomicLong> counts) {
+        StringBuilder sb = new StringBuilder();
+        String prefix = ReportingConf.ANSI_GREEN + StringUtils.leftPad(name, indent + name.length(), filler);
+
+        if (counts != null) {
+            sb.append(ReportingConf.ANSI_BLUE).append("[").append(ReportingConf.ANSI_GREEN);
+            Iterator keyItr = counts.keySet().iterator();
+            while (keyItr.hasNext()) {
+                AtomicLong count = counts.get(keyItr.next());
+                sb.append(count.get());
+                if (keyItr.hasNext()) {
+                    sb.append("/");
+                }
+            }
+            sb.append(ReportingConf.ANSI_BLUE).append("]");
+        }
+        String ctrStr = sb.toString();
+        return prefix + StringUtils.leftPad(ctrStr, WIDTH - prefix.length() - indent, filler);
+    }
+
+    protected String progressCount(CounterGroup counterGroup) {
+        StringBuilder sb = new StringBuilder();
+        long constructed = counterGroup.getTaskStateValue(TaskState.CONSTRUCTED);
+        long processed = counterGroup.getTaskStateValue(TaskState.PROCESSED);
+        sb.append(ReportingConf.ANSI_BLUE).append("[").append(ReportingConf.ANSI_GREEN);
+        sb.append(constructed).append("/").append(processed);
+        sb.append(ReportingConf.ANSI_BLUE).append("]");
+
+        String ctrStr = sb.toString();
+        String prefix = ReportingConf.ANSI_GREEN + StringUtils.leftPad(counterGroup.getName(), counterGroup.getName().length());
+        return prefix + StringUtils.leftPad(ctrStr, WIDTH - prefix.length());
+    }
+
 
     @Override
     public void run() {
@@ -244,7 +229,7 @@ public class Reporter implements Runnable {
     public void doIt() {
         while (refresh()) {
             try {
-                Thread.sleep(200);
+                Thread.sleep(refreshInterval);
 //                System.out.print(".");
             } catch (InterruptedException e) {
                 e.printStackTrace();

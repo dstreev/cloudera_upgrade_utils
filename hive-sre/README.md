@@ -93,11 +93,25 @@ There are several 'processes' that are defined in `u3`.  Each process will run 1
 
 The number of concurrent processes is controlled by the `parallelism` variable in the configuration yaml defined above.
 
-1. Process Header - [process id: process name]
-2. Sub Process - [table name: process state]
-3. Sub Process Progress - [processed count / issues count / total in process count]
-4. Process Footer Details.  Count of sub processes in various states. [Constructed:Waiting:Started:Processing:Error:Complete].  In the example below there are 5 sub-processes waiting for a slot to run, 3 sub-processes running, and 11 sub-processes that have completed.
-5. Process Counts - [issues: processed so far]. The example below shows 6 issues in the 'Location Scan' and 9186 'completed checks' thus far.
+1. `hive-sre` version information
+2. Metastore RDBMS Type
+3. Thread Status `a,b,c - d,e,f,j`
+   - (a) Core Pool Size 
+   - (b) Largest Pool Size
+   - (c) Max Pool Size
+   - (d) Active Thread Count
+   - (e) Completed Thread Tasks
+   - (f) Remaining Thread Queue
+   - (j) Total Task Count
+4. Procedure Name
+5. Procedure Counts `[Total/Completed]`
+    - `Total` is the full count of all tasks for that process
+    - `Completed` is the number of tasks this procedure has completed.
+6. Procedure Check - Child of Procedure
+7. Procedure Check Counts - `errors/successes`
+8. Velocity - Total Time in Seconds process has been running.
+9. Velocity - The average number of Tasks completed per second since job started.
+   - Note that not all Tasks are equal.  Task times vary based on the content of the cluster and area being inspected.  And can largely be effected by Namenode performance.
 
 ![UI Details](images/hive-ui-details.png)
                          

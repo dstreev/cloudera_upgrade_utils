@@ -4,30 +4,28 @@ import com.streever.hadoop.HadoopSession;
 import com.streever.hadoop.shell.command.CommandReturn;
 import com.streever.hive.config.HiveStrictManagedMigrationElements;
 import com.streever.hive.config.HiveStrictManagedMigrationIncludeListConfig;
+import com.streever.hive.reporting.CounterGroup;
+import com.streever.hive.reporting.TaskState;
 import com.streever.sql.JDBCUtils;
 import com.streever.sql.QueryDefinition;
 import com.streever.sql.ResultArray;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-import static com.streever.hive.reporting.ReportCounter.*;
-
 public class DbPaths extends SRERunnable {
+    private static Logger LOG = LogManager.getLogger(DbPaths.class);
 
     private DbSetProcess parent;
-//    private String sessionId;
-//    private HadoopSession cliSession;
+    private CounterGroup counterGroup;
 
     private List<CommandReturnCheck> commandChecks = new ArrayList<CommandReturnCheck>();
     private CheckCalculation calculationCheck = null;
-    private ScriptEngine scriptEngine = null;
 
     public DbSetProcess getParent() {
         return parent;
@@ -37,9 +35,9 @@ public class DbPaths extends SRERunnable {
         this.parent = parent;
     }
 
-//    public HadoopSession getCliSession() {
-//        return cliSession;
-//    }
+    public void setCounterGroup(CounterGroup counterGroup) {
+        this.counterGroup = counterGroup;
+    }
 
     public List<CommandReturnCheck> getCommandChecks() {
         return commandChecks;
@@ -60,57 +58,16 @@ public class DbPaths extends SRERunnable {
     public DbPaths(String name, DbSetProcess dbSet) {
         setDisplayName(name);
         setParent(dbSet);
-        if (scriptEngine == null) {
-            ScriptEngineManager sem = new ScriptEngineManager();
-            scriptEngine = sem.getEngineByName("nashorn");
-        }
-
     }
 
     @Override
     public Boolean init() {
         Boolean rtn = Boolean.FALSE;
-        if (parent.getCommandChecks() != null) {
-            for (CommandReturnCheck check : parent.getCommandChecks()) {
-                try {
-                    CommandReturnCheck newCheck = (CommandReturnCheck) check.clone();
-                    commandChecks.add(newCheck);
-                    // Connect CommandReturnCheck counter to this counter as a child.
-                    // TODO: Need to set Counters name from the 'check'
-                    getCounter().addChild(newCheck.getCounter());
-                    // Redirect Output.
-                    if (newCheck.getErrorFilename() == null) {
-                        newCheck.setErrorStream(this.error);
-                    }
-                    if (newCheck.getSuccessFilename() == null) {
-                        newCheck.setSuccessStream(this.success);
-                    }
-                    // TODO: Set success and error printstreams to output files.
-                } catch (CloneNotSupportedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        if (parent.getCalculationCheck() != null) {
-            try {
-                this.calculationCheck = (CheckCalculation) parent.getCalculationCheck().clone();
-                this.calculationCheck.setSuccessStream(this.success);
-                this.calculationCheck.setErrorStream(this.error);
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
-        }
         return Boolean.TRUE;
     }
 
-//    @Override
-//    public void run() {
-//        doIt();
-//    }
 
     protected void doIt() {
-        this.setStatus(STARTED);
-//        sessionId = "DB Paths for: " + getDisplayName() + UUID.randomUUID();
 
         QueryDefinition queryDefinition = null;
         HadoopSession cli = null;
@@ -136,15 +93,6 @@ public class DbPaths extends SRERunnable {
 
             cli = getParent().getParent().getCliPool().borrow();
 
-//            this.cliSession = HadoopSession.get(sessionId);
-//            String[] api = {"-api"};
-//            try {
-//                this.cliSession.start(api);
-//            } catch (Exception e) {
-////            System.err.println("Issue starting CLI Session:" + e.getMessage());
-//                e.printStackTrace(error);
-//            }
-
             Integer[] hsmmElementLoc = null;
             HiveStrictManagedMigrationElements hsmmElements = getParent().getHsmmElements();
             // If we found an hsmmelement attribute, populate the location parts
@@ -166,11 +114,8 @@ public class DbPaths extends SRERunnable {
                     hsmmElementLoc = null;
                 }
             }
-            this.setTotalCount(rarray.getCount() * this.getCounterChildren().size());
             // Loop through the paths
             if (columnsArray[0] != null && columnsArray[0].length > 0) {
-                this.setStatus(PROCESSING);
-
                 for (int i = 0; i < columnsArray[0].length; i++) { //String path : columnArray) {
                     String[] args = new String[columnsArray.length];
                     for (int a = 0; a < columnsArray.length; a++) {
@@ -188,18 +133,17 @@ public class DbPaths extends SRERunnable {
                     if (getCommandChecks() != null) {
                         for (CommandReturnCheck lclCheck : getCommandChecks()) {
                             try {
+                                LOG.info(getParent().getDisplayName() + ":" + lclCheck.getDisplayName() + " " + Arrays.toString(args));
                                 String rcmd = lclCheck.getFullCommand(args);
                                 if (rcmd != null) {
                                     CommandReturn cr = cli.processInput(rcmd);
-                                    lclCheck.incProcessed(1);
+//                                    lclCheck.getCounter().incCount(TaskState.PROCESSED, 1);
                                     if (!cr.isError() || (lclCheck.getInvertCheck() && cr.isError())) {
                                         lclCheck.onSuccess(cr);
-                                        lclCheck.incSuccess(1);
-                                        this.incSuccess(1);
+                                        lclCheck.getCounter().incCount(TaskState.SUCCESS, 1);
                                     } else {
                                         lclCheck.onError(cr);
-                                        lclCheck.incError(1);
-                                        this.incError(1);
+                                        lclCheck.getCounter().incCount(TaskState.ERROR, 1);
                                     }
                                 }
                             } catch (RuntimeException t) {
@@ -207,48 +151,47 @@ public class DbPaths extends SRERunnable {
                                 // Unusual, but not an expection.
                             }
                         }
-                        incProcessed(1);
                     }
 
-                    if (calculationCheck != null) {
-//                        for (int j = 0; j < metastoreQueryDefinition.getListingColumns().length; j++) {
-//                            record[j] = metastoreRecords[j][i];
+//                    if (calculationCheck != null) {
+////                        for (int j = 0; j < metastoreQueryDefinition.getListingColumns().length; j++) {
+////                            record[j] = metastoreRecords[j][i];
+////                        }
+//
+//                        List combined = new LinkedList(Arrays.asList(args));
+//
+//                        // Configured Params
+////                        if (metastoreQueryDefinition.getCheck().getParams() != null)
+////                            combined.addAll(Arrays.asList(metastoreQueryDefinition.getCheck().getParams()));
+//                        try {
+//                            String testStr = String.format(calculationCheck.getTest(), combined.toArray());
+//                            Boolean checkTest = null;
+//                            checkTest = (Boolean) scriptEngine.eval(testStr);
+//                            if (checkTest) {
+//                                if (calculationCheck.getPass() != null) {
+//                                    String passStr = String.format(calculationCheck.getPass(), combined.toArray());
+//                                    String passResult = (String) scriptEngine.eval(passStr);
+//                                    success.println(passResult);
+//                                }
+//
+//                            } else {
+//                                if (calculationCheck.getFail() != null) {
+//                                    String failStr = String.format(calculationCheck.getFail(), combined.toArray());
+//                                    String failResult = (String) scriptEngine.eval(failStr);
+//                                    success.println(failResult);
+//                                }
+//                            }
+//                            incSuccess(1);
+//
+//                            incProcessed(1);
+//                        } catch (ScriptException e) {
+//                            e.printStackTrace(error);
+//                            System.err.println("Issue with script eval: " + this.getDisplayName());
+//                        } catch (MissingFormatArgumentException mfa) {
+//                            mfa.printStackTrace(error);
+//                            System.err.println("Bad Argument Match up for PATH check rule: " + this.getDisplayName());
 //                        }
-
-                        List combined = new LinkedList(Arrays.asList(args));
-
-                        // Configured Params
-//                        if (metastoreQueryDefinition.getCheck().getParams() != null)
-//                            combined.addAll(Arrays.asList(metastoreQueryDefinition.getCheck().getParams()));
-                        try {
-                            String testStr = String.format(calculationCheck.getTest(), combined.toArray());
-                            Boolean checkTest = null;
-                            checkTest = (Boolean) scriptEngine.eval(testStr);
-                            if (checkTest) {
-                                if (calculationCheck.getPass() != null) {
-                                    String passStr = String.format(calculationCheck.getPass(), combined.toArray());
-                                    String passResult = (String) scriptEngine.eval(passStr);
-                                    success.println(passResult);
-                                }
-
-                            } else {
-                                if (calculationCheck.getFail() != null) {
-                                    String failStr = String.format(calculationCheck.getFail(), combined.toArray());
-                                    String failResult = (String) scriptEngine.eval(failStr);
-                                    success.println(failResult);
-                                }
-                            }
-                            incSuccess(1);
-
-                            incProcessed(1);
-                        } catch (ScriptException e) {
-                            e.printStackTrace(error);
-                            System.err.println("Issue with script eval: " + this.getDisplayName());
-                        } catch (MissingFormatArgumentException mfa) {
-                            mfa.printStackTrace(error);
-                            System.err.println("Bad Argument Match up for PATH check rule: " + this.getDisplayName());
-                        }
-                    }
+//                    }
                 }
             }
         } catch (SQLException e) {
@@ -260,21 +203,43 @@ public class DbPaths extends SRERunnable {
                 error.println("Failure in DbPaths" + e.getMessage());
             }
             e.printStackTrace(error);
-            setStatus(ERROR);
         } catch (Throwable t) {
             System.err.println("Failure in DbPaths");
             t.printStackTrace(error);
-//            t.printStackTrace();
         } finally {
             getParent().getParent().getCliPool().returnSession(cli);
-//            HadoopSession.freeSession(sessionId);
+            // When completed, increment the processed value.
+            counterGroup.addAndGetTaskState(TaskState.PROCESSED, 1);
         }
-        setStatus(COMPLETED);
     }
 
     @Override
     public String call() throws Exception {
         doIt();
         return "done";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DbPaths dbPaths = (DbPaths) o;
+
+        if (parent != null ? !parent.equals(dbPaths.parent) : dbPaths.parent != null) return false;
+        if (counterGroup != null ? !counterGroup.equals(dbPaths.counterGroup) : dbPaths.counterGroup != null)
+            return false;
+        if (commandChecks != null ? !commandChecks.equals(dbPaths.commandChecks) : dbPaths.commandChecks != null)
+            return false;
+        return calculationCheck != null ? calculationCheck.equals(dbPaths.calculationCheck) : dbPaths.calculationCheck == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = parent != null ? parent.hashCode() : 0;
+        result = 31 * result + (counterGroup != null ? counterGroup.hashCode() : 0);
+        result = 31 * result + (commandChecks != null ? commandChecks.hashCode() : 0);
+        result = 31 * result + (calculationCheck != null ? calculationCheck.hashCode() : 0);
+        return result;
     }
 }

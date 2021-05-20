@@ -9,7 +9,6 @@ import com.streever.hadoop.HadoopSessionFactory;
 import com.streever.hadoop.HadoopSessionPool;
 import com.streever.hive.config.Metastore;
 import com.streever.hive.config.SreProcessesConfig;
-import com.streever.hive.reporting.Counter;
 import com.streever.hive.reporting.Reporter;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -24,25 +23,26 @@ import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 /*
 The 'ProcessContainer' is the definition and runtime structure
  */
-@JsonIgnoreProperties({"config", "reporter", "threadPool", "processThreads", "connectionPools", "outputDirectory"})
+@JsonIgnoreProperties({"config", "reporter", "taskThreadPool", "procThreadPool", "processThreads", "cliPool",
+        "connectionPools", "outputDirectory"})
 public class ProcessContainer implements Runnable {
     private static Logger LOG = LogManager.getLogger(ProcessContainer.class);
 
     private boolean initializing = Boolean.TRUE;
     private SreProcessesConfig config;
     private Reporter reporter;
-    private ScheduledExecutorService threadPool;
-    private List<Future> processThreads;
+    //    private ScheduledExecutorService threadPool;
+    private ThreadPoolExecutor taskThreadPool;
+    private ThreadPoolExecutor procThreadPool;
+
+    private List<Future<String>> processThreads;
     private ConnectionPools connectionPools;
     private String outputDirectory;
     private List<Integer> includes = new ArrayList<Integer>();
@@ -69,6 +69,7 @@ public class ProcessContainer implements Runnable {
 
     public void setConfig(SreProcessesConfig config) {
         this.config = config;
+        this.reporter.setRefreshInterval(this.config.getReportingInterval());
     }
 
     public Reporter getReporter() {
@@ -83,23 +84,20 @@ public class ProcessContainer implements Runnable {
         includes.add(include);
     }
 
-    public ScheduledExecutorService getThreadPool() {
-        if (threadPool == null) {
-            threadPool = Executors.newScheduledThreadPool(getConfig().getParallelism());
-//            threadPool = Executors.newFixedThreadPool(getConfig().getParallelism());
+    public ThreadPoolExecutor getTaskThreadPool() {
+        if (taskThreadPool == null) {
+            taskThreadPool = new ThreadPoolExecutor(getConfig().getParallelism(), getConfig().getParallelism(),
+                    5000l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
         }
-        return threadPool;
+        return taskThreadPool;
     }
 
-    public List<Future> getProcessThreads() {
-        if (processThreads == null) {
-            processThreads = new ArrayList<Future>();
+    public ThreadPoolExecutor getProcThreadPool() {
+        if (procThreadPool == null) {
+            procThreadPool = new ThreadPoolExecutor(getConfig().getParallelism(), getConfig().getParallelism(),
+                    5000l, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
         }
-        return processThreads;
-    }
-
-    public void setProcessThreads(List<Future> processThreads) {
-        this.processThreads = processThreads;
+        return procThreadPool;
     }
 
     public ConnectionPools getConnectionPools() {
@@ -146,48 +144,49 @@ public class ProcessContainer implements Runnable {
     public Boolean isActive() {
         Boolean rtn = Boolean.FALSE;
         for (SreProcessBase proc : getProcesses()) {
-            if (proc.isActive()) {
+            if (proc.isActive() && proc.isInitializing()) {
                 rtn = Boolean.TRUE;
+                break;
             }
+        }
+        if (this.getProcThreadPool().getActiveCount() > 0) {
+            rtn = Boolean.TRUE;
+        }
+        if (this.getTaskThreadPool().getActiveCount() > 0) {
+            rtn = Boolean.TRUE;
         }
         return rtn;
     }
 
     public void run() {
+        int i = 0;
         while (true) {
             boolean check = true;
             try {
                 Thread.sleep(1000);
+                i++;
+                if (i > 100) {
+                    System.gc();
+                    i = 0;
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             boolean procActive = isActive();
-            if (!procActive) {
-                LOG.info("No procs active. Checking Threads.");
+            if (procActive) {
+                // Try again. This happens because we are editing the
+                // list in the background.
                 try {
-                    for (Future sf : getProcessThreads()) {
-                        if (!sf.isDone()) {
-                            check = false;
-                            break;
-                        }
-                    }
-                    if (check)
-                        break;
-                } catch (ConcurrentModificationException cme) {
-                    // Try again. This happens because we are editing the
-                    // list in the background.
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             } else {
-                LOG.info("Procs active.");
+                break;
             }
         }
         LOG.info("Shutting down Thread Pool.");
-        getThreadPool().shutdown();
+        getTaskThreadPool().shutdown();
         for (SreProcessBase process : getProcesses()) {
             if (!process.isSkip()) {
                 System.out.println(process.getUniqueName());
@@ -231,13 +230,11 @@ public class ProcessContainer implements Runnable {
             this.connectionPools.init();
 
             GenericObjectPoolConfig<HadoopSession> hspCfg = new GenericObjectPoolConfig<HadoopSession>();
-            hspCfg.setMaxTotal(sreConfig.getParallelism());
-            this.cliPool = new HadoopSessionPool(new GenericObjectPool<HadoopSession>(new HadoopSessionFactory(), hspCfg ));
+            hspCfg.setMaxTotal(sreConfig.getParallelism() * 2);
+            this.cliPool = new HadoopSessionPool(new GenericObjectPool<HadoopSession>(new HadoopSessionFactory(), hspCfg));
 
             // Needs to be added first, so it runs the reporter thread.
             Thread reporterThread = new Thread(getReporter());
-
-//            getProcessThreads().add(getThreadPool().schedule(getReporter(), 1, MILLISECONDS));
 
             for (SreProcessBase process : getProcesses()) {
                 if (process.isActive()) {
@@ -266,17 +263,10 @@ public class ProcessContainer implements Runnable {
                     process.setParent(this);
                     process.setOutputDirectory(job_run_dir);
                     process.init(this);
-                    if (process instanceof Callable && process instanceof Counter) {
-                        getReporter().addCounter(process.getUniqueName(), ((Counter) process).getCounter());
-                        if (process instanceof MetastoreProcess) {
-                            delay = 3000;
-                        } else {
-                            delay = 100;
-                        }
-                        getProcessThreads().add(getThreadPool().schedule(process, delay, MILLISECONDS));
-                    } else if (process instanceof Callable) {
-                        getProcessThreads().add(getThreadPool().schedule(process, 100, MILLISECONDS));
-                    }
+//                    getProcessThreads().add(
+                    getProcThreadPool().submit(process);
+//                    getProcessThreads().add(getThreadPool().schedule(process, 100, MILLISECONDS));
+
                 }
             }
 

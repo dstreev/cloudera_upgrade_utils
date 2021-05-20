@@ -21,7 +21,7 @@ import java.util.*;
 //        @JsonSubTypes.Type(value = DirectoryExistsCheck.class, name = "directory.exists")
 //})
 @JsonIgnoreProperties({"counter", "properties", "calculationResults", "scriptEngine"})
-public class CommandReturnCheck implements Counter, Cloneable {
+public class CommandReturnCheck {
 
     private String displayName;
     private String title;
@@ -60,7 +60,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
      */
     public PrintStream errorStream = System.err;
 
-    public ReportCounter counter = new ReportCounter();
+    public ReportCounter counter = null;//new ReportCounter();
 
     public String getHeader() {
         return header;
@@ -315,13 +315,13 @@ public class CommandReturnCheck implements Counter, Cloneable {
         successStream.print(sb.toString());
     }
 
-    @Override
     public String getDisplayName() {
         return displayName;
     }
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+        this.counter = new ReportCounter(this.displayName);
     }
 
     public String getTitle() {
@@ -422,6 +422,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
             scriptEngine = sem.getEngineByName("nashorn");
         }
         this.checkCalculations = checkCalculations;
+
     }
 
     public String getFullCommand(String[] args) {
@@ -438,45 +439,45 @@ public class CommandReturnCheck implements Counter, Cloneable {
         this.counter = counter;
     }
 
-    @Override
-    public int getStatus() {
-        return counter.getStatus();
-    }
-
-    @Override
-    public String getStatusStr() {
-        return counter.getStatusStr();
-    }
-
-    @Override
-    public List<ReportCounter> getCounterChildren() {
-        return counter.getChildren();
-    }
-
-    @Override
-    public void setStatus(int status) {
-        counter.setStatus(status);
-    }
-
-    @Override
-    public void incProcessed(int increment) {
-        counter.incProcessed(increment);
-    }
-
-    @Override
-    public void setTotalCount(long totalCount) {
-        counter.setTotalCount(totalCount);
-    }
-
-    @Override
-    public void incSuccess(int increment) {
-        counter.incSuccess(increment);
-    }
-
-    @Override
-    public void incError(int increment) {
-        counter.incError(increment);
-    }
+//    @Override
+//    public int getStatus() {
+//        return counter.getStatus();
+//    }
+//
+//    @Override
+//    public String getStatusStr() {
+//        return counter.getStatusStr();
+//    }
+//
+//    @Override
+//    public List<ReportCounter> getCounterChildren() {
+//        return counter.getChildren();
+//    }
+//
+//    @Override
+//    public void setStatus(int status) {
+//        counter.setStatus(status);
+//    }
+//
+//    @Override
+//    public void incProcessed(int increment) {
+//        counter.incProcessed(increment);
+//    }
+//
+//    @Override
+//    public void setTotalCount(long totalCount) {
+//        counter.setConstructedCount(totalCount);
+//    }
+//
+//    @Override
+//    public void incSuccess(int increment) {
+//        counter.incSuccess(increment);
+//    }
+//
+//    @Override
+//    public void incError(int increment) {
+//        counter.incError(increment);
+//    }
 
     public String[] getCurrentArgs() {
         return currentArgs;
@@ -498,7 +499,7 @@ public class CommandReturnCheck implements Counter, Cloneable {
         clone.setReportOnResults(this.reportOnResults);
         clone.setProcessOnError(this.processOnError);
         clone.setProcessOnSuccess(this.processOnSuccess);
-        clone.setCounter(new ReportCounter());
+//        clone.setCounter(new ReportCounter());
         clone.getCounter().setName(this.displayName);
         clone.setCheckCalculations(this.checkCalculations);
         clone.setErrorStream(this.errorStream);

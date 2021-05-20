@@ -8,7 +8,7 @@ import java.io.PrintStream;
 import java.util.Arrays;
 
 @JsonIgnoreProperties({"scriptEngine"})
-public class CheckCalculation implements Cloneable {
+public class CheckCalculation {
 
     // Needs to return a boolean.
     private String test;
@@ -78,15 +78,15 @@ public class CheckCalculation implements Cloneable {
         this.errorStream = errorStream;
     }
 
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        CheckCalculation rtn = (CheckCalculation) super.clone();
-        rtn.setFail(this.fail);
-        rtn.setTest(this.test);
-        rtn.setPass(this.pass);
-        return super.clone();
-    }
-
+//    @Override
+//    protected Object clone() throws CloneNotSupportedException {
+//        CheckCalculation rtn = (CheckCalculation) super.clone();
+//        rtn.setFail(this.fail);
+//        rtn.setTest(this.test);
+//        rtn.setPass(this.pass);
+//        return super.clone();
+//    }
+//
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.streever.hive.config.Metastore;
 import com.streever.hive.config.QueryDefinitions;
 import com.streever.hive.config.SreProcessesConfig;
+import com.streever.hive.reporting.CounterGroup;
 import com.streever.sql.QueryDefinition;
 import org.apache.commons.io.IOUtils;
 
@@ -16,9 +17,7 @@ import java.io.*;
 import java.net.URL;
 import java.util.concurrent.Callable;
 
-import static com.streever.hive.reporting.ReportCounter.WAITING;
-
-@JsonIgnoreProperties({"parent", "config", "queryDefinitions", "dbsOverride", "dbType", "outputDirectory", "success", "error"})
+@JsonIgnoreProperties({"parent", "config", "queryDefinitions", "dbsOverride", "dbType", "outputDirectory", "success", "error", "counterGroup"})
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
         property = "type")
@@ -49,6 +48,8 @@ public abstract class SreProcessBase implements Callable<String> {
     private String successDescription = null;
     private String errorFilename = null;
     private String successFilename = null;
+
+    protected CounterGroup counterGroup;
 
     /**
      * allows stdout to be captured if necessary
