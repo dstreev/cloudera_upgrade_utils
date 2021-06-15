@@ -14,6 +14,18 @@ When running `sre` or `u3` you can either include the `-cfg <cfg_file>` option i
 # Required to connect to Metastore RDBMS.  RDBMS driver needs to be included in the classpath
 metastore_direct:
   uri: "FULL_RDMBS_URL_FOR_METASTORE_INCLUDING_THE_DB_NAME"
+  ## MySQL syntax and example:
+  # jdbc:mysql://<HOST>:<PORT>/<DATABASE_NAME>
+  # jdbc:mysql://my_mysql_server_hostname:3306/my_database_name
+
+  # PostgreSQL syntax and example
+  # jdbc:postgresql://<HOST>:<PORT>/<DATABASE_NAME>
+  # jdbc:postgresql://my_postgres_server_hostname:5432/my_database_name
+  
+  # Oracle syntax and example
+  # jdbc:oracle:thin:@<HOST>:<PORT>:<DATABASE_NAME>
+  # jdbc:oracle:thin:@my_oracle_server_hostname:1521:my_database_name
+  
   type: MYSQL | POSTRGES | ORACLE
   # Needed for Oracle Connections to pick the right schema for hive.
   # initSql: "ALTER SESSION SET CURRENT_SCHEMA=<hive_schema>"
