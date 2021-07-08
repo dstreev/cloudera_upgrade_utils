@@ -50,7 +50,7 @@ public class CommandReturnCheck {
     private Map<String, Map<CheckSearch, CheckCalculation>> checkCalculations = null;
     private ScriptEngine scriptEngine = null;
     private Map<String, Object> calculationResults = null;
-    private String[] currentArgs;
+//    private String[] currentArgs;
     /**
      * allows stdout to be captured if necessary
      */
@@ -126,23 +126,23 @@ public class CommandReturnCheck {
         this.successFilename = successFilename;
     }
 
-    public void onError(CommandReturn commandReturn) {
+    public void onError(CommandReturn commandReturn, String[] args) {
         if (!invertCheck) {
-            internalOnError(commandReturn);
+            internalOnError(commandReturn, args);
         } else {
-            internalOnSuccess(commandReturn);
+            internalOnSuccess(commandReturn, args);
         }
     }
 
-    public void onSuccess(CommandReturn commandReturn) {
+    public void onSuccess(CommandReturn commandReturn, String[] args) {
         if (!invertCheck) {
-            internalOnSuccess(commandReturn);
+            internalOnSuccess(commandReturn, args);
         } else {
-            internalOnError(commandReturn);
+            internalOnError(commandReturn, args);
         }
     }
 
-    public String runCalculations(CommandReturn commandReturn) {
+    public String runCalculations(CommandReturn commandReturn, String[] args) {
         String rtn = null;
         try {
             if (getCheckCalculations() != null && getCheckCalculations().size() > 0 && getScriptEngine() != null) {
@@ -158,7 +158,7 @@ public class CommandReturnCheck {
                             case PATH:
                                 if (checkCalculation.getTest() != null) {
                                     // Params
-                                    List combined = new LinkedList(Arrays.asList(getCurrentArgs()));
+                                    List combined = new LinkedList(Arrays.asList(args));
                                     // Configured Params
                                     if (checkCalculation.getParams() != null)
                                         combined.addAll(Arrays.asList(checkCalculation.getParams()));
@@ -194,7 +194,7 @@ public class CommandReturnCheck {
                                 if (checkCalculation.getTest() != null) {
                                     for (List<Object> record : commandReturn.getRecords()) {
                                         // Params
-                                        List combined = new LinkedList(Arrays.asList(getCurrentArgs()));
+                                        List combined = new LinkedList(Arrays.asList(args));
                                         // Current Record
                                         combined.addAll(record);
                                         // Configured Params
@@ -243,12 +243,12 @@ public class CommandReturnCheck {
         return scriptEngine;
     }
 
-    private void internalOnError(CommandReturn commandReturn) {
+    private void internalOnError(CommandReturn commandReturn, String[] args) {
         StringBuilder sb = new StringBuilder();
         if (getReportOnPath() && getOnErrorPathCommand() != null) {
             String action = null;
             try {
-                action = String.format(getOnErrorPathCommand(), getCurrentArgs());
+                action = String.format(getOnErrorPathCommand(), args);
             } catch (Throwable t) {
                 throw new RuntimeException("Bad string format in 'errorPath' action command of CommandReturnCheck", t);
             }
@@ -259,9 +259,9 @@ public class CommandReturnCheck {
         if (getReportOnResults() && getOnErrorRecordCommand() != null) {
             for (List<Object> record : commandReturn.getRecords()) {
                 String action = null;
-                String[] combined = new String[getCurrentArgs().length + record.size()];
-                System.arraycopy(getCurrentArgs(), 0, combined, 0, getCurrentArgs().length);
-                System.arraycopy(record.toArray(), 0, combined, getCurrentArgs().length, record.toArray().length);
+                String[] combined = new String[args.length + record.size()];
+                System.arraycopy(args, 0, combined, 0, args.length);
+                System.arraycopy(record.toArray(), 0, combined, args.length, record.toArray().length);
                 try {
                     action = String.format(getOnErrorRecordCommand(), combined);
                 } catch (Throwable t) {
@@ -272,19 +272,19 @@ public class CommandReturnCheck {
             }
         }
         if (getProcessOnError()) {
-            String checkCalcs = runCalculations(commandReturn);
+            String checkCalcs = runCalculations(commandReturn, args);
             if (checkCalcs != null)
                 sb.append(checkCalcs);
         }
         errorStream.print(sb.toString());
     }
 
-    private void internalOnSuccess(CommandReturn commandReturn) {
+    private void internalOnSuccess(CommandReturn commandReturn, String[] args) {
         StringBuilder sb = new StringBuilder();
         if (getReportOnPath() && getOnSuccessPathCommand() != null) {
             String action = null;
             try {
-                action = String.format(getOnSuccessPathCommand(), getCurrentArgs());
+                action = String.format(getOnSuccessPathCommand(), args);
             } catch (Throwable t) {
                 throw new RuntimeException("Bad string format in 'successPath' action command of CommandReturnCheck", t);
             }
@@ -308,7 +308,7 @@ public class CommandReturnCheck {
             }
         }
         if (getProcessOnSuccess()) {
-            String checkCalcs = runCalculations(commandReturn);
+            String checkCalcs = runCalculations(commandReturn, args);
             if (checkCalcs != null)
                 sb.append(checkCalcs);
         }
@@ -426,8 +426,8 @@ public class CommandReturnCheck {
     }
 
     public String getFullCommand(String[] args) {
-        setCurrentArgs(args);
-        String action = String.format(getPathCommand(), getCurrentArgs());
+//        setCurrentArgs(args);
+        String action = String.format(getPathCommand(), args);
         return action;
     }
 
@@ -479,14 +479,14 @@ public class CommandReturnCheck {
 //        counter.incError(increment);
 //    }
 
-    public String[] getCurrentArgs() {
-        return currentArgs;
-    }
-
-    public void setCurrentArgs(String[] currentArgs) {
-        this.currentArgs = new String[currentArgs.length];
-        System.arraycopy(currentArgs, 0, this.currentArgs, 0, currentArgs.length);
-    }
+//    public String[] getCurrentArgs() {
+//        return currentArgs;
+//    }
+//
+//    public void setCurrentArgs(String[] currentArgs) {
+//        this.currentArgs = new String[currentArgs.length];
+//        System.arraycopy(currentArgs, 0, this.currentArgs, 0, currentArgs.length);
+//    }
 
     @Override
     protected Object clone() throws CloneNotSupportedException {

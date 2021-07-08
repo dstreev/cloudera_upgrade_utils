@@ -52,6 +52,7 @@ query_definitions:
                     P.SD_ID = PS.SD_ID
                 WHERE
                     D.NAME LIKE ?
+                AND D.NAME != 'sys'
                 AND T.TBL_TYPE != 'VIRTUAL_VIEW'
                 ORDER BY D.NAME, T.TBL_NAME"
     parameters:

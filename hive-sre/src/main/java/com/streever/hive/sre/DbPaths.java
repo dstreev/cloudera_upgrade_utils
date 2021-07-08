@@ -139,10 +139,10 @@ public class DbPaths extends SRERunnable {
                                     CommandReturn cr = cli.processInput(rcmd);
 //                                    lclCheck.getCounter().incCount(TaskState.PROCESSED, 1);
                                     if (!cr.isError() || (lclCheck.getInvertCheck() && cr.isError())) {
-                                        lclCheck.onSuccess(cr);
+                                        lclCheck.onSuccess(cr,args);
                                         lclCheck.getCounter().incCount(TaskState.SUCCESS, 1);
                                     } else {
-                                        lclCheck.onError(cr);
+                                        lclCheck.onError(cr,args);
                                         lclCheck.getCounter().incCount(TaskState.ERROR, 1);
                                     }
                                 }

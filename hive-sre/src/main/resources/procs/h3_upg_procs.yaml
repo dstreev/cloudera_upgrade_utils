@@ -187,12 +187,12 @@ processes:
         listingColumns: [ "db_name" ,"tbl_name", "tbl_serde_slib" ]
         resultMessageHeader:         "## Questionable Serde's\n
                               > Listed tables should be review to ensure the Serde is still available.\n
-                              Missing Serde's can disrupt a Hive Upgrade/Migration Process"
+                              Missing Serde's can disrupt a Hive Upgrade/Migration Process\n"
         resultMessageDetailHeader:   "| Database | Table | Serde |\n|:---|:---|:---|"
         resultMessageDetailTemplate: "| %1$s | %2$s | %3$s |"
       - query:                       "legacy_kudu_storage_handle_class"
         listingColumns: [ "db_name" ,"tbl_name"]
-        resultMessageHeader:         "## Legacy Kudu Serde's\n
+        resultMessageHeader:         "\n## Legacy Kudu Serde's\n
                               > Listed tables need the Kudu Serde Class upgraded.\n
                               "
         resultMessageDetailHeader:   "| Database | Table |\n|:---|:---|"
@@ -202,7 +202,7 @@ processes:
           tableField:    "tbl_name"
       - query:                       "legacy_decimal_defs_orc"
         listingColumns: [ "name" ,"tbl_name", "location", "column_name", "type_name", "integer_idx" ]
-        resultMessageHeader: "## Legacy DECIMAL Definitions in ORC Tables\n\n
+        resultMessageHeader: "\n## Legacy DECIMAL Definitions in ORC Tables\n\n
                               **EXPLANATION**\n
                               Introduced with Hive 0.11.0 - Decimal Fields defined in Hive 0.11.0 -> 0.12.0 will NOT have ‘precision’ or ‘scale’ defined.\n\n
                               Legacy Hive (0.11.0->0.12.0)\n\n
