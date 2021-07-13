@@ -20,38 +20,21 @@ else
   JAVA=java
 fi
 
-if [[ -f ./hive-sre-shaded.jar ]]; then
-    # Look in Current Directory
-    CMD_CP=$APP_DIR/hive-sre-shaded.jar
-    #echo "Using bin from same directory"
-elif [[ -f $APP_DIR/../target/hive-sre-shaded.jar ]]; then
-    # Look in ../target
-    CMD_CP=$APP_DIR/../target/hive-sre-shaded.jar
-    #echo "Using bin from build directory"
-else
-    # Look in /usr/local/hive-sre/lib
-    if [[ -f /usr/local/hive-sre/lib/hive-sre-shaded.jar ]]; then
-        CMD_CP=/usr/local/hive-sre/lib/hive-sre-shaded.jar
-        #echo "Using bin from installation directory"
-    else
-        #echo "Couldn't locate Hadoop Cli Library"
-        exit 1
-    fi
-fi
-
 # Set the default.
 export HADOOP_CONF_DIR="/etc/hadoop/conf"
 
 AUX_LIBS_DIR=${HADOOP_CLI_AUX_LIBS:-${HOME}/.hive-sre/aux_libs}
+
 SHOW_CP=
 CMD_DIRECTIVE=
 CMD_ARGS=
 VERBOSE=
 ENV_VAR_FILE=
+HADOOP_CLASSPATH=
 APP_JAVA_OPTS=${JAVA_OPTS:-}
 
-if [[ -f ${HOME}/.hadoop-cli/env-var.props || -L ${HOME}/.hadoop-cli/env-var.props ]]; then
-    ENV_VAR_FILE=${HOME}/.hadoop-cli/env-var.props
+if [[ -f ${HOME}/.hive-sre/env-var.props || -L ${HOME}/.hive-sre/env-var.props ]]; then
+    ENV_VAR_FILE=${HOME}/.hive-sre/env-var.props
 fi
 
 if [[ ! -d ${AUX_LIBS_DIR} ]]; then
@@ -110,6 +93,10 @@ while [[ $# -gt 0 ]]; do
       export AUX_LIBS_DIR=$1
       shift
       ;;
+    --hadoop-classpath)
+      shift
+      HADOOP_CLASSPATH="true"
+      ;;
     --show-cp)
       shift
       SHOW_CP="true"
@@ -144,6 +131,27 @@ if [[ ! -d ${AUX_LIBS_DIR} ]]; then
     mkdir -p ${AUX_LIBS_DIR}
 fi
 
+SHADED=shaded
+
+if [[ -f ./hive-sre-$SHADED.jar ]]; then
+    # Look in Current Directory
+    CMD_CP=$APP_DIR/hive-sre-$SHADED.jar
+    #echo "Using bin from same directory"
+elif [[ -f $APP_DIR/../target/hive-sre-$SHADED.jar ]]; then
+    # Look in ../target
+    CMD_CP=$APP_DIR/../target/hive-sre-$SHADED.jar
+    #echo "Using bin from build directory"
+elif [[ -f /usr/local/hive-sre/lib/hive-sre-$SHADED.jar ]]; then
+    # Look in /usr/local/hive-sre/lib
+    CMD_CP=/usr/local/hive-sre/lib/hive-sre-$SHADED.jar
+    #echo "Using bin from installation directory"
+elif [[ -f $HOME/.hive-sre/lib/hive-sre-$SHADED.jar ]]; then
+    CMD_CP=$HOME/.hive-sre/lib/hive-sre-$SHADED.jar
+else
+    #echo "Couldn't locate hive-sre Library"
+    exit 1
+fi
+
 for jarFile in `ls -d ${AUX_LIBS_DIR}/*.jar 2> /dev/null`; do
     CMD_CP=${CMD_CP}:$jarFile
 done
@@ -163,11 +171,10 @@ if [[ "${APP_JAVA_OPTS}x" != "x" ]]; then
     echo "Application JAVA_OPTS=${APP_JAVA_OPTS}"
 fi
 
-if [[ "${PRG_ARGS}x" != "x" ]]; then
-    echo "PRG_ARGS=${PRG_ARGS}"
-fi
+JV=$(${JAVA} -version)
 
-$(${JAVA} -version)
+echo "Using Java Version: "
+echo $JV
 
 CLI_CMD="${JAVA} -cp ${CMD_CP} ${APP_JAVA_OPTS} com.streever.hadoop.HadoopShell ${PRG_ARGS}"
 

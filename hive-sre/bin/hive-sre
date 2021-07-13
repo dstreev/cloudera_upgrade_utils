@@ -37,15 +37,15 @@ elif [[ -f $APP_DIR/../target/hive-sre-shaded.jar ]]; then
     # Look in ../target
     CMD_CP=$APP_DIR/../target/hive-sre-shaded.jar:${CMD_CP}
     #echo "Using bin from build directory"
-else
+elif [[ -f /usr/local/hive-sre/lib/hive-sre-shaded.jar ]]; then
     # Look in /usr/local/hadoop-cli/lib
-    if [[ -f /usr/local/hive-sre/lib/hive-sre-shaded.jar ]]; then
-        CMD_CP=/usr/local/hive-sre/lib/hive-sre-shaded.jar:${CMD_CP}
-        #echo "Using bin from installation directory"
-    else
-        echo "Couldn't locate hive-sre Library" >&2
-        exit -1
-    fi
+    CMD_CP=/usr/local/hive-sre/lib/hive-sre-shaded.jar:${CMD_CP}
+    #echo "Using bin from installation directory"
+elif [[ -f $HOME/.hive-sre/lib/hive-sre-shaded.jar ]]; then
+    CMD_CP=$HOME/.hive-sre/lib/hive-sre-shaded.jar:${CMD_CP}
+else
+    echo "Couldn't locate hive-sre Library" >&2
+    exit -1
 fi
 
 # Set the default.
