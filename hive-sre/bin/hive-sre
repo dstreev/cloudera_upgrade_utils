@@ -1,7 +1,18 @@
 #!/usr/bin/env sh
 
-APP_DIR=`dirname $0`
-CURR_DIR=`pwd`
+# Resolve Symlinks of exe
+RESOLVED_EXE_PATH=`readlink -f $0`
+# Find Dir of resolved script
+APP_DIR=$(dirname $RESOLVED_EXE_PATH)
+CURR_DIR=$(pwd)
+
+echo "APP_DIR: $APP_DIR"
+
+if [[ "${APP_DIR}" == "${HOME}/.hive-sre/bin" ]]; then
+  echo "Running from User Local Instance"
+else
+  echo "Running Host instance"
+fi
 
 if [[ ! -d ${HOME}/.hive-sre/aux_libs ]]; then
   mkdir -p ${HOME}/.hive-sre/aux_libs
@@ -18,35 +29,8 @@ else
   JAVA=java
 fi
 
-if [[ -f ./hive-sre && "${APP_DIR}" != "${CURR_DIR}" && "${APP_DIR}" != "." ]]; then
-  echo "Appears you are referencing a previously installed 'hive-sre' while "
-  echo "  in the installation directory of 'hive-sre'."
-  echo "Change directories and run 'hive-sre' to run installed version OR "
-  echo "Run current directories 'hive-sre' via './hive-sre'"
-  exit -1
-fi
-
 PRG_ARGS=
 CMD_CP=${HOME}/.hive-sre/cust
-
-if [[ -f ./hive-sre-shaded.jar ]]; then
-    # Look in Current Directory
-    CMD_CP=$APP_DIR/hive-sre-shaded.jar:${CMD_CP}
-    #echo "Using bin from same directory"
-elif [[ -f $APP_DIR/../target/hive-sre-shaded.jar ]]; then
-    # Look in ../target
-    CMD_CP=$APP_DIR/../target/hive-sre-shaded.jar:${CMD_CP}
-    #echo "Using bin from build directory"
-elif [[ -f /usr/local/hive-sre/lib/hive-sre-shaded.jar ]]; then
-    # Look in /usr/local/hadoop-cli/lib
-    CMD_CP=/usr/local/hive-sre/lib/hive-sre-shaded.jar:${CMD_CP}
-    #echo "Using bin from installation directory"
-elif [[ -f $HOME/.hive-sre/lib/hive-sre-shaded.jar ]]; then
-    CMD_CP=$HOME/.hive-sre/lib/hive-sre-shaded.jar:${CMD_CP}
-else
-    echo "Couldn't locate hive-sre Library" >&2
-    exit -1
-fi
 
 # Set the default.
 export HADOOP_CONF_DIR="/etc/hadoop/conf"
@@ -71,10 +55,10 @@ while [[ $# -gt 0 ]]; do
       APP_JAVA_OPTS="${APP_JAVA_OPTS} ${1}"
       shift
       ;;
-    --hadoop-classpath)
-      shift
-      HADOOP_CLASSPATH="true"
-      ;;
+#    --hadoop-classpath)
+#      shift
+#      HADOOP_CLASSPATH="true"
+#      ;;
     --aux-libs)
       shift
       export AUX_LIBS_DIR=$1
@@ -96,13 +80,20 @@ if [[ ! -d ${AUX_LIBS_DIR} ]]; then
     mkdir -p ${AUX_LIBS_DIR}
 fi
 
+if [[ -f $APP_DIR/../lib/hive-sre-shaded.jar ]]; then
+    CMD_CP=$APP_DIR/../lib/hive-sre-shaded.jar:${CMD_CP}
+else
+    echo "Couldn't locate hive-sre Library at: ${APP_DIR}/../lib/hive-sre-shaded.jar " >&2
+    exit -1
+fi
+
 for jarFile in `ls -d ${AUX_LIBS_DIR}/*.jar 2> /dev/null`; do
     CMD_CP=${CMD_CP}:$jarFile
 done
 
-if [[ "${HADOOP_CLASSPATH}x" != "x" ]]; then
-    CMD_CP=${CMD_CP}:`hadoop classpath`
-fi
+#if [[ "${HADOOP_CLASSPATH}x" != "x" ]]; then
+#    CMD_CP=${CMD_CP}:`hadoop classpath`
+#fi
 
 CLI_CMD=""
 

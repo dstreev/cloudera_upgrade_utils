@@ -1,14 +1,18 @@
 #!/usr/bin/env sh
 
-APP_DIR=`dirname $0`
-CURR_DIR=`pwd`
 
-if [[ -f ./hive-sre-cli && "${APP_DIR}" != "${CURR_DIR}" && "${APP_DIR}" != "." ]]; then
-  echo "Appears you are referencing a previously installed 'hive-sre-cli' while "
-  echo "  in the installation directory of 'hive-sre-cli'."
-  echo "Change directories and run 'hive-sre-cli' to run installed version OR "
-  echo "Run current directories 'hive-sre-cli' via './hive-sre-cli'"
-  exit -1
+# Resolve Symlinks of exe
+RESOLVED_EXE_PATH=`readlink -f $0`
+# Find Dir of resolved script
+APP_DIR=$(dirname $RESOLVED_EXE_PATH)
+CURR_DIR=$(pwd)
+
+echo "APP_DIR: $APP_DIR"
+
+if [[ "${APP_DIR}" == "${HOME}/.hive-sre/bin" ]]; then
+  echo "Running from User Local Instance"
+else
+  echo "Running Host instance"
 fi
 
 PRG_ARGS=
@@ -23,7 +27,7 @@ fi
 # Set the default.
 export HADOOP_CONF_DIR="/etc/hadoop/conf"
 
-AUX_LIBS_DIR=${HADOOP_CLI_AUX_LIBS:-${HOME}/.hive-sre/aux_libs}
+AUX_LIBS_DIR=${HADOOP_CLI_AUX_LIBS:-${HOME}/.hadoop-cli/aux_libs}
 
 SHOW_CP=
 CMD_DIRECTIVE=
@@ -33,12 +37,12 @@ ENV_VAR_FILE=
 HADOOP_CLASSPATH=
 APP_JAVA_OPTS=${JAVA_OPTS:-}
 
-if [[ -f ${HOME}/.hive-sre/env-var.props || -L ${HOME}/.hive-sre/env-var.props ]]; then
-    ENV_VAR_FILE=${HOME}/.hive-sre/env-var.props
+if [[ -f ${HOME}/.hadoop-cli/env-var.props || -L ${HOME}/.hadoop-cli/env-var.props ]]; then
+    ENV_VAR_FILE=${HOME}/.hadoop-cli/env-var.props
 fi
 
-if [[ ! -d ${AUX_LIBS_DIR} ]]; then
-    mkdir -p ${AUX_LIBS_DIR}
+if [[ ! -d ${HOME}/.hadoop-cli/aux_libs ]]; then
+    mkdir -p ${HOME}/.hadoop-cli/aux_libs
 fi
 
 while [[ $# -gt 0 ]]; do
@@ -93,10 +97,10 @@ while [[ $# -gt 0 ]]; do
       export AUX_LIBS_DIR=$1
       shift
       ;;
-    --hadoop-classpath)
-      shift
-      HADOOP_CLASSPATH="true"
-      ;;
+#    --hadoop-classpath)
+#      shift
+#      HADOOP_CLASSPATH="true"
+#      ;;
     --show-cp)
       shift
       SHOW_CP="true"
@@ -131,24 +135,22 @@ if [[ ! -d ${AUX_LIBS_DIR} ]]; then
     mkdir -p ${AUX_LIBS_DIR}
 fi
 
-SHADED=shaded
-
-if [[ -f ./hive-sre-$SHADED.jar ]]; then
-    # Look in Current Directory
-    CMD_CP=$APP_DIR/hive-sre-$SHADED.jar
-    #echo "Using bin from same directory"
-elif [[ -f $APP_DIR/../target/hive-sre-$SHADED.jar ]]; then
-    # Look in ../target
-    CMD_CP=$APP_DIR/../target/hive-sre-$SHADED.jar
-    #echo "Using bin from build directory"
-elif [[ -f /usr/local/hive-sre/lib/hive-sre-$SHADED.jar ]]; then
-    # Look in /usr/local/hive-sre/lib
-    CMD_CP=/usr/local/hive-sre/lib/hive-sre-$SHADED.jar
-    #echo "Using bin from installation directory"
-elif [[ -f $HOME/.hive-sre/lib/hive-sre-$SHADED.jar ]]; then
-    CMD_CP=$HOME/.hive-sre/lib/hive-sre-$SHADED.jar
+SHADED=
+# Choose to use embedded libs (Hadoop 3+) or get Hadoop Classpath locally
+if [[ "${HADOOP_CLASSPATH}x" != "x" ]]; then
+  echo "Picking up local Hadoop Classpath Libs."
+  SHADED=shaded-no-hadoop
+  CMD_CP=${CMD_CP}:$(hadoop classpath)
+  echo "hive-sre-cli with local Hadoop Classpath Libs not supported"
+  exit 1
 else
-    #echo "Couldn't locate hive-sre Library"
+  SHADED=shaded
+fi
+
+if [[ -f $APP_DIR/../lib/hive-sre-$SHADED.jar ]]; then
+    CMD_CP=$APP_DIR/../lib/hive-sre-$SHADED.jar:${CMD_CP}
+else
+    echo "Couldn't locate Hadoop Cli Library at: ${APP_DIR}/../lib/hive-sre-${SHADED}.jar"
     exit 1
 fi
 

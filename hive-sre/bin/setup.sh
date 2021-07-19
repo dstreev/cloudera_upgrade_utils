@@ -15,16 +15,12 @@ fi
 mkdir -p $BASE_DIR/bin
 mkdir -p $BASE_DIR/lib
 
-cp -f hive-sre $BASE_DIR/bin
-cp -f hive-sre-cli $BASE_DIR/bin
-
 # Cleanup previous installation
 rm -f $BASE_DIR/lib/*.jar
-rm -f $BASE_DIR/bin/*.*
+rm -f $BASE_DIR/bin/*
 
-if [ -f ../target/hive-sre-shaded.jar ]; then
-    cp -f ../target/hive-sre-shaded.jar $BASE_DIR/lib
-fi
+cp -f hive-sre $BASE_DIR/bin
+cp -f hive-sre-cli $BASE_DIR/bin
 
 if [ -f hive-sre-shaded.jar ]; then
     cp -f hive-sre-shaded.jar $BASE_DIR/lib
