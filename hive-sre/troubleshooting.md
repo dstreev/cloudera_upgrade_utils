@@ -21,6 +21,8 @@ One thing to check, before debugging Kerberos is that you are able to connect wi
 
 Assuming that works and you are still having issues with `hive-sre`, than check that you are running the same JDK for `hive-sre` as is setup for the `hdfs` cli.
 
+Our `hdfs` client implementation used in `hive-sre` requires the authenticated user to have a HOME directory in `hdfs`.  IE: If your prinicipal is for `david` then there should be an hdfs directory `/user/david`.  If there isn't a user HOME directory in HDFS, the application may hang on initialization.
+
 The application will display the JDK version at startup.  Use this to confirm.
 
 ### Setting up $JAVA_HOME
