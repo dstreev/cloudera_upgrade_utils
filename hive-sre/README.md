@@ -46,17 +46,16 @@ _**Don't Build, Download the LATEST binary here!!!**_
 
 [![Download the LATEST Binary](./images/download.png)](https://github.com/dstreev/cloudera_upgrade_utils/releases)
 
-* Download the release 'tar.gz' file to a temp location.
-* Untar the file (tar.gz).
-```
-tar xzvf hive-sre-dist.tar.gz
-cd hive-sre
-```  
-* As a root user, chmod +x the 3 shell script files.
-* Run the 'setup.sh'.
-```
-./setup
-```  
+On the edgenode:
+- Expand the tarball `tar zxvf hive-sre-dist.tar.gz`.
+  > This produces a child `hive-sre-install` directory.
+- Two options for installation:
+   - As the root user (or `sudo`), run `hive-sre-install/setup.sh`. This will install the `hive-sre` packages in `/usr/local/hive-sre` and create symlinks for the executables in `/usr/local/bin`.  At this point, `hive-sre` should be available to all user and in the default path.
+   - As the local user, run `hive-sre-install/setup.sh`.  This will install the `hive-sre` packages in `$HOME/.hive-sre` and create symlink in `$HOME/bin`.  Ensure `$HOME/bin` is in the users path and run `hive-sre`.
+
+*DO NOT RUN `hive-sre` from the installation directory.*
+
+If you install both options, your environment PATH will determine which one is run.  Make note of this because an upgrade may not be reachable.
 
 This will create and install the `hive-sre` and `hive-sre-cli` applications to your path.
 

@@ -40,8 +40,9 @@
                 <include>hive-sre</include>
                 <include>hive-sre-cli</include>
                 <include>setup.sh</include>
+                <include>DO_NOT_RUN_APP_FROM_HERE.txt</include>
             </includes>
-            <outputDirectory>hive-sre</outputDirectory>
+            <outputDirectory>hive-sre-install</outputDirectory>
             <useDefaultExcludes>true</useDefaultExcludes>
         </fileSet>
         <fileSet>
@@ -49,7 +50,7 @@
             <includes>
                 <include>default.yaml.template</include>
             </includes>
-            <outputDirectory>hive-sre</outputDirectory>
+            <outputDirectory>hive-sre-install</outputDirectory>
             <useDefaultExcludes>true</useDefaultExcludes>
         </fileSet>
         <fileSet>
@@ -57,7 +58,7 @@
             <includes>
                 <include>*shaded*.jar</include>
             </includes>
-            <outputDirectory>hive-sre</outputDirectory>
+            <outputDirectory>hive-sre-install</outputDirectory>
             <useDefaultExcludes>true</useDefaultExcludes>
         </fileSet>
     </fileSets>
