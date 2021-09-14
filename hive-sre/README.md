@@ -47,6 +47,7 @@ _**Don't Build, Download the LATEST binary here!!!**_
 [![Download the LATEST Binary](./images/download.png)](https://github.com/dstreev/cloudera_upgrade_utils/releases)
 
 On the edgenode:
+- Remove previous install directory `rm -rf hive-sre-install`
 - Expand the tarball `tar zxvf hive-sre-dist.tar.gz`.
   > This produces a child `hive-sre-install` directory.
 - Two options for installation:

@@ -48,7 +48,7 @@
         <fileSet>
             <directory>${project.basedir}/configs</directory>
             <includes>
-                <include>default.yaml.template</include>
+                <include>default.template.yaml</include>
             </includes>
             <outputDirectory>hive-sre-install</outputDirectory>
             <useDefaultExcludes>true</useDefaultExcludes>

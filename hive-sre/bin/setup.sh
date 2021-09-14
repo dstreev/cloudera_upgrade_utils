@@ -16,11 +16,11 @@ mkdir -p $BASE_DIR/lib
 mkdir -p $HOME/.hive-sre/cfg
 mkdir -p $HOME/.hive-sre/aux_libs
 
-echo "Make sure you copy your JDBC jars files to $HOME/.hive-sre/aux_libs"
-if [ ! -f $HOME/.hive-sre/cfg/default.yaml ]; then
-  cp default.yaml.template $HOME/.hive-sre/cfg/default.yaml
-  echo "A default.yaml template has been copied to $HOME/.hive-sre/cfg. Modify this for your environment."
-fi
+#echo "Make sure you copy your JDBC jars files to $HOME/.hive-sre/aux_libs"
+#if [ ! -f $HOME/.hive-sre/cfg/default.yaml ]; then
+#  cp default.template.yaml $HOME/.hive-sre/cfg/default.yaml
+#  echo "A default.yaml template has been copied to $HOME/.hive-sre/cfg. Modify this for your environment."
+#fi
 
 # Cleanup previous installation
 rm -f $BASE_DIR/lib/*.jar

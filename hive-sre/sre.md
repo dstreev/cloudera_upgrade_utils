@@ -4,7 +4,7 @@ The Sre Tool brings together information from the HMS RDBMS and HDFS to provide 
 
 Action commands for identified scenarios are written out to file(s), which can be reviewed / edited and run through either "beeline" for "hive" actions or in [Hadoop-CLI](https://github.com/dstreev/hadoop-cli) for hdfs commands.
 
-This process is driven by a control file.  A template is [here](configs/default.yaml.template).  Make a copy, edit the needed parameters and reference it with the '-cfg' parameter when running the process.
+This process is driven by a control file.  A template is [here](configs/default.template.yaml).  Make a copy, edit the needed parameters and reference it with the '-cfg' parameter when running the process.
 
 ### Known Issues
 
