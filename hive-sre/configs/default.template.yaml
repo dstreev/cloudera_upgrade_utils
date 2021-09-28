@@ -1,6 +1,6 @@
 metastore_direct:
   uri: "FULL_DB_URL"
-  type: MYSQL | POSTRGES | ORACLE
+  type: MYSQL | POSTGRES | ORACLE
   # Required for Oracle Connections to Select proper schema
   #initSql: "ALTER SESSION SET CURRENT_SCHEMA=<hive_schema>"
   connectionProperties:
