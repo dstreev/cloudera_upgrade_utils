@@ -1,0 +1,27 @@
+@startuml
+
+digraph llap {
+    LLAP [label="HDP LLAP"]
+    Spark [label="Spark Workload"]
+    Hive [label="Hive Workload"]
+
+    LLAP ->
+
+    subgraph cluster_cdpbase {
+        label="CDP Base";
+        HOT [label="Hive on TEZ"];
+        YARN [label="YARN"];
+
+        HOT -> YARN [label="Runs on"];
+    }
+
+    subgraph cluster_cdppvc {
+        label="CDP Private Cloud";
+
+        CDW_Hive [label="Hive LLAP"]
+
+    }
+
+}
+
+@enduml

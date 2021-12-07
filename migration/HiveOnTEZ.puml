@@ -1,0 +1,23 @@
+@startuml
+
+[*] --> UsingLLAP
+
+Workload : Type
+UsingLLAP --> PVC : YES
+
+PVC: Is PVC Available?
+PVC --> BASE: NO
+PVC --> CDW: YES
+PVC --> BASE: Eventually
+
+BASE --> CDW: Once Configured
+
+BASE: CDP Base Cluster
+CDW: CDP PVC
+CDW: Running LLAP in Containers
+
+BASE --> HiveBase
+HiveBase : Running On YARN
+
+
+@enduml

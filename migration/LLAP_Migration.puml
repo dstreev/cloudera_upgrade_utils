@@ -1,0 +1,62 @@
+@startuml
+'https://plantuml.com/activity-diagram-beta
+
+
+fork
+  :CDW is Available;
+  if (Consumer) then (hive)
+    if (Job is Scheduled and Predictable) then (yes)
+        :Consider running on CDP Base / Datahub;
+        end
+    else (no)
+        split
+            :ETL Workloads;
+            :Run CDW in Isolation Mode;
+            end
+        split again
+            :Interactive Workloads;
+            :Determine CDW Instance sizing (other jobs using same instance?);
+            :Understand Elastic Needs and Max PEEK compute needs to size CDW instance;
+            :Run Hive on TEZ in CDW (LLAP);
+            end
+        end split
+    endif
+  else (spark)
+    if (filesystem access to data) then (no)
+        :Use HWC to Submit HiveSQL;
+        if (RESULTSET is) then (small)
+            :Use HWC JDBC_CLIENT mode;
+            end
+        else (large)
+            :Use HWC STAGING_OUTPUT mode;
+            end
+        endif
+    else (yes)
+        if (sparkSql compatable) then (yes)
+            :Use Native SparkSQL;
+            end
+        else (no)
+            :Use HWC;
+            :Grant Filesystem Access;
+            if (DATASET is) then (small to large)
+                :Use SparkSQL with HWC DIRECT_READER mode;
+                end
+            else (x-large)
+                :Use HiveSQL with HWC STAGING_OUTPUT mode;
+                end
+            endif
+        endif
+    endif
+  endif
+fork again
+    :Only CDP Base is Available;
+    :Isolate an HS2 Instance
+        - Tune for pre-warmed Containers
+        - Associate to dedicated YARN Queue
+        - Ensure preemption configured to allow
+            Queue to reclaim resources;
+    :Run Hive on TEZ on CDP Base / Datahub;
+    end
+end fork
+
+@enduml
